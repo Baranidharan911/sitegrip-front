@@ -2,11 +2,11 @@
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig = {
-  basePath: isProd ? '/' : '',
   images: {
     unoptimized: true,
   },
-  // ❌ Removed "output: 'export'" to support dynamic routes and Firestore
+  // basePath removed because '/' is invalid
+  // output: 'export' removed — you're using dynamic routing + Firebase
 };
 
 export default nextConfig;
