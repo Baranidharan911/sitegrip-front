@@ -17,7 +17,7 @@ export default function LoginCard() {
 
   // Auto-redirect if already logged in
   useEffect(() => {
-    const storedUser = localStorage.getItem('webwatch-user');
+    const storedUser = localStorage.getItem('Sitegrip-user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
       window.location.href = '/indexing';
@@ -29,7 +29,7 @@ export default function LoginCard() {
       const result = await signInWithPopup(auth, provider);
       const loggedInUser = result.user;
       setUser(loggedInUser);
-      localStorage.setItem('webwatch-user', JSON.stringify(loggedInUser));
+      localStorage.setItem('Sitegrip-user', JSON.stringify(loggedInUser));
       window.location.href = '/indexing';
     } catch (error: any) {
       console.error('Google Login failed:', error);
@@ -48,9 +48,9 @@ export default function LoginCard() {
       const loggedInUser = result.user;
       setUser(loggedInUser);
       if (rememberMe) {
-        localStorage.setItem('webwatch-user', JSON.stringify(loggedInUser));
+        localStorage.setItem('Sitegrip-user', JSON.stringify(loggedInUser));
       } else {
-        localStorage.removeItem('webwatch-user');
+        localStorage.removeItem('Sitegrip-user');
       }
       window.location.href = '/indexing';
     } catch (error: any) {
@@ -66,7 +66,7 @@ export default function LoginCard() {
     <div className="p-10 bg-white dark:bg-gray-800 text-center max-w-md w-full mx-auto my-auto min-h-screen flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 p-8 sm:p-10 w-full max-w-md">
         <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-          Welcome Back to WebWatch Pro
+          Welcome Back to Site Grip
         </h1>
         <p className="text-gray-600 dark:text-gray-300 mb-6">
           Sign in to continue to your account.

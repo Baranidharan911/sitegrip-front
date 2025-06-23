@@ -19,7 +19,7 @@ const AppHeader = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const stored = localStorage.getItem('webwatch-user');
+      const stored = localStorage.getItem('Sitegrip-user');
       if (stored) {
         const parsed = JSON.parse(stored);
         // Fetch latest avatar from Firestore
@@ -41,7 +41,7 @@ const AppHeader = () => {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('webwatch-user');
+    localStorage.removeItem('Sitegrip-user');
     window.location.href = '/login';
   };
 
@@ -70,7 +70,7 @@ const AppHeader = () => {
             className="flex items-center gap-2 text-xl font-extrabold text-purple-600 dark:text-purple-300"
           >
             <Rocket className="w-6 h-6" />
-            WebWatch Pro
+            Site Grip
           </Link>
 
           {/* Controls */}

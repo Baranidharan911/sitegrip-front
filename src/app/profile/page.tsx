@@ -22,7 +22,7 @@ export default function ProfilePage() {
   const [personalization, setPersonalization] = useState<any>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('webwatch-user');
+    const stored = localStorage.getItem('Sitegrip-user');
     if (stored) {
       const parsed = JSON.parse(stored);
       setUser(parsed);
@@ -66,7 +66,7 @@ export default function ProfilePage() {
       ...user,
       avatar: avatarBase64 || '',
     };
-    localStorage.setItem('webwatch-user', JSON.stringify(updatedUser));
+    localStorage.setItem('Sitegrip-user', JSON.stringify(updatedUser));
     setUser(updatedUser);
 
     setIsSaving(false);

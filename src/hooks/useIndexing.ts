@@ -41,7 +41,7 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-const appId = process.env.NEXT_PUBLIC_WEBWATCH_APP_ID || 'webwatch-dev';
+const appId = process.env.NEXT_PUBLIC_WEBWATCH_APP_ID || 'Sitegrip-dev';
 const initialAuthToken = null;
 
 export const useIndexing = () => {

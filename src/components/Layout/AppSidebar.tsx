@@ -35,7 +35,7 @@ const AppSidebar = () => {
       <div className="absolute bottom-[-60px] right-[-60px] w-72 h-72 bg-pink-400 opacity-10 rounded-full blur-3xl z-[-1]" />
 
       {/* Brand */}
-      <h2 className="text-2xl font-extrabold mb-6 drop-shadow-sm">WebWatch</h2>
+      <h2 className="text-2xl font-extrabold mb-6 drop-shadow-sm">SiteGrip</h2>
 
       <div className="space-y-5">
         {sidebarItems.map((section) => {

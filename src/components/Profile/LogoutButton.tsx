@@ -4,7 +4,7 @@ import { LogOut } from 'lucide-react';
 
 const LogoutButton = () => {
   const logout = () => {
-    localStorage.removeItem('webwatch-user');
+    localStorage.removeItem('Sitegrip-user');
     window.location.href = '/login';
   };
 

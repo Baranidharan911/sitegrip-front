@@ -23,7 +23,7 @@ const Header = () => {
           className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center"
         >
           <Rocket className="w-8 h-8 mr-2 text-purple-600 dark:text-purple-400" />
-          WebWatch Pro
+          Site Grip
         </a>
 
         {/* Desktop Nav */}

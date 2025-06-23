@@ -29,7 +29,7 @@ const config: Config = {
       },
       backgroundImage: {
         'newsletter-bg': `url('/images/newsletter/bgFile.png')`,
-        'newsletter-bg-2': `url('/E-learning/images/newsletter/bgFile.png')`,
+        'newsletter-bg-2': `url('/sitegrip/images/newsletter/bgFile.png')`,
       },
     },
   },
