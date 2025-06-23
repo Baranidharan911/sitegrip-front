@@ -10,12 +10,10 @@ import PricingSection from '../components/Home/PricingSection';
 import CallToAction from '../components/Home/CallToAction';
 import Footer from '../components/Common/Footer';
 
-const HomePage = () => {
+export default function Page() {
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-white font-inter antialiased transition-colors duration-300">
       <Header />
-
-      {/* Push content below sticky header */}
       <main className="pt-24 md:pt-28">
         <HeroSection />
         <FeatureCards />
@@ -24,10 +22,7 @@ const HomePage = () => {
         <PricingSection />
         <CallToAction />
       </main>
-
       <Footer />
     </div>
   );
-};
-
-export default HomePage;
+}
