@@ -255,7 +255,32 @@ export default function ResultsTable({ pages }: ResultsTableProps) {
       {selectedPage && <PageDetailsModal page={selectedPage} onClose={() => setSelectedPage(null)} />}
       <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md overflow-hidden">
         <h2 className="text-2xl font-bold p-6 text-gray-800 dark:text-white">📄 Detailed Page Results</h2>
-        <div className="overflow-x-auto">
+{/* Mobile Card View */}
+<div className="sm:hidden space-y-4 p-4">
+  {paginatedPages.map((page) => (
+    <div key={page.url} className="border border-gray-300 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow">
+      <div className="text-blue-600 dark:text-blue-400 font-medium truncate mb-1">
+        <a href={page.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{page.title || page.url}</a>
+      </div>
+      <div className="text-sm text-gray-600 dark:text-gray-300">
+        <div><strong>Status:</strong> <span className={page.statusCode >= 400 ? 'text-red-500' : 'text-green-600'}>{page.statusCode}</span></div>
+        <div><strong>Depth:</strong> {page.depth}</div>
+        <div><strong>LCP:</strong> <span className={getColorForLCP(page.lcp)}>{page.lcp.toFixed(2)}s</span></div>
+        <div><strong>CLS:</strong> <span className={getColorForCLS(page.cls)}>{page.cls.toFixed(2)}</span></div>
+        <div><strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb)}>{page.ttfb.toFixed(2)}s</span></div>
+        <div><strong>SEO Score:</strong> <span className={getScoreClass(page.seoScore)}>{page.seoScore}</span></div>
+        <div className="mt-2 flex justify-between items-center">
+          <span><strong>JS:</strong> {page.consoleErrors?.length ? <XCircle className="inline h-5 w-5 text-red-500" /> : <CheckCircle className="inline h-5 w-5 text-green-500" />}</span>
+          <button onClick={() => setSelectedPage(page)} className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 flex items-center gap-1 text-sm">
+            <Lightbulb className="h-4 w-4" /> Insights
+          </button>
+        </div>
+      </div>
+    </div>
+  ))}
+</div>
+
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
