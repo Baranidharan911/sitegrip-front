@@ -55,9 +55,11 @@ export default function LoginCard() {
       window.location.href = '/indexing';
     } catch (error: any) {
       let msg = 'Login failed.';
-      if (error.code === 'auth/invalid-email') msg = 'Invalid email.';
-      else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') msg = 'Invalid credentials.';
-      else if (error.code === 'auth/user-disabled') msg = 'Account is disabled.';
+      if (error.code === 'auth/invalid-email') msg = 'Invalid email format.';
+      else if (error.code === 'auth/user-not-found') msg = 'User not found.';
+      else if (error.code === 'auth/wrong-password') msg = 'Incorrect password.';
+      else if (error.code === 'auth/user-disabled') msg = 'This account is disabled.';
+      else msg = error.message;
       setErrorMessage(msg);
     }
   };
@@ -110,7 +112,7 @@ export default function LoginCard() {
             onChange={(e) => setRememberMe(e.target.checked)}
           />
           <label htmlFor="rememberMe" className="ml-2 text-gray-700 dark:text-gray-300 text-sm">
-            Keep me signed in until I sign out
+            Keep me signed in
           </label>
         </div>
 
@@ -120,13 +122,13 @@ export default function LoginCard() {
           onClick={handleEmailPasswordLogin}
           className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
         >
-          Sign In
+          Sign In with Email
         </button>
 
         <p className="mt-6 text-gray-600 dark:text-gray-300 text-sm">
           Not a member yet?{' '}
           <a href="/signup" className="text-blue-600 hover:underline dark:text-blue-400">
-            Sign Up
+            Create an account
           </a>
         </p>
       </div>
