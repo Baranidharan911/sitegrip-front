@@ -22,7 +22,7 @@ export default function SitemapPage() {
     setSitemapTree(null);
 
     try {
-      const res = await fetch('https://sitegrip-backend.el.r.appspot.com/api/sitemap', {
+      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/sitemap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: inputUrl }),

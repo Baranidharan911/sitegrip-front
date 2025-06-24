@@ -81,7 +81,7 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      const res = await fetch('https://sitegrip-backend.el.r.appspot.com/api/discover', {
+      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/discover', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, depth }),
@@ -107,7 +107,7 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      const res = await fetch('https://sitegrip-backend.el.r.appspot.com/api/crawl', {
+      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/crawl', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, depth, selectedUrls }),
@@ -132,7 +132,7 @@ export default function SeoCrawlerDashboardPage() {
     if (!crawlResult) return;
 
     try {
-      const res = await fetch('https://sitegrip-backend.el.r.appspot.com/api/export/csv', {
+      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/export/csv', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(crawlResult.pages),
