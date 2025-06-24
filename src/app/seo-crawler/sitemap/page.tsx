@@ -22,7 +22,7 @@ export default function SitemapPage() {
     setSitemapTree(null);
 
     try {
-      const res = await fetch('https://sitegrip-backend.el.r.appspot.com/api/sitemap', {
+      const res = await fetch('http://127.0.0.1:8000/api/sitemap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: inputUrl }),

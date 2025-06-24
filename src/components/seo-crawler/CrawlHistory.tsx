@@ -63,7 +63,7 @@ export default function CrawlHistory() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('https://sitegrip-backend.el.r.appspot.com/api/history');
+        const response = await fetch('http://127.0.0.1:8000/api/history');
         if (!response.ok) throw new Error('Failed to fetch crawl history from the server.');
         const data: CrawlHistoryEntry[] = await response.json();
         setCrawls(data);
