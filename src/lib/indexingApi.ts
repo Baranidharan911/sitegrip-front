@@ -98,14 +98,30 @@ class IndexingAPI {
     projectId: string,
     priority: string = 'medium'
   ): Promise<IndexingResponse> {
-    return this.request('/api/index/submit', {
-      method: 'POST',
-      body: JSON.stringify({
-        urls,
-        priority,
-        project_id: projectId,
-      }),
-    });
+    console.log('Frontend: Submitting URLs:', urls);
+    console.log('Frontend: Project ID:', projectId);
+    console.log('Frontend: Priority:', priority);
+    console.log('Frontend: User ID:', this.getUserId());
+    console.log('Frontend: API Base URL:', this.baseUrl);
+    
+    const requestBody = {
+      urls,
+      priority,
+      project_id: projectId,
+    };
+    console.log('Frontend: Request body:', requestBody);
+    
+    try {
+      const response = await this.request<IndexingResponse>('/api/index/submit', {
+        method: 'POST',
+        body: JSON.stringify(requestBody),
+      });
+      console.log('Frontend: API response:', response);
+      return response;
+    } catch (error) {
+      console.error('Frontend: API error:', error);
+      throw error;
+    }
   }
 
   // Get indexing entries
