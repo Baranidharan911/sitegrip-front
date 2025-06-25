@@ -1,5 +1,6 @@
 'use client';
 
+// Force rebuild - production API configured
 import { useState } from 'react';
 import { auth, provider } from '@/lib/firebase';
 import {
@@ -15,7 +16,7 @@ export const useAuth = () => {
 
   const verifyTokenAndRedirect = async (idToken: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/auth/verify-token`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -41,7 +42,9 @@ export const useAuth = () => {
     refreshToken: string | null
   ) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      console.log('API URL being used:', apiUrl);
+      console.log('Full URL:', `${apiUrl}/api/auth/verify-token-with-google`);
       const response = await fetch(`${apiUrl}/api/auth/verify-token-with-google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

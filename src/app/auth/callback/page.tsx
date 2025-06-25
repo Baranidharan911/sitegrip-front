@@ -58,9 +58,22 @@ function AuthCallbackContent() {
         });
 
         const data = await response.json();
+        console.log('OAuth callback response:', data);
 
         if (data.success) {
-          setStatus('Authentication successful! Redirecting...');
+          setStatus('Authentication successful! Updating profile...');
+          
+          // Update localStorage with the new user data including Google credentials
+          if (data.user) {
+            const updatedUserData = {
+              success: true,
+              user: data.user,
+              message: data.message || "Google API integration successful",
+              google_integration: true
+            };
+            localStorage.setItem('Sitegrip-user', JSON.stringify(updatedUserData));
+          }
+          
           // Wait a moment then redirect to indexing page
           setTimeout(() => {
             router.push('/indexing');
