@@ -11,17 +11,16 @@ export const useIndexingBackend = () => {
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [statistics, setStatistics] = useState<IndexingStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [projectId, setProjectId] = useState<string>('default_project');
-
-  // Generate a project ID for the current session
-  useEffect(() => {
-    const sessionProjectId = `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    setProjectId(sessionProjectId);
-  }, []);
+  const [projectId, setProjectId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    }
+    return 'default_project';
+  });
 
   // Load initial data
   useEffect(() => {
-    if (projectId) {
+    if (projectId && projectId !== 'default_project') {
       loadDashboardData();
     }
   }, [projectId]);
