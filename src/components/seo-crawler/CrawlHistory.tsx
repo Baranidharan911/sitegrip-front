@@ -12,7 +12,12 @@ interface AISuggestions {
   title: string;
   metaDescription: string;
   content: string;
+  keyword_analysis?: {
+    keyword_density: Record<string, number>;
+    missing_keywords?: string[];
+  };
 }
+
 
 interface PageData {
   url: string;
@@ -140,7 +145,7 @@ export default function CrawlHistory() {
                   />
                   <KeywordSummary domain={new URL(crawl.url).hostname} />
                   <ResultsTable pages={crawl.pages} />
-                  <KeywordTable url={crawl.url} />
+                  <KeywordTable url={crawl.url} pages={crawl.pages} />
                 </div>
               )}
             </div>

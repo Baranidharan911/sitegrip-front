@@ -14,7 +14,12 @@ interface AISuggestions {
   title: string;
   metaDescription: string;
   content: string;
+  keyword_analysis?: {
+    keyword_density: Record<string, number>;
+    missing_keywords?: string[];
+  };
 }
+
 
 interface PageData {
   url: string;
@@ -218,18 +223,22 @@ export default function SeoCrawlerDashboardPage() {
 
             {activeTab === 'summary' && (
               <>
-                <CrawlSummary summary={crawlResult.summary} pages={crawlResult.pages} />
+                <CrawlSummary
+                  summary={crawlResult.summary}
+                  pages={crawlResult.pages}
+                  aiSummaryText={(crawlResult as any).aiSummaryText}
+                />
                 <KeywordSummary domain={new URL(url).hostname} />
               </>
             )}
 
-
             {activeTab === 'results' && (
               <>
                 <ResultsTable pages={crawlResult.pages} />
-                <KeywordTable url={url} />
+                <KeywordTable url={url} pages={crawlResult.pages} />
               </>
             )}
+
           </div>
         )}
       </div>
