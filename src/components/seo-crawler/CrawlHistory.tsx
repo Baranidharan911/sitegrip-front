@@ -3,6 +3,8 @@
 import { useEffect, useState } from 'react';
 import ResultsTable from './ResultsTable';
 import CrawlSummary from './CrawlSummary';
+import KeywordSummary from './KeywordSummary';
+import KeywordTable from './KeywordTable';
 import { ChevronDown, Loader2, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -43,6 +45,7 @@ interface CrawlSummaryData {
   nonMobilePages: number;
   pagesWithSlowLoad: number;
   orphanPages: number;
+  
 }
 
 interface CrawlHistoryEntry {
@@ -131,8 +134,13 @@ export default function CrawlHistory() {
               </button>
               {isOpen && (
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-6 bg-gray-50/50 dark:bg-black/20">
-                  <CrawlSummary summary={crawl.summary} pages={crawl.pages} />
+                  <CrawlSummary
+                    summary={crawl.summary}
+                    pages={crawl.pages}
+                  />
+                  <KeywordSummary domain={new URL(crawl.url).hostname} />
                   <ResultsTable pages={crawl.pages} />
+                  <KeywordTable url={crawl.url} />
                 </div>
               )}
             </div>

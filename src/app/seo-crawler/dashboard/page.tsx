@@ -5,6 +5,9 @@ import RunCrawlForm from '@/components/seo-crawler/RunCrawlForm';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';
 import DiscoveredTable from '@/components/seo-crawler/DiscoveredTable';
+import KeywordSummary from '@/components/seo-crawler/KeywordSummary';
+import KeywordTable from '@/components/seo-crawler/KeywordTable';
+
 import { FileText, Search, Download } from 'lucide-react';
 
 interface AISuggestions {
@@ -214,11 +217,18 @@ export default function SeoCrawlerDashboardPage() {
             </div>
 
             {activeTab === 'summary' && (
-              <CrawlSummary summary={crawlResult.summary} pages={crawlResult.pages} />
+              <>
+                <CrawlSummary summary={crawlResult.summary} pages={crawlResult.pages} />
+                <KeywordSummary domain={new URL(url).hostname} />
+              </>
             )}
 
+
             {activeTab === 'results' && (
-              <ResultsTable pages={crawlResult.pages} />
+              <>
+                <ResultsTable pages={crawlResult.pages} />
+                <KeywordTable url={url} />
+              </>
             )}
           </div>
         )}

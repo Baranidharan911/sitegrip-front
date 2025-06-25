@@ -32,9 +32,11 @@ interface SummaryProps {
     pagesWithSlowLoad: number;
     orphanPages: number;
     averageSeoScore?: number;
+    
   };
   pages: PageData[];
   aiSummaryText?: string;
+  
 }
 
 export default function CrawlSummary({ summary, pages, aiSummaryText }: SummaryProps) {
