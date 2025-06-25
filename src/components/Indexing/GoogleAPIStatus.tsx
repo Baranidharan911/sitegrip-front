@@ -11,6 +11,29 @@ export default function GoogleAPIStatus() {
 
   useEffect(() => {
     checkGoogleAPIStatus();
+    
+    // Listen for window focus to refresh status (when user returns from OAuth)
+    const handleFocus = () => {
+      console.log('Window focused, refreshing Google API status');
+      checkGoogleAPIStatus();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    // Also listen for localStorage changes (in case updated by another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'Sitegrip-user') {
+        console.log('localStorage changed, refreshing Google API status');
+        checkGoogleAPIStatus();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const handleGoogleAuth = async () => {
@@ -57,13 +80,19 @@ export default function GoogleAPIStatus() {
 
   const checkGoogleAPIStatus = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const userStr = localStorage.getItem('Sitegrip-user');
       let userId = '';
+      let localGoogleAuthEnabled = false;
+      let localProperties: any[] = [];
+      
       if (userStr) {
         const userData = JSON.parse(userStr);
+        console.log('Checking localStorage user data:', userData);
+        
         // Handle both nested and direct user object structures
         userId = userData.user?.uid || userData.uid || '';
+        localGoogleAuthEnabled = userData.user?.google_auth_enabled || userData.google_auth_enabled || false;
+        localProperties = userData.user?.search_console_properties || userData.search_console_properties || [];
       }
 
       if (!userId) {
@@ -73,6 +102,18 @@ export default function GoogleAPIStatus() {
         return;
       }
 
+      // First check localStorage data (immediate response)
+      if (localGoogleAuthEnabled) {
+        console.log('Found Google auth enabled in localStorage');
+        setIsConnected(true);
+        setProperties(localProperties);
+        setIsLoading(false);
+        return;
+      }
+
+      // Fallback: Check backend API status if localStorage doesn't show connected
+      console.log('Checking backend API status as fallback');
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/auth/google/status?user_id=${userId}`, {
         method: 'GET',
         headers: {
@@ -82,7 +123,7 @@ export default function GoogleAPIStatus() {
       const data = await response.json();
       setIsConnected(data.authenticated);
       
-      // If connected, get user profile to show properties
+      // If connected via backend, get user profile to show properties
       if (data.authenticated && userId) {
         const profileResponse = await fetch(`${apiUrl}/api/auth/user/${userId}`, {
           method: 'GET',
@@ -93,7 +134,7 @@ export default function GoogleAPIStatus() {
         
         if (profileResponse.ok) {
           const profileData = await profileResponse.json();
-          setProperties(profileData.user.search_console_properties || []);
+          setProperties(profileData.search_console_properties || []);
         }
       }
     } catch (error) {
@@ -149,14 +190,23 @@ export default function GoogleAPIStatus() {
           </div>
         </div>
 
-        {!isConnected && (
+        <div className="flex gap-2">
           <button
-            onClick={handleGoogleAuth}
-            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            onClick={checkGoogleAPIStatus}
+            className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+            title="Refresh status"
           >
-            Sign In
+            ↻
           </button>
-        )}
+          {!isConnected && (
+            <button
+              onClick={handleGoogleAuth}
+              className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+            >
+              Sign In
+            </button>
+          )}
+        </div>
       </div>
 
       {isConnected && properties.length > 0 && (

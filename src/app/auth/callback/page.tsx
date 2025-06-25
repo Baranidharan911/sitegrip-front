@@ -58,7 +58,6 @@ function AuthCallbackContent() {
         });
 
         const data = await response.json();
-        console.log('OAuth callback response:', data);
 
         if (data.success) {
           setStatus('Authentication successful! Updating profile...');

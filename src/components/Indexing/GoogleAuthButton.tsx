@@ -21,13 +21,19 @@ export default function GoogleAuthButton({ onAuthSuccess, onAuthError }: GoogleA
 
   const checkAuthStatus = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const userStr = localStorage.getItem('Sitegrip-user');
       let userId = '';
+      let localGoogleAuthEnabled = false;
+      let localProperties: any[] = [];
+      
       if (userStr) {
         const userData = JSON.parse(userStr);
+        console.log('GoogleAuthButton checking localStorage user data:', userData);
+        
         // Handle both nested and direct user object structures
         userId = userData.user?.uid || userData.uid || '';
+        localGoogleAuthEnabled = userData.user?.google_auth_enabled || userData.google_auth_enabled || false;
+        localProperties = userData.user?.search_console_properties || userData.search_console_properties || [];
       }
 
       if (!userId) {
@@ -36,6 +42,16 @@ export default function GoogleAuthButton({ onAuthSuccess, onAuthError }: GoogleA
         return;
       }
 
+      // First check localStorage data (immediate response)
+      if (localGoogleAuthEnabled) {
+        console.log('GoogleAuthButton found Google auth enabled in localStorage');
+        setIsAuthenticated(true);
+        setProperties(localProperties);
+        return;
+      }
+
+      // Fallback: Check backend API status
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/auth/google/status?user_id=${userId}`, {
         method: 'GET',
         headers: {
