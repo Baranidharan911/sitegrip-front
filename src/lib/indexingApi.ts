@@ -111,8 +111,12 @@ class IndexingAPI {
     };
     console.log('Frontend: Request body:', requestBody);
     
+    // Add user_id as query parameter
+    const userId = this.getUserId();
+    const url = `/api/index/submit?user_id=${encodeURIComponent(userId)}`;
+    
     try {
-      const response = await this.request<IndexingResponse>('/api/index/submit', {
+      const response = await this.request<IndexingResponse>(url, {
         method: 'POST',
         body: JSON.stringify(requestBody),
       });
