@@ -46,7 +46,7 @@ export default function DebugUserData() {
     const testUserData = {
       "success": true,
       "user": {
-        "uid": "wthslcC9zOSfnlPkYB41I2KnAl2",
+        "uid": "OCYAEEoUBYeouUicGlKxdYKDPaD2",
         "email": "bbharanidharan43@gmail.com",
         "display_name": "Baranidharan B",
         "photo_url": "https://lh3.googleusercontent.com/a/ACg8ocL3UY9lRX_yaFiTvc",
@@ -63,7 +63,7 @@ export default function DebugUserData() {
 
   const testBackend = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       console.log('Testing backend at:', apiUrl);
       
       const response = await fetch(`${apiUrl}/health`);
@@ -77,7 +77,7 @@ export default function DebugUserData() {
 
   const testGoogleStatus = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const userId = userData?.user?.uid || userData?.uid || '';
       
       if (!userId) {
@@ -98,7 +98,7 @@ export default function DebugUserData() {
 
   const testGoogleOAuth = async () => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const userId = userData?.user?.uid || userData?.uid || '';
       
       if (!userId) {

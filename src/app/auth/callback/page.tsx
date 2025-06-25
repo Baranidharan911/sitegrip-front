@@ -45,7 +45,7 @@ function AuthCallbackContent() {
         }
 
         // Exchange code for tokens
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await fetch(`${apiUrl}/api/auth/google/callback`, {
           method: 'POST',
           headers: {

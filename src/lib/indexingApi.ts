@@ -50,6 +50,20 @@ class IndexingAPI {
     this.baseUrl = baseUrl;
   }
 
+  private getUserId(): string {
+    // Get user ID from localStorage
+    try {
+      const userStr = localStorage.getItem('Sitegrip-user');
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        return userData.user?.uid || userData.uid || 'anonymous-user';
+      }
+    } catch (e) {
+      console.warn('Failed to get user ID from localStorage');
+    }
+    return 'anonymous-user';
+  }
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -104,18 +118,21 @@ class IndexingAPI {
     if (projectId) params.append('project_id', projectId);
     if (status) params.append('status', status);
     params.append('limit', limit.toString());
+    params.append('user_id', this.getUserId());
 
     return this.request(`/api/index/entries?${params.toString()}`);
   }
 
   // Get quota information
   async getQuotaInfo(projectId: string): Promise<QuotaInfo> {
-    return this.request(`/api/index/quota?project_id=${projectId}`);
+    const userId = this.getUserId();
+    return this.request(`/api/index/quota?project_id=${projectId}&user_id=${userId}`);
   }
 
   // Get indexing statistics
   async getStatistics(projectId: string): Promise<IndexingStats> {
-    return this.request(`/api/index/stats?project_id=${projectId}`);
+    const userId = this.getUserId();
+    return this.request(`/api/index/stats?project_id=${projectId}&user_id=${userId}`);
   }
 
   // Update indexing status
