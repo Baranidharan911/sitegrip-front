@@ -3,8 +3,6 @@
 import { useEffect, useState } from 'react';
 import ResultsTable from './ResultsTable';
 import CrawlSummary from './CrawlSummary';
-import KeywordSummary from './KeywordSummary';
-import KeywordTable from './KeywordTable';
 import { ChevronDown, Loader2, Smartphone } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -143,9 +141,7 @@ export default function CrawlHistory() {
                     summary={crawl.summary}
                     pages={crawl.pages}
                   />
-                  <KeywordSummary domain={new URL(crawl.url).hostname} />
                   <ResultsTable pages={crawl.pages} />
-                  <KeywordTable url={crawl.url} pages={crawl.pages} />
                 </div>
               )}
             </div>

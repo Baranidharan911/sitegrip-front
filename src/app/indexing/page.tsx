@@ -1,5 +1,5 @@
-import IndexingPage from '@/components/Indexing/IndexingPage';
+import EnhancedIndexingPage from '@/components/Indexing/EnhancedIndexingPage';
 
-export default function IndexPage() {
-  return <IndexingPage />;
+export default function IndexingPage() {
+  return <EnhancedIndexingPage />;
 }

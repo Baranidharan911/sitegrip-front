@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 import RunCrawlForm from '@/components/seo-crawler/RunCrawlForm';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';
 import DiscoveredTable from '@/components/seo-crawler/DiscoveredTable';
-import KeywordSummary from '@/components/seo-crawler/KeywordSummary';
-import KeywordTable from '@/components/seo-crawler/KeywordTable';
 
 import { FileText, Search, Download } from 'lucide-react';
 
@@ -20,7 +20,6 @@ interface AISuggestions {
   };
 }
 
-
 interface PageData {
   url: string;
   title?: string;
@@ -32,15 +31,13 @@ interface PageData {
   pageSizeBytes: number;
   hasViewport: boolean;
   suggestions?: AISuggestions;
-  seoScore: number; // ✅ Add this line
-  lcp: number;    // ✅ Add this
-  cls: number;    // ✅ Add this
+  seoScore: number;
+  lcp: number;
+  cls: number;
   ttfb: number;
   linkedFrom?: string[];
   depth: number;
-  
 }
-
 
 interface CrawlSummaryData {
   totalPages: number;
@@ -61,6 +58,7 @@ interface CrawlResult {
   summary: CrawlSummaryData;
   pages: PageData[];
   sitemapUrls: string[];
+  aiSummaryText?: string;
 }
 
 interface DiscoveredPage {
@@ -72,6 +70,8 @@ interface DiscoveredPage {
 }
 
 export default function SeoCrawlerDashboardPage() {
+  const router = useRouter();
+
   const [url, setUrl] = useState('');
   const [depth, setDepth] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -226,19 +226,78 @@ export default function SeoCrawlerDashboardPage() {
                 <CrawlSummary
                   summary={crawlResult.summary}
                   pages={crawlResult.pages}
-                  aiSummaryText={(crawlResult as any).aiSummaryText}
+                  aiSummaryText={crawlResult.aiSummaryText}
                 />
-                <KeywordSummary domain={new URL(url).hostname} />
               </>
             )}
 
             {activeTab === 'results' && (
               <>
                 <ResultsTable pages={crawlResult.pages} />
-                <KeywordTable url={url} pages={crawlResult.pages} />
               </>
             )}
 
+            {/* Keyword Analysis Section */}
+            <div className="mt-8 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg p-6 border dark:border-gray-700">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <span className="text-white text-xl">🔍</span>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                    Keyword Analysis Available
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">
+                    Your crawl has been completed! You can now analyze keywords for all {crawlResult.pages.length} crawled pages. 
+                    Get insights on keyword opportunities, ranking potential, and SEO optimization recommendations for each page.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Keyword density analysis</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Missing keyword opportunities</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Competitor keyword gaps</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Search volume insights</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Ranking tracking</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                      <span className="text-green-500">✓</span>
+                      <span>Trending keywords</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                      onClick={() => router.push(`/seo-crawler/keyword-tools?crawlId=${crawlResult.crawlId}`)}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <span>🚀</span>
+                      <span>Analyze Keywords for All Pages</span>
+                    </button>
+                    <button
+                      onClick={() => router.push(`/seo-crawler/history`)}
+                      className="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+                    >
+                      <span>📚</span>
+                      <span>View Crawl History</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

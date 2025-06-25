@@ -5,6 +5,8 @@ import {
   Search,
   Activity,
   Radar,
+  Settings,
+  KeySquare,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -38,7 +40,8 @@ export const sidebarItems: SidebarSection[] = [
     subItems: [
       { name: 'Dashboard', path: '/seo-crawler/dashboard', icon: Radar, pro: false },
       { name: 'Crawl History', path: '/seo-crawler/history', icon: Server, pro: false },
-      { name: 'Site Map', path: '/seo-crawler/sitemap', icon: Server, pro: false }
+      { name: 'Site Map', path: '/seo-crawler/sitemap', icon: Server, pro: false },
+      { name: 'Keywords Analysis', path: '/seo-crawler/keyword-tools', icon: KeySquare, pro: false }
     ],
   },
 
