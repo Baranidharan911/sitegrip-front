@@ -16,7 +16,7 @@ export default function KeywordSummary({ domain }: { domain: string }) {
   useEffect(() => {
     const loadSummary = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/keywords/domain-summary/${domain}`);
+        const res = await fetch(`https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/keywords/domain-summary/${domain}`);
         if (!res.ok) throw new Error('Failed to load keyword summary');
         const result = await res.json();
         setData(result);

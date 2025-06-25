@@ -18,7 +18,7 @@ export default function KeywordTable({ url }: { url: string }) {
   useEffect(() => {
     const fetchKeywords = async () => {
       try {
-        const res = await fetch(`http://127.0.0.1:8000/api/keywords/performance/${encodeURIComponent(url)}`);
+        const res = await fetch(`https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/keywords/performance/${encodeURIComponent(url)}`);
         if (!res.ok) throw new Error('Failed to fetch keyword data');
         const result = await res.json();
         setKeywords(result.keywords || []);
