@@ -1,7 +1,7 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import KeywordToolsTabs from '@/components/seo-crawler/KeywordToolsTabs';
 import { Search, Database, Globe, History } from 'lucide-react';
 import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
@@ -21,7 +21,7 @@ interface CrawlResult {
   totalPages: number;
 }
 
-export default function KeywordToolsPage() {
+function KeywordToolsContent() {
   const searchParams = useSearchParams();
   const crawlId = searchParams.get('crawlId') || '';
   
@@ -492,5 +492,27 @@ export default function KeywordToolsPage() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function KeywordToolsPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Loading Keyword Tools...
+            </h1>
+            <div className="animate-pulse">
+              <div className="h-4 bg-gray-300 rounded w-3/4 mx-auto mb-4"></div>
+              <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
+            </div>
+          </div>
+        </main>
+      </div>
+    }>
+      <KeywordToolsContent />
+    </Suspense>
   );
 } 
