@@ -5,6 +5,8 @@ import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import EnhancedIndexingForm from './EnhancedIndexingForm';
 import EnhancedIndexingTable from './EnhancedIndexingTable';
 import IndexingDashboard from './IndexingDashboard';
+import GoogleAPIStatus from './GoogleAPIStatus';
+import DebugUserData from './DebugUserData';
 import { useTheme } from 'next-themes';
 
 export default function EnhancedIndexingPage() {
@@ -71,6 +73,12 @@ export default function EnhancedIndexingPage() {
             onRefresh={refreshData}
             isLoading={isLoading}
           />
+
+          {/* Google API Status */}
+          <GoogleAPIStatus />
+
+          {/* Debug Component - Remove this after fixing */}
+          <DebugUserData />
 
           {/* Form Section */}
           <EnhancedIndexingForm

@@ -6,6 +6,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 
 export const useAuth = () => {
@@ -19,6 +20,36 @@ export const useAuth = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || 'Verification failed.');
+      }
+
+      const data = await response.json();
+      localStorage.setItem('Sitegrip-user', JSON.stringify(data));
+      window.location.href = '/indexing';
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    }
+  };
+
+  const verifyTokenAndRedirectWithGoogleAuth = async (
+    idToken: string, 
+    accessToken: string | null, 
+    refreshToken: string | null
+  ) => {
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiUrl}/api/auth/verify-token-with-google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          idToken,
+          googleAccessToken: accessToken,
+          googleRefreshToken: refreshToken
+        }),
       });
 
       if (!response.ok) {
@@ -54,7 +85,14 @@ export const useAuth = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const idToken = await result.user.getIdToken();
-      await verifyTokenAndRedirect(idToken);
+      
+      // Get OAuth access token from credential
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const accessToken = credential?.accessToken || null;
+      const refreshToken = (result as any)._tokenResponse?.refreshToken || null;
+      
+      // Send both Firebase ID token and Google OAuth data to backend
+      await verifyTokenAndRedirectWithGoogleAuth(idToken, accessToken, refreshToken);
     } catch (err: any) {
       setErrorMessage(err.message || 'Google login failed.');
     } finally {

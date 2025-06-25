@@ -21,9 +21,16 @@ const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
 
-// Add optional scopes for Search Console and Indexing API (future use)
+// Add scopes for Search Console and Indexing API during login
 provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
+provider.addScope("https://www.googleapis.com/auth/webmasters");
 provider.addScope("https://www.googleapis.com/auth/indexing");
+
+// Request offline access to get refresh tokens
+provider.setCustomParameters({
+  'access_type': 'offline',
+  'prompt': 'consent'
+});
 
 // Firestore (for saving indexing requests)
 const db = getFirestore(app);

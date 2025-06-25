@@ -6,8 +6,6 @@ import { useTheme } from 'next-themes';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 const AppHeader = () => {
   const [user, setUser] = useState<any>(null);
@@ -19,13 +17,26 @@ const AppHeader = () => {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const stored = localStorage.getItem('Sitegrip-user');
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        // Fetch latest avatar from Firestore
-        const snap = await getDoc(doc(db, 'users', parsed.uid));
-        const data = snap.exists() ? snap.data() : {};
-        setUser({ ...parsed, avatar: data.avatar || null });
+      try {
+        const stored = localStorage.getItem('Sitegrip-user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          
+          // Handle both nested and direct user object structures
+          let userObj = parsed.user || parsed;
+          
+          // Just use the stored user data directly
+          if (userObj && userObj.uid) {
+            setUser(userObj);
+          } else {
+            console.warn('Invalid user data in localStorage');
+            localStorage.removeItem('Sitegrip-user');
+          }
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+        // Clear invalid data
+        localStorage.removeItem('Sitegrip-user');
       }
     };
 
@@ -45,13 +56,19 @@ const AppHeader = () => {
     window.location.href = '/login';
   };
 
-  const getInitial = (nameOrEmail: string) =>
+  const getInitial = (nameOrEmail: string | undefined) =>
     nameOrEmail?.trim()?.charAt(0)?.toUpperCase() || '?';
 
-  const avatarSrc =
-    user?.avatar?.startsWith('data:') || user?.avatar?.startsWith('http')
+  // Defensive checks for avatar
+  const avatarSrc = user?.avatar && 
+    (typeof user.avatar === 'string') && 
+    (user.avatar.startsWith('data:') || user.avatar.startsWith('http'))
       ? user.avatar
       : null;
+
+  // Defensive fallback for displayName and email
+  const displayName = user?.displayName || '';
+  const email = user?.email || '';
 
   return (
     <header
@@ -104,7 +121,7 @@ const AppHeader = () => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-sm font-bold text-indigo-700 dark:text-white">
-                      {getInitial(user.displayName || user.email)}
+                      {getInitial(displayName || email)}
                     </div>
                   )}
                 </button>

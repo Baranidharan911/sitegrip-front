@@ -32,14 +32,30 @@ export default function LoginCard() {
         <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Welcome Back to Site Grip</h1>
         <p className="text-gray-600 dark:text-gray-300 mb-6">Sign in to continue to your account.</p>
 
-        <button
-          onClick={handleGoogleLogin}
-          disabled={loading}
-          className="flex items-center justify-center w-full mb-4 bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
-        >
-          <img src="/google-logo.png" alt="Google" className="w-5 h-5 mr-3" />
-          {loading ? 'Signing in...' : 'Continue with Google'}
-        </button>
+        <div className="mb-4">
+          <button
+            onClick={handleGoogleLogin}
+            disabled={loading}
+            className="flex items-center justify-center w-full bg-white border border-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 disabled:opacity-50"
+          >
+            <img src="/google-logo.png" alt="Google" className="w-5 h-5 mr-3" />
+            {loading ? 'Signing in...' : 'Continue with Google'}
+          </button>
+          
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-xs text-blue-700 dark:text-blue-300">
+            <div className="flex items-center gap-1 mb-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              <span className="font-medium">Includes API Access:</span>
+            </div>
+            <ul className="text-xs space-y-1 ml-4">
+              <li>• Google Search Console integration</li>
+              <li>• Real-time URL indexing (where supported)</li>
+              <li>• Domain verification & management</li>
+            </ul>
+          </div>
+        </div>
 
         <div className="flex items-center my-4">
           <div className="flex-grow border-t border-gray-300"></div>
