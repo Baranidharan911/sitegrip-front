@@ -30,7 +30,7 @@ function AuthCallbackContent() {
 
         setStatus('Exchanging authorization code for tokens...');
 
-        // Get user data from localStorage to verify state
+        // Load current user from localStorage to validate state
         const userStr = localStorage.getItem('Sitegrip-user');
         let userId = '';
         if (userStr) {
@@ -38,54 +38,44 @@ function AuthCallbackContent() {
           userId = userData.user?.uid || userData.uid || '';
         }
 
-        if (state !== userId && !state.startsWith('user_')) {
-          setError('Invalid state parameter - security check failed');
+        if (!userId || (state !== userId && !state.startsWith('user_'))) {
+          setError('Invalid state parameter – security check failed');
           setStatus('Authentication failed');
           return;
         }
 
-        // Exchange code for tokens
+        // Call backend to complete OAuth
         const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await fetch(`${apiUrl}/api/auth/google/callback`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            code: code,
-            state: state
-          }),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, state }),
         });
 
         const data = await response.json();
 
-        if (data.success) {
-          setStatus('Authentication successful! Updating profile...');
-          
-          // Update localStorage with the new user data including Google credentials
-          if (data.user) {
-            localStorage.setItem('Sitegrip-user', JSON.stringify({
-              user: {
-                uid: data.user.uid,
-                email: data.user.email,
-                display_name: data.user.display_name,
-                photo_url: data.user.photo_url,
-                google_auth_enabled: data.user.google_auth_enabled,
-                indexing_api_enabled: data.user.indexing_api_enabled,
-                search_console_properties: data.user.search_console_properties
-              },
-              success: true,
-              message: data.message,
-              google_integration: true
-            }));
-          }
-          
-          // Wait a moment then redirect to indexing page
-          setTimeout(() => {
-            router.push('/indexing');
-          }, 2000);
+        if (data.success && data.user) {
+          setStatus('Authentication successful! Redirecting...');
+
+          // Update localStorage with Google-integrated user
+          localStorage.setItem('Sitegrip-user', JSON.stringify({
+            user: {
+              uid: data.user.uid,
+              email: data.user.email,
+              display_name: data.user.display_name,
+              photo_url: data.user.photo_url,
+              google_auth_enabled: data.user.google_auth_enabled,
+              indexing_api_enabled: data.user.indexing_api_enabled,
+              search_console_properties: data.user.search_console_properties
+            },
+            success: true,
+            google_integration: true,
+            message: data.message
+          }));
+
+          setTimeout(() => router.push('/indexing'), 1500);
         } else {
-          setError(data.message || 'Failed to complete authentication');
+          setError(data.message || 'Authentication failed');
           setStatus('Authentication failed');
         }
 
@@ -101,51 +91,37 @@ function AuthCallbackContent() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full space-y-8 p-8">
-        <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900 dark:text-white">
-            Google Authentication
-          </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-            {status}
-          </p>
-        </div>
+      <div className="max-w-md w-full p-8 space-y-6 text-center">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Google Authentication
+        </h2>
 
-        <div className="mt-8 space-y-6">
-          {status === 'Processing...' || status.includes('Exchanging') ? (
-            <div className="flex justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            </div>
-          ) : null}
+        <p className="text-sm text-gray-600 dark:text-gray-400">{status}</p>
 
-          {status === 'Authentication successful! Redirecting...' ? (
-            <div className="text-center">
-              <div className="text-green-600 dark:text-green-400 text-lg font-medium">
-                ✅ Success!
-              </div>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                Redirecting to indexing page...
-              </p>
-            </div>
-          ) : null}
+        {status.includes('Exchanging') && (
+          <div className="flex justify-center">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+          </div>
+        )}
 
-          {error ? (
-            <div className="text-center">
-              <div className="text-red-600 dark:text-red-400 text-lg font-medium">
-                ❌ Error
-              </div>
-              <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                {error}
-              </p>
-              <button
-                onClick={() => router.push('/indexing')}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Return to Indexing
-              </button>
-            </div>
-          ) : null}
-        </div>
+        {status === 'Authentication successful! Redirecting...' && (
+          <div className="text-green-600 dark:text-green-400 text-lg font-semibold">
+            ✅ Success
+          </div>
+        )}
+
+        {error && (
+          <div className="text-red-600 dark:text-red-400 space-y-2">
+            <div className="font-semibold">❌ Error</div>
+            <p className="text-sm">{error}</p>
+            <button
+              onClick={() => router.push('/indexing')}
+              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Return to Indexing
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -156,10 +132,10 @@ export default function AuthCallback() {
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
             Loading...
           </h2>
-          <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
             Processing authentication
           </p>
         </div>
@@ -168,4 +144,4 @@ export default function AuthCallback() {
       <AuthCallbackContent />
     </Suspense>
   );
-} 
+}
