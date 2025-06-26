@@ -30,8 +30,9 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/keywords/gaps/${encodeURIComponent(url)}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const encodedUrl = encodeURIComponent(url);
+      const response = await fetch(`${apiUrl}/api/keywords/gaps/${encodedUrl}?days=30`);
 
       if (!response.ok) {
         const errorData = await response.json();

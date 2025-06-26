@@ -1,109 +1,122 @@
 'use client';
 
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import EnhancedIndexingForm from './EnhancedIndexingForm';
-import EnhancedIndexingTable from './EnhancedIndexingTable';
 import IndexingDashboard from './IndexingDashboard';
-import GoogleAPIStatus from './GoogleAPIStatus';
-import DebugUserData from './DebugUserData';
-import { useTheme } from 'next-themes';
+import EnhancedIndexingTable from './EnhancedIndexingTable';
+import GoogleAuthButton from './GoogleAuthButton';
+import { Toaster } from 'react-hot-toast';
 
 export default function EnhancedIndexingPage() {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [projectId, setProjectId] = useState('default-project');
+  
   const {
-    urlInput,
-    setUrlInput,
-    isSubmitting,
-    isLoading,
+    loading,
     indexingEntries,
-    quotaInfo,
     statistics,
-    projectId,
-    handleSubmit,
+    quotaInfo,
     submitUrls,
     submitUrlsFromFile,
-    updateEntryStatus,
     retryEntry,
-    refreshData,
+    deleteEntry,
+    loadDashboardData,
   } = useIndexingBackend();
 
-  const { theme } = useTheme();
+  useEffect(() => {
+    // Load user from localStorage
+    const storedUser = localStorage.getItem('Sitegrip-user');
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      setCurrentUser(userData.user || userData);
+    }
+  }, []);
 
-  const handleFormSubmit = async (urls: string[], priority: string) => {
-    await submitUrls(urls, priority);
+  useEffect(() => {
+    if (currentUser && projectId) {
+      loadDashboardData(projectId);
+    }
+  }, [currentUser, projectId, loadDashboardData]);
+
+  const handleSubmitUrls = async (urls: string[], priority: 'low' | 'medium' | 'high') => {
+    if (!currentUser) {
+      return;
+    }
+    await submitUrls(urls, projectId, priority);
   };
 
-  const handleFileSubmit = async (file: File, priority: string) => {
-    await submitUrlsFromFile(file, priority);
+  const handleSubmitFile = async (file: File, priority: 'low' | 'medium' | 'high') => {
+    if (!currentUser) {
+      return;
+    }
+    await submitUrlsFromFile(file, projectId, priority);
   };
 
-  const handleRetry = async (entry: any) => {
-    await retryEntry(entry);
-  };
-
-  const handleUpdateStatus = async (entryId: string, status: string, errorMessage?: string) => {
-    await updateEntryStatus(entryId, status, errorMessage);
-  };
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+              Please Sign In
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mb-8">
+              You need to be signed in to access the indexing functionality.
+            </p>
+            <GoogleAuthButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`min-h-screen flex flex-col transition-colors ${
-        theme === 'dark'
-          ? 'bg-gray-900 text-white'
-          : 'bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-900'
-      }`}
-    >
-      {/* Page Content */}
-      <main className="flex-1 flex flex-col items-center justify-start px-4 pt-32 pb-12">
-        <div className="w-full max-w-7xl space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-4xl sm:text-5xl font-bold text-indigo-800 dark:text-indigo-300 mb-4">
-              SiteGrip Indexing
-            </h1>
-            <p className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-              Submit URLs for Google indexing with priority control, bulk processing, and real-time tracking.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+      <Toaster position="top-right" />
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            URL Indexing Dashboard
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Submit URLs for search engine indexing and monitor their status
+          </p>
+        </div>
 
-          {/* Dashboard */}
+        {/* Dashboard Stats */}
+        <div className="mb-8">
           <IndexingDashboard
             statistics={statistics}
             quotaInfo={quotaInfo}
-            onRefresh={refreshData}
-            isLoading={isLoading}
+            loading={loading}
+            onRefresh={() => loadDashboardData(projectId)}
           />
+        </div>
 
-          {/* Google API Status */}
-          <GoogleAPIStatus />
-
-          {/* Debug Component - Remove this after fixing */}
-          <DebugUserData />
-
-          {/* Form Section */}
+        {/* Submit Form */}
+        <div className="mb-8">
           <EnhancedIndexingForm
-            onSubmit={handleFormSubmit}
-            onFileSubmit={handleFileSubmit}
-            isSubmitting={isSubmitting}
+            onSubmitUrls={handleSubmitUrls}
+            onSubmitFile={handleSubmitFile}
+            loading={loading}
+            quotaInfo={quotaInfo}
           />
+        </div>
 
-          {/* Table Section */}
+        {/* Recent Entries Table */}
+        <div>
           <EnhancedIndexingTable
             entries={indexingEntries}
-            onRetry={handleRetry}
-            onUpdateStatus={handleUpdateStatus}
-            isLoading={isLoading}
+            loading={loading}
+            onRetry={retryEntry}
+            onDelete={deleteEntry}
+            onRefresh={() => loadDashboardData(projectId)}
           />
-
-          {/* Project Info */}
-          <div className="text-center text-sm text-gray-500 dark:text-gray-400">
-            <p>Project ID: {projectId}</p>
-            <p className="mt-1">
-              Backend API: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}
-            </p>
-          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 } 

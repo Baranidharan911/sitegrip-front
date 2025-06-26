@@ -48,7 +48,7 @@ interface CrawlSummaryData {
   nonMobilePages: number;
   pagesWithSlowLoad: number;
   orphanPages: number;
-  
+  averageSeoScore: number;
 }
 
 interface CrawlHistoryEntry {
@@ -69,7 +69,8 @@ export default function CrawlHistory() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const response = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/history');
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const response = await fetch(`${apiUrl}/api/history`);
         if (!response.ok) throw new Error('Failed to fetch crawl history from the server.');
         const data: CrawlHistoryEntry[] = await response.json();
         setCrawls(data);

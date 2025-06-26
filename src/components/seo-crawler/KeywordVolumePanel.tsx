@@ -28,8 +28,14 @@ export default function KeywordVolumePanel() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/ranking/volume/${encodeURIComponent(keyword.trim())}`);
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${apiUrl}/api/keywords/volume`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ keyword: keyword.trim() })
+      });
 
       if (!response.ok) {
         const errorData = await response.json();

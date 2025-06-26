@@ -4,7 +4,8 @@ import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import KeywordToolsTabs from '@/components/seo-crawler/KeywordToolsTabs';
 import { Search, Database, Globe, History } from 'lucide-react';
-import { getFirestore, collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 interface PageData {
   url: string;
@@ -33,8 +34,6 @@ function KeywordToolsContent() {
   const [error, setError] = useState('');
   const [userCrawls, setUserCrawls] = useState<CrawlResult[]>([]);
   const [selectedCrawlId, setSelectedCrawlId] = useState('');
-
-  const db = getFirestore();
 
   // Load user's crawl history on component mount
   useEffect(() => {
@@ -68,20 +67,19 @@ function KeywordToolsContent() {
 
   const loadUserCrawls = async () => {
     try {
-      // Get user ID from localStorage or use a fallback
-      const userData = localStorage.getItem('Sitegrip-user');
-      let userId = 'anonymous-user';
-      
-      if (userData) {
-        try {
-          const parsed = JSON.parse(userData);
-          userId = parsed.uid || parsed.id || 'anonymous-user';
-        } catch (e) {
-          console.warn('Failed to parse user data from localStorage');
+      // Get user ID from localStorage
+      let userId = 'anonymous';
+      try {
+        const userData = localStorage.getItem('Sitegrip-user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user.uid || user.id || user.user_id || 'anonymous';
         }
+      } catch (err) {
+        console.warn('Failed to parse user data from localStorage');
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/history/user/${userId}`);
       
       if (response.ok) {
@@ -107,7 +105,7 @@ function KeywordToolsContent() {
     setError('');
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/history/crawl/${crawlId}`);
       
       if (!response.ok) {
@@ -179,7 +177,7 @@ function KeywordToolsContent() {
   // Function to fetch page content when missing
   const fetchPageContent = async (url: string): Promise<Partial<PageData>> => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/crawl/single`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -65,7 +65,6 @@ function AuthCallbackContent() {
               display_name: data.user.display_name,
               photo_url: data.user.photo_url,
               google_auth_enabled: data.user.google_auth_enabled,
-              indexing_api_enabled: data.user.indexing_api_enabled,
               search_console_properties: data.user.search_console_properties
             },
             success: true,

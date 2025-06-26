@@ -51,7 +51,7 @@ export default function LoginCard() {
             </div>
             <ul className="text-xs space-y-1 ml-4">
               <li>• Google Search Console integration</li>
-              <li>• Real-time URL indexing (where supported)</li>
+              <li>• Real-time URL indexing (demo mode)</li>
               <li>• Domain verification & management</li>
             </ul>
           </div>

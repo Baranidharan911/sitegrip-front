@@ -27,10 +27,10 @@ export default function DomainKeywordProfile({ domain }: { domain: string }) {
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const res = await fetch(`${apiUrl}/api/keywords/domain-summary/${encodeURIComponent(domain)}`);
-        if (!res.ok) throw new Error('Failed to fetch domain summary');
-        const result = await res.json();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/api/keywords/domain-summary/${encodeURIComponent(domain)}`);
+        if (!response.ok) throw new Error('Failed to fetch domain summary');
+        const result = await response.json();
         
         if (result.success && result.domain_summary) {
           setData(result.domain_summary);

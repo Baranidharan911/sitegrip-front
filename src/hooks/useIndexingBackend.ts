@@ -1,173 +1,164 @@
-'use client';
-
-import { useState, useEffect, useCallback } from 'react';
-import { indexingApi, IndexingEntry, IndexingResponse, QuotaInfo, IndexingStats, DashboardData } from '@/lib/indexingApi';
-import toast from 'react-hot-toast';
+import { useState, useCallback } from 'react';
+import { toast } from 'react-hot-toast';
+import { indexingApi } from '@/lib/indexingApi';
+import { IndexingEntry, IndexingStats, QuotaInfo, DashboardData } from '@/types/indexing';
 
 export const useIndexingBackend = () => {
-  const [urlInput, setUrlInput] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
-  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
   const [statistics, setStatistics] = useState<IndexingStats | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [projectId, setProjectId] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return `project_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    }
-    return 'default_project';
-  });
+  const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
 
-  // Load initial data
-  useEffect(() => {
-    if (projectId && projectId !== 'default_project') {
-      loadDashboardData();
-    }
-  }, [projectId]);
-
-  const loadDashboardData = useCallback(async () => {
-    setIsLoading(true);
+  const loadDashboardData = useCallback(async (projectId: string) => {
+    setLoading(true);
     try {
+      console.log('Loading dashboard data for project:', projectId);
+      
       const dashboardData = await indexingApi.getDashboardData(projectId);
-      setIndexingEntries(dashboardData.recent_entries || []);
-      setQuotaInfo(dashboardData.quota);
+      setIndexingEntries(dashboardData.recentEntries || []);
       setStatistics(dashboardData.statistics);
+      setQuotaInfo(dashboardData.quotaInfo);
+      
+      console.log('Dashboard data loaded successfully:', dashboardData);
     } catch (error) {
-      console.error('Failed to load dashboard data:', error);
+      console.error('Error loading dashboard data:', error);
       toast.error('Failed to load indexing data');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, [projectId]);
+  }, []);
 
-  const submitUrls = useCallback(async (urls: string[], priority: string = 'medium') => {
-    if (!urls.length) {
-      toast.error('Please provide at least one URL');
-      return;
-    }
-
-    setIsSubmitting(true);
-    toast.loading('Submitting URLs for indexing...', { id: 'submit' });
-
+  const submitUrls = useCallback(async (
+    urls: string[], 
+    projectId: string, 
+    priority: 'low' | 'medium' | 'high' = 'medium'
+  ) => {
+    setLoading(true);
     try {
-      const response: IndexingResponse = await indexingApi.submitUrls(urls, projectId, priority);
+      toast.loading('Submitting URLs for indexing...', { id: 'submit' });
       
-      toast.success(
-        `Successfully submitted ${response.successful_submissions} URLs! ${response.failed_submissions > 0 ? `${response.failed_submissions} failed.` : ''}`,
-        { id: 'submit' }
-      );
-
-      // Reload data to show new entries
-      await loadDashboardData();
-
-      return response;
+      const response = await indexingApi.submitUrls(urls, projectId, priority);
+      
+      if (response.success) {
+        toast.success(
+          `Successfully submitted ${response.data?.successfulSubmissions || 0} URLs for indexing!`,
+          { id: 'submit' }
+        );
+        
+        // Update local state with new entries
+        if (response.data?.entries) {
+          setIndexingEntries(prev => [...response.data!.entries, ...prev]);
+        }
+        
+        // Reload dashboard data to get updated stats
+        await loadDashboardData(projectId);
+        
+        return response;
+      } else {
+        toast.error(response.message || 'Failed to submit URLs', { id: 'submit' });
+        return response;
+      }
     } catch (error) {
-      console.error('Failed to submit URLs:', error);
+      console.error('Error submitting URLs:', error);
       toast.error('Failed to submit URLs for indexing', { id: 'submit' });
       throw error;
     } finally {
-      setIsSubmitting(false);
-    }
-  }, [projectId, loadDashboardData]);
-
-  const handleSubmit = useCallback(async (e: React.FormEvent, retryUrl?: string) => {
-    e.preventDefault();
-    const urls = retryUrl ? [retryUrl] : [urlInput.trim()];
-    
-    if (!urls[0]) {
-      toast.error('Please enter a valid URL');
-      return;
-    }
-
-    try {
-      await submitUrls(urls);
-      if (!retryUrl) {
-        setUrlInput('');
-      }
-    } catch (error) {
-      // Error already handled in submitUrls
-    }
-  }, [urlInput, submitUrls]);
-
-  const submitUrlsFromFile = useCallback(async (file: File, priority: string = 'medium') => {
-    if (!file) {
-      toast.error('Please select a file');
-      return;
-    }
-
-    if (!file.name.endsWith('.txt')) {
-      toast.error('Please select a .txt file');
-      return;
-    }
-
-    setIsSubmitting(true);
-    toast.loading('Processing file and submitting URLs...', { id: 'file-submit' });
-
-    try {
-      const response: IndexingResponse = await indexingApi.submitUrlsFromFile(file, projectId, priority);
-      
-      toast.success(
-        `Successfully submitted ${response.successful_submissions} URLs from file! ${response.failed_submissions > 0 ? `${response.failed_submissions} failed.` : ''}`,
-        { id: 'file-submit' }
-      );
-
-      // Reload data to show new entries
-      await loadDashboardData();
-
-      return response;
-    } catch (error) {
-      console.error('Failed to submit URLs from file:', error);
-      toast.error('Failed to process file and submit URLs', { id: 'file-submit' });
-      throw error;
-    } finally {
-      setIsSubmitting(false);
-    }
-  }, [projectId, loadDashboardData]);
-
-  const updateEntryStatus = useCallback(async (entryId: string, status: string, errorMessage?: string) => {
-    try {
-      await indexingApi.updateStatus(entryId, status, errorMessage);
-      toast.success('Status updated successfully');
-      
-      // Reload data to reflect changes
-      await loadDashboardData();
-    } catch (error) {
-      console.error('Failed to update status:', error);
-      toast.error('Failed to update status');
+      setLoading(false);
     }
   }, [loadDashboardData]);
+
+  const submitUrlsFromFile = useCallback(async (
+    file: File, 
+    projectId: string, 
+    priority: 'low' | 'medium' | 'high' = 'medium'
+  ) => {
+    setLoading(true);
+    try {
+      toast.loading('Processing file and submitting URLs...', { id: 'file-submit' });
+      
+      const response = await indexingApi.submitUrlsFromFile(file, projectId, priority);
+      
+      if (response.success) {
+        toast.success(
+          `Successfully processed file and submitted ${response.data?.successfulSubmissions || 0} URLs!`,
+          { id: 'file-submit' }
+        );
+        
+        // Update local state with new entries
+        if (response.data?.entries) {
+          setIndexingEntries(prev => [...response.data!.entries, ...prev]);
+        }
+        
+        // Reload dashboard data to get updated stats
+        await loadDashboardData(projectId);
+        
+        return response;
+      } else {
+        toast.error(response.message || 'Failed to process file', { id: 'file-submit' });
+        return response;
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error('Failed to process file', { id: 'file-submit' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadDashboardData]);
+
+  const updateStatus = useCallback(async (entryId: string, status: string, errorMessage?: string) => {
+    try {
+      await indexingApi.updateStatus(entryId, status, errorMessage);
+      
+      // Update local state
+      setIndexingEntries(prev => 
+        prev.map(entry => 
+          entry.id === entryId 
+            ? { ...entry, status: status as any, errorMessage, lastChecked: new Date().toISOString() }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error updating status:', error);
+      throw error;
+    }
+  }, []);
 
   const retryEntry = useCallback(async (entry: IndexingEntry) => {
     try {
-      await submitUrls([entry.url], entry.priority);
+      await submitUrls([entry.url], entry.projectId, entry.priority);
       toast.success('URL resubmitted for indexing');
     } catch (error) {
-      // Error already handled in submitUrls
+      toast.error('Failed to resubmit URL');
     }
   }, [submitUrls]);
 
-  const refreshData = useCallback(() => {
-    loadDashboardData();
+  const deleteEntry = useCallback(async (entryId: string) => {
+    try {
+      await indexingApi.deleteEntry(entryId);
+      setIndexingEntries(prev => prev.filter(entry => entry.id !== entryId));
+      toast.success('Entry deleted successfully');
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+      toast.error('Failed to delete entry');
+    }
+  }, []);
+
+  const refreshData = useCallback(async (projectId: string) => {
+    await loadDashboardData(projectId);
   }, [loadDashboardData]);
 
   return {
-    // State
-    urlInput,
-    setUrlInput,
-    isSubmitting,
-    isLoading,
+    loading,
     indexingEntries,
-    quotaInfo,
     statistics,
-    projectId,
-
-    // Actions
-    handleSubmit,
+    quotaInfo,
     submitUrls,
     submitUrlsFromFile,
-    updateEntryStatus,
+    updateStatus,
     retryEntry,
-    refreshData,
+    deleteEntry,
     loadDashboardData,
+    refreshData,
   };
 }; 

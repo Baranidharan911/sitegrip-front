@@ -89,7 +89,8 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/discover', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const res = await fetch(`${apiUrl}/api/discover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, depth }),
@@ -115,10 +116,23 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/crawl', {
+      // Get user ID from localStorage
+      let userId = 'anonymous';
+      try {
+        const userData = localStorage.getItem('Sitegrip-user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          userId = user.uid || user.id || user.user_id || 'anonymous';
+        }
+      } catch (err) {
+        console.warn('Failed to parse user data from localStorage');
+      }
+
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const res = await fetch(`${apiUrl}/api/crawl`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, depth, selectedUrls }),
+        body: JSON.stringify({ url, depth, selectedUrls, user_id: userId }),
       });
 
       if (!res.ok) {
@@ -140,7 +154,8 @@ export default function SeoCrawlerDashboardPage() {
     if (!crawlResult) return;
 
     try {
-      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/export/csv', {
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const res = await fetch(`${apiUrl}/api/export/csv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(crawlResult.pages),

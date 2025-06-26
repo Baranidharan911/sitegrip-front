@@ -1,69 +1,98 @@
 export interface IndexingEntry {
   id: string;
   url: string;
-  status: 'indexed' | 'pending' | 'error' | 'submitted';
+  status: 'pending' | 'submitted' | 'indexed' | 'error';
+  priority: 'low' | 'medium' | 'high';
   submittedAt: string;
-  indexedAt?: string;
-  priority: boolean;
-  failureReason?: string;
-  timestamp?: {
-    toDate: () => Date;
+  lastChecked?: string;
+  errorMessage?: string;
+  gscCoverageState?: string;
+  gscLastCrawled?: string;
+  gscDiscoveredDate?: string;
+  gscIndexingState?: string;
+  gscCrawlErrors?: string[];
+  gscMobileUsabilityIssues?: string[];
+  gscPageExperienceSignals?: {
+    coreWebVitals?: {
+      lcp?: number;
+      fid?: number;
+      cls?: number;
+    };
+    httpsUsage?: boolean;
+    mobileUsability?: boolean;
   };
+  gscReferringUrls?: string[];
+  projectId: string;
+  userId: string;
+  retryCount?: number;
+  quotaUsed?: number;
+  batchId?: string;
+  domain?: string;
+  sitemapUrl?: string;
+  crawlDepth?: number;
+  discoveredLinks?: string[];
+  lastModified?: string;
+  contentHash?: string;
+  contentLength?: number;
+  responseTime?: number;
+  httpStatusCode?: number;
+  indexingState?: string;
 }
 
-export interface SitemapEntry {
-  id: string;
-  url: string;
-  autoSync: boolean;
-  lastSubmitted: string;
-  status: 'submitted' | 'deleted' | 'pending';
-  domain?: string;
+export interface IndexingResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    submittedUrls: number;
+    successfulSubmissions: number;
+    failedSubmissions: number;
+    entries: IndexingEntry[];
+    quotaUsed: number;
+    quotaRemaining: number;
+  };
+  errors?: string[];
+}
+
+export interface IndexingStats {
+  totalUrlsSubmitted: number;
+  totalUrlsIndexed: number;
+  totalUrlsPending: number;
+  totalUrlsError: number;
+  indexingSuccessRate: number;
+  averageIndexingTime: number;
+  quotaUsed: number;
+  quotaLimit: number;
+  lastUpdated: string;
+  dailySubmissions: number;
+  weeklySubmissions: number;
+  monthlySubmissions: number;
 }
 
 export interface QuotaInfo {
   dailyLimit: number;
-  used: number;
-  remaining: number;
-  perDomain: DomainQuota[];
-}
-
-export interface DomainQuota {
-  domain: string;
-  allocated: number;
-  used: number;
-  remaining: number;
-}
-
-export interface GSCData {
-  url: string;
-  coverage: 'Indexed' | 'Discovered' | 'Excluded' | 'Error';
-  lastCrawled: string;
-  discoveredDate: string;
-  indexingState?: string;
-  crawlRequest?: string;
-}
-
-export interface IndexingStats {
-  totalUrls: number;
-  indexedCount: number;
-  pendingCount: number;
-  errorCount: number;
-  indexedPercentage: number;
-  priorityUrls: number;
-}
-
-export interface BulkIndexRequest {
-  urls: string[];
-  priority?: boolean;
-  source: 'manual' | 'file' | 'sitemap' | 'auto';
+  dailyUsed: number;
+  dailyRemaining: number;
+  monthlyLimit: number;
+  monthlyUsed: number;
+  monthlyRemaining: number;
+  resetTime: string;
+  isPremium: boolean;
 }
 
 export interface IndexingHistoryEntry {
   id: string;
-  action: 'submit' | 'delete' | 'priority' | 'sitemap_add' | 'sitemap_remove';
-  url?: string;
-  sitemapUrl?: string;
+  url: string;
+  action: 'submit' | 'resubmit' | 'delete' | 'check_status';
+  status: 'success' | 'error' | 'pending';
   timestamp: string;
-  status: 'success' | 'failed';
   details?: string;
+  userId: string;
+  projectId: string;
+}
+
+export interface DashboardData {
+  statistics: IndexingStats | null;
+  quotaInfo: QuotaInfo | null;
+  recentEntries: IndexingEntry[];
+  recentHistory: IndexingHistoryEntry[];
 } 

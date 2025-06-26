@@ -43,7 +43,7 @@ export default function KeywordRankingPanel({ url, domain }: { url: string; doma
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(`${apiUrl}/api/ranking/track`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -77,7 +77,7 @@ export default function KeywordRankingPanel({ url, domain }: { url: string; doma
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const response = await fetch(
         `${apiUrl}/api/ranking/history?keyword=${encodeURIComponent(searchKeyword)}&url=${encodeURIComponent(url)}&days=30`
       );

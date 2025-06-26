@@ -23,10 +23,12 @@ export default function KeywordPerformanceChart({ keyword, url }: { keyword: str
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-        const res = await fetch(`${apiUrl}/api/keywords/performance/${encodeURIComponent(url)}?keywords=${encodeURIComponent(keyword)}`);
-        if (!res.ok) throw new Error('Failed to fetch keyword performance trends');
-        const result = await res.json();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const encodedUrl = encodeURIComponent(url);
+        const keywords = encodeURIComponent(keyword);
+        const response = await fetch(`${apiUrl}/api/keywords/performance/${encodedUrl}?keywords=${keywords}&days=90`);
+        if (!response.ok) throw new Error('Failed to fetch keyword performance trends');
+        const result = await response.json();
         
         if (result.success && result.performance_trends && result.performance_trends[keyword]) {
           setData(result.performance_trends[keyword]);

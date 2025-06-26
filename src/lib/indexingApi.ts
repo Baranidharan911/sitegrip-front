@@ -1,254 +1,230 @@
-// API client for SiteGrip Indexing Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+// Mock API client for Indexing functionality
+import { IndexingEntry, IndexingResponse, QuotaInfo, IndexingStats, DashboardData, IndexingHistoryEntry } from '@/types/indexing';
 
-export interface IndexingEntry {
-  id: string;
-  url: string;
-  status: string;
-  priority: string;
-  submitted_at: string;
-  domain: string;
-  project_id: string;
-  user_id: string;
-  error_message?: string;
-}
+// Mock data generators
+const generateMockEntry = (url: string, projectId: string, userId: string): IndexingEntry => {
+  const statuses = ['pending', 'submitted', 'indexed', 'error'] as const;
+  const priorities = ['low', 'medium', 'high'] as const;
+  const status = statuses[Math.floor(Math.random() * statuses.length)];
+  
+  return {
+    id: `idx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    url,
+    status,
+    priority: priorities[Math.floor(Math.random() * priorities.length)],
+    submittedAt: new Date().toISOString(),
+    lastChecked: status !== 'pending' ? new Date(Date.now() - Math.random() * 86400000).toISOString() : undefined,
+    errorMessage: status === 'error' ? 'URL is not accessible or has crawl errors' : undefined,
+    gscCoverageState: status === 'indexed' ? 'Submitted and indexed' : 'Discovered - currently not indexed',
+    gscLastCrawled: status === 'indexed' ? new Date(Date.now() - Math.random() * 604800000).toISOString() : undefined,
+    gscDiscoveredDate: new Date(Date.now() - Math.random() * 2592000000).toISOString(),
+    gscIndexingState: status === 'indexed' ? 'URL is on Google' : 'URL is known to Google',
+    projectId,
+    userId,
+    retryCount: status === 'error' ? Math.floor(Math.random() * 3) : 0,
+    quotaUsed: 1,
+    domain: new URL(url).hostname,
+    httpStatusCode: status === 'error' ? 404 : 200,
+    responseTime: Math.floor(Math.random() * 2000) + 100,
+  };
+};
 
-export interface IndexingResponse {
-  total_submitted: number;
-  successful_submissions: number;
-  failed_submissions: number;
-  failed_urls: string[];
-  errors: string[];
-}
+const generateMockStats = (): IndexingStats => ({
+  totalUrlsSubmitted: Math.floor(Math.random() * 1000) + 100,
+  totalUrlsIndexed: Math.floor(Math.random() * 800) + 80,
+  totalUrlsPending: Math.floor(Math.random() * 50) + 10,
+  totalUrlsError: Math.floor(Math.random() * 30) + 5,
+  indexingSuccessRate: Math.floor(Math.random() * 30) + 70,
+  averageIndexingTime: Math.floor(Math.random() * 48) + 12,
+  quotaUsed: Math.floor(Math.random() * 150) + 50,
+  quotaLimit: 200,
+  lastUpdated: new Date().toISOString(),
+  dailySubmissions: Math.floor(Math.random() * 20) + 5,
+  weeklySubmissions: Math.floor(Math.random() * 100) + 30,
+  monthlySubmissions: Math.floor(Math.random() * 400) + 150,
+});
 
-export interface QuotaInfo {
-  total_daily_limit: number;
-  total_used: number;
-  remaining: number;
-  last_updated: string;
-}
+const generateMockQuota = (): QuotaInfo => ({
+  dailyLimit: 200,
+  dailyUsed: Math.floor(Math.random() * 150) + 25,
+  dailyRemaining: 200 - (Math.floor(Math.random() * 150) + 25),
+  monthlyLimit: 6000,
+  monthlyUsed: Math.floor(Math.random() * 4000) + 1000,
+  monthlyRemaining: 6000 - (Math.floor(Math.random() * 4000) + 1000),
+  resetTime: new Date(Date.now() + 86400000).toISOString(),
+  isPremium: Math.random() > 0.5,
+});
 
-export interface IndexingStats {
-  total_urls_submitted: number;
-  total_urls_indexed: number;
-  total_urls_pending: number;
-  total_urls_error: number;
-  indexing_success_rate: number;
-  quota_used_percentage: number;
-}
+class MockIndexingAPI {
+  private mockEntries: IndexingEntry[] = [];
+  private mockHistory: IndexingHistoryEntry[] = [];
 
-export interface DashboardData {
-  statistics: IndexingStats | null;
-  quota: QuotaInfo | null;
-  recent_entries: IndexingEntry[];
-}
-
-class IndexingAPI {
-  private baseUrl: string;
-
-  constructor(baseUrl: string = API_BASE_URL) {
-    this.baseUrl = baseUrl;
+  constructor() {
+    // Initialize with some mock data
+    this.initializeMockData();
   }
 
-  private getUserId(): string {
-    // Get user ID from localStorage
-    try {
-      const userStr = localStorage.getItem('Sitegrip-user');
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        return userData.user?.uid || userData.uid || 'anonymous-user';
-      }
-    } catch (e) {
-      console.warn('Failed to get user ID from localStorage');
-    }
-    return 'anonymous-user';
-  }
+  private initializeMockData() {
+    const sampleUrls = [
+      'https://example.com',
+      'https://example.com/blog',
+      'https://example.com/products',
+      'https://example.com/about',
+      'https://example.com/contact',
+    ];
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    
-    const defaultOptions: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-    };
+    sampleUrls.forEach(url => {
+      this.mockEntries.push(generateMockEntry(url, 'default-project', 'user-123'));
+    });
 
-    const response = await fetch(url, { ...defaultOptions, ...options });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
-    }
-
-    return response.json();
-  }
-
-  // Health check
-  async healthCheck(): Promise<{ status: string; service: string; timestamp: string }> {
-    return this.request('/health');
-  }
-
-  // Submit URLs for indexing
-  async submitUrls(
-    urls: string[],
-    projectId: string,
-    priority: string = 'medium'
-  ): Promise<IndexingResponse> {
-    console.log('Frontend: Submitting URLs:', urls);
-    console.log('Frontend: Project ID:', projectId);
-    console.log('Frontend: Priority:', priority);
-    console.log('Frontend: User ID:', this.getUserId());
-    console.log('Frontend: API Base URL:', this.baseUrl);
-    
-    const requestBody = {
-      urls,
-      priority,
-      project_id: projectId,
-    };
-    console.log('Frontend: Request body:', requestBody);
-    
-    // Add user_id as query parameter
-    const userId = this.getUserId();
-    const url = `/api/index/submit?user_id=${encodeURIComponent(userId)}`;
-    
-    try {
-      const response = await this.request<IndexingResponse>(url, {
-        method: 'POST',
-        body: JSON.stringify(requestBody),
+    // Generate mock history
+    for (let i = 0; i < 10; i++) {
+      this.mockHistory.push({
+        id: `hist_${Date.now()}_${i}`,
+        url: sampleUrls[Math.floor(Math.random() * sampleUrls.length)],
+        action: ['submit', 'resubmit', 'check_status'][Math.floor(Math.random() * 3)] as any,
+        status: ['success', 'error', 'pending'][Math.floor(Math.random() * 3)] as any,
+        timestamp: new Date(Date.now() - Math.random() * 2592000000).toISOString(),
+        userId: 'user-123',
+        projectId: 'default-project',
       });
-      console.log('Frontend: API response:', response);
-      return response;
-    } catch (error) {
-      console.error('Frontend: API error:', error);
-      throw error;
     }
   }
 
-  // Get indexing entries
-  async getEntries(
-    projectId?: string,
-    status?: string,
-    limit: number = 100
-  ): Promise<IndexingEntry[]> {
-    const params = new URLSearchParams();
-    if (projectId) params.append('project_id', projectId);
-    if (status) params.append('status', status);
-    params.append('limit', limit.toString());
-    params.append('user_id', this.getUserId());
-
-    return this.request(`/api/index/entries?${params.toString()}`);
-  }
-
-  // Get quota information
-  async getQuotaInfo(projectId: string): Promise<QuotaInfo> {
-    const userId = this.getUserId();
-    return this.request(`/api/index/quota?project_id=${projectId}&user_id=${userId}`);
-  }
-
-  // Get indexing statistics
-  async getStatistics(projectId: string): Promise<IndexingStats> {
-    const userId = this.getUserId();
-    return this.request(`/api/index/stats?project_id=${projectId}&user_id=${userId}`);
-  }
-
-  // Update indexing status
-  async updateStatus(
-    entryId: string,
-    status: string,
-    errorMessage?: string
-  ): Promise<{ success: boolean; message: string }> {
-    const body: any = { status };
-    if (errorMessage) body.error_message = errorMessage;
-
-    return this.request(`/api/index/entries/${entryId}/status`, {
-      method: 'PUT',
-      body: JSON.stringify(body),
-    });
-  }
-
-  // Submit URLs from file
-  async submitUrlsFromFile(
-    file: File,
-    projectId: string,
-    priority: string = 'medium'
-  ): Promise<IndexingResponse> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('priority', priority);
-    formData.append('project_id', projectId);
-
-    const url = `${this.baseUrl}/api/index/submit-file`;
-    const response = await fetch(url, {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
-    }
-
-    return response.json();
-  }
-
-  // Get dashboard data
   async getDashboardData(projectId: string): Promise<DashboardData> {
-    const [statistics, quota, recent_entries] = await Promise.all([
-      this.getStatistics(projectId).catch(() => null),
-      this.getQuotaInfo(projectId).catch(() => null),
-      this.getEntries(projectId, undefined, 50).catch(() => []),
-    ]);
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 500));
 
     return {
-      statistics,
-      quota,
-      recent_entries,
+      statistics: generateMockStats(),
+      quotaInfo: generateMockQuota(),
+      recentEntries: this.mockEntries.slice(0, 5),
+      recentHistory: this.mockHistory.slice(0, 5),
+    };
+  }
+
+  async submitUrls(
+    urls: string[], 
+    projectId: string, 
+    priority: 'low' | 'medium' | 'high' = 'medium'
+  ): Promise<IndexingResponse> {
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const newEntries: IndexingEntry[] = [];
+    let successCount = 0;
+    let failCount = 0;
+
+    urls.forEach(url => {
+      try {
+        new URL(url); // Validate URL
+        const entry = generateMockEntry(url, projectId, 'user-123');
+        entry.priority = priority;
+        newEntries.push(entry);
+        this.mockEntries.unshift(entry);
+        successCount++;
+
+        // Add to history
+        this.mockHistory.unshift({
+          id: `hist_${Date.now()}_${Math.random()}`,
+          url,
+          action: 'submit',
+          status: 'success',
+          timestamp: new Date().toISOString(),
+          userId: 'user-123',
+          projectId,
+        });
+      } catch {
+        failCount++;
+      }
+    });
+
+    return {
+      success: successCount > 0,
+      message: `Successfully submitted ${successCount} URLs${failCount > 0 ? `, ${failCount} failed` : ''}`,
+      data: {
+        submittedUrls: urls.length,
+        successfulSubmissions: successCount,
+        failedSubmissions: failCount,
+        entries: newEntries,
+        quotaUsed: successCount,
+        quotaRemaining: 200 - successCount,
+      },
+    };
+  }
+
+  async submitUrlsFromFile(
+    file: File, 
+    projectId: string, 
+    priority: 'low' | 'medium' | 'high' = 'medium'
+  ): Promise<IndexingResponse> {
+    const text = await file.text();
+    const urls = text.split('\n')
+      .map(line => line.trim())
+      .filter(line => line && !line.startsWith('#'));
+
+    return this.submitUrls(urls, projectId, priority);
+  }
+
+  async getEntries(
+    projectId: string,
+    limit: number = 50,
+    offset: number = 0,
+    status?: string
+  ): Promise<IndexingEntry[]> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    let filtered = this.mockEntries.filter(entry => entry.projectId === projectId);
+    
+    if (status) {
+      filtered = filtered.filter(entry => entry.status === status);
+    }
+
+    return filtered.slice(offset, offset + limit);
+  }
+
+  async updateStatus(
+    entryId: string, 
+    status: string, 
+    errorMessage?: string
+  ): Promise<IndexingResponse> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+
+    const entry = this.mockEntries.find(e => e.id === entryId);
+    if (entry) {
+      entry.status = status as any;
+      entry.errorMessage = errorMessage;
+      entry.lastChecked = new Date().toISOString();
+    }
+
+    return {
+      success: true,
+      message: 'Status updated successfully',
+    };
+  }
+
+  async getStatistics(projectId: string): Promise<IndexingStats> {
+    await new Promise(resolve => setTimeout(resolve, 400));
+    return generateMockStats();
+  }
+
+  async getQuotaInfo(projectId: string): Promise<QuotaInfo> {
+    await new Promise(resolve => setTimeout(resolve, 200));
+    return generateMockQuota();
+  }
+
+  async deleteEntry(entryId: string): Promise<IndexingResponse> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const index = this.mockEntries.findIndex(e => e.id === entryId);
+    if (index !== -1) {
+      this.mockEntries.splice(index, 1);
+    }
+
+    return {
+      success: true,
+      message: 'Entry deleted successfully',
     };
   }
 }
 
-// Create and export a singleton instance
-export const indexingApi = new IndexingAPI();
-
-// Utility functions
-export const validateUrl = (url: string): boolean => {
-  try {
-    new URL(url);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
-export const extractDomain = (url: string): string => {
-  try {
-    return new URL(url).hostname.toLowerCase();
-  } catch {
-    return 'unknown';
-  }
-};
-
-export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleString();
-};
-
-export const getStatusColor = (status: string): string => {
-  switch (status.toLowerCase()) {
-    case 'indexed':
-    case 'success':
-      return 'text-green-600 bg-green-100';
-    case 'submitted':
-    case 'pending':
-    case 'processing':
-      return 'text-yellow-600 bg-yellow-100';
-    case 'error':
-    case 'failed':
-      return 'text-red-600 bg-red-100';
-    default:
-      return 'text-gray-600 bg-gray-100';
-  }
-};
+export const indexingApi = new MockIndexingAPI(); 

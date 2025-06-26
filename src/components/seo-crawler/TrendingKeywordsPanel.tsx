@@ -21,7 +21,7 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
       const params = new URLSearchParams({
         days: selectedPeriod.toString(),
         ...(domain && { domain })

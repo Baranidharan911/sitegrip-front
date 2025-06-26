@@ -22,7 +22,8 @@ export default function SitemapPage() {
     setSitemapTree(null);
 
     try {
-      const res = await fetch('https://webwatch-api-pu22v4ao5a-uc.a.run.app/api/sitemap', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const res = await fetch(`${apiUrl}/api/sitemap`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: inputUrl }),
