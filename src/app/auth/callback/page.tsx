@@ -64,13 +64,20 @@ function AuthCallbackContent() {
           
           // Update localStorage with the new user data including Google credentials
           if (data.user) {
-            const updatedUserData = {
+            localStorage.setItem('Sitegrip-user', JSON.stringify({
+              user: {
+                uid: data.user.uid,
+                email: data.user.email,
+                display_name: data.user.display_name,
+                photo_url: data.user.photo_url,
+                google_auth_enabled: data.user.google_auth_enabled,
+                indexing_api_enabled: data.user.indexing_api_enabled,
+                search_console_properties: data.user.search_console_properties
+              },
               success: true,
-              user: data.user,
-              message: data.message || "Google API integration successful",
+              message: data.message,
               google_integration: true
-            };
-            localStorage.setItem('Sitegrip-user', JSON.stringify(updatedUserData));
+            }));
           }
           
           // Wait a moment then redirect to indexing page
