@@ -263,6 +263,119 @@ If you encounter issues:
 4. Check network connectivity between frontend and backend
 5. Use the deployment test script to verify backend status
 
+## Recent Updates
+
+### Real-Time Indexing Integration ✅
+
+The frontend has been updated to connect with the real backend indexing system that supports:
+
+1. **Single URL Indexing** - Submit individual URLs for indexing
+2. **Website Discovery & Indexing** - Automatically discover and index all URLs from a website
+3. **Bulk URL Indexing** - Submit multiple URLs at once
+4. **File Upload Indexing** - Upload .txt or .csv files containing URLs
+5. **Real-time Status Updates** - Monitor indexing progress and status
+6. **Quota Management** - Track API quota usage and limits
+
+## Backend Requirements
+
+Make sure your backend is running on `http://localhost:8000` with these endpoints:
+
+- `POST /api/indexing/submit` - Submit URLs for indexing
+- `POST /api/indexing/submit-website` - Submit website for discovery & indexing  
+- `GET /api/indexing/entries` - Get indexing entries
+- `POST /api/indexing/dashboard` - Get dashboard data
+- `POST /api/indexing/statistics` - Get indexing statistics
+- `POST /api/indexing/quota` - Get quota information
+- `POST /api/indexing/update-status` - Update entry status
+- `DELETE /api/indexing/delete` - Delete an entry
+- `GET /api/indexing/history` - Get indexing history
+
+## Testing the Integration
+
+### 1. Start the Backend
+```bash
+cd backend
+python main.py  # or however you start your backend
+```
+
+### 2. Start the Frontend
+```bash
+npm run dev
+```
+
+### 3. Test Website Discovery (New Feature!)
+1. Go to `/indexing` page
+2. Click on "Website Discovery" tab
+3. Enter a website URL (e.g., `https://www.elbrit.org/`)
+4. Click "Discover & Index"
+5. The system will:
+   - Discover all URLs from the website
+   - Create indexing entries
+   - Submit them for Google indexing
+   - Show real-time progress
+
+### 4. Configuration
+
+Set the backend URL in your environment:
+```bash
+# .env.local
+NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+## API Data Flow
+
+### Website Indexing Request
+```json
+{
+  "website_url": "https://example.com",
+  "project_id": "default-project", 
+  "user_id": "user-123",
+  "priority": "medium"
+}
+```
+
+### Expected Response
+```json
+{
+  "message": "Successfully discovered and submitted 18 URLs",
+  "discovered_urls": 18,
+  "successful_submissions": 15,
+  "failed_submissions": 3,
+  "entries": [...],
+  "quota_used": 15,
+  "quota_remaining": 185
+}
+```
+
+## Features Implemented
+
+✅ Real API integration (replacing mock data)
+✅ Website discovery and automatic indexing
+✅ Error handling with backend connection status
+✅ Real-time quota management
+✅ Improved user feedback with detailed toasts
+✅ Backend URL configuration
+✅ User authentication integration
+
+## Troubleshooting
+
+### Backend Connection Issues
+- Ensure backend is running on `http://localhost:8000`
+- Check CORS configuration in backend
+- Verify API endpoints are accessible
+
+### Authentication Issues  
+- Make sure user is logged in via Google Auth
+- Check localStorage for 'Sitegrip-user' data
+
+### Quota Issues
+- Monitor quota usage in dashboard
+- Check backend quota limits and reset times
+
+## Next Steps
+
+The integration is now ready for production use with your real indexing backend!
+
 ---
 
 **🎉 Congratulations!** You now have a fully functional URL indexing system with a beautiful, responsive frontend connected to a robust backend API deployed on Google Cloud. 

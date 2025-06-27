@@ -7,6 +7,11 @@ import {
   Radar,
   Settings,
   KeySquare,
+  Shield,
+  AlertCircle,
+  BarChart3,
+  Clock,
+  Eye,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -48,9 +53,13 @@ export const sidebarItems: SidebarSection[] = [
   {
     name: 'Uptime Monitor',
     path: '/uptime-section',
-    icon: Server,
+    icon: Activity,
     subItems: [
-      { name: 'Check Uptime', path: '/uptime', icon: Globe, pro: false },
+      { name: 'Dashboard', path: '/uptime', icon: BarChart3, pro: false },
+      { name: 'Monitors', path: '/uptime/monitors', icon: Eye, pro: false },
+      { name: 'Incidents', path: '/uptime/incidents', icon: AlertCircle, pro: false },
+      { name: 'SSL Certificates', path: '/uptime/ssl', icon: Shield, pro: false },
+      { name: 'Status Page', path: '/uptime/status', icon: Globe, pro: false },
     ],
   },
 ];

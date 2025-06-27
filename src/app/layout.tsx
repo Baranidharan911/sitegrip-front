@@ -49,9 +49,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </noscript>
 
         <ThemeProvider attribute="class" enableSystem defaultTheme="light">
-          <AppContent>{children}</AppContent>
-          <Toaster position="top-right" reverseOrder={false} />
           <ScrollToTop />
+          <AppContent children={children} />
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              duration: 5000,
+              style: {
+                background: '#333',
+                color: '#fff',
+              },
+              success: {
+                duration: 3000,
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: '#FFFFFF',
+                },
+              },
+              error: {
+                duration: 5000,
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: '#FFFFFF',
+                },
+              },
+            }} 
+          />
         </ThemeProvider>
       </body>
     </html>

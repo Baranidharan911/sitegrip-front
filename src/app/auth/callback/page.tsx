@@ -1,146 +1,234 @@
+// src/app/auth/callback/page.tsx
+
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 
-function AuthCallbackContent() {
+export default function AuthCallback() {
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('Processing your authentication...');
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const [manualMode, setManualMode] = useState(false);
+  const [manualInput, setManualInput] = useState('');
+  const [processed, setProcessed] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [status, setStatus] = useState('Processing...');
-  const [error, setError] = useState('');
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
 
   useEffect(() => {
-    const handleCallback = async () => {
+    if (processed) return;
+    setProcessed(true);
+
+    const handleAuthCallback = async () => {
       try {
-        const code = searchParams.get('code');
-        const state = searchParams.get('state');
-        const error = searchParams.get('error');
+        const urlParams = new URLSearchParams(window.location.search);
+        const success = urlParams.get('success');
+        const user_id = urlParams.get('user_id');
+        const error = urlParams.get('error');
 
         if (error) {
-          setError(`OAuth error: ${error}`);
-          setStatus('Authentication failed');
+          setStatus('error');
+          setMessage(`Authentication failed: ${error}`);
+          setErrorDetails(error);
           return;
         }
 
-        if (!code || !state) {
-          setError('Missing authorization code or state parameter');
-          setStatus('Authentication failed');
-          return;
-        }
+        if (success === 'true' && user_id) {
+          setStatus('success');
+          setMessage('Authentication successful! Fetching real user details...');
 
-        setStatus('Exchanging authorization code for tokens...');
+          try {
+            const response = await fetch(`${API_URL}/api/auth/auth/user/${user_id}`, {
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+              }
+            });
 
-        // Load current user from localStorage to validate state
-        const userStr = localStorage.getItem('Sitegrip-user');
-        let userId = '';
-        if (userStr) {
-          const userData = JSON.parse(userStr);
-          userId = userData.user?.uid || userData.uid || '';
-        }
+            if (!response.ok) throw new Error(`Failed to fetch user profile: ${response.status}`);
 
-        if (!userId || (state !== userId && !state.startsWith('user_'))) {
-          setError('Invalid state parameter – security check failed');
-          setStatus('Authentication failed');
-          return;
-        }
+            const userData = await response.json();
 
-        // Call backend to complete OAuth
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const response = await fetch(`${apiUrl}/api/auth/google/callback`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code, state }),
-        });
+            if (userData.success) {
+              const userToSave = {
+                uid: userData.uid,
+                email: userData.email || '',
+                displayName: userData.display_name || '',
+                photoURL: userData.photo_url || '',
+                googleAuthEnabled: userData.google_auth_enabled,
+                properties: userData.search_console_properties || []
+              };
 
-        const data = await response.json();
+              localStorage.setItem('Sitegrip-user', JSON.stringify(userToSave));
+              localStorage.removeItem('Sitegrip-temp-user-id');
 
-        if (data.success && data.user) {
-          setStatus('Authentication successful! Redirecting...');
+              setMessage('Authentication successful! Redirecting...');
+              toast.success('Signed in successfully');
+              setTimeout(() => router.push('/profile'), 1500);
+            } else {
+              throw new Error('Invalid user data received');
+            }
+          } catch (e: any) {
+            setStatus('error');
+            setMessage(`Failed to load user profile: ${e.message}`);
+            toast.error(`Profile fetch failed: ${e.message}`);
+          }
 
-          // Update localStorage with Google-integrated user
-          localStorage.setItem('Sitegrip-user', JSON.stringify({
-            user: {
-              uid: data.user.uid,
-              email: data.user.email,
-              display_name: data.user.display_name,
-              photo_url: data.user.photo_url,
-              google_auth_enabled: data.user.google_auth_enabled,
-              search_console_properties: data.user.search_console_properties
-            },
-            success: true,
-            google_integration: true,
-            message: data.message
-          }));
-
-          setTimeout(() => router.push('/indexing'), 1500);
         } else {
-          setError(data.message || 'Authentication failed');
-          setStatus('Authentication failed');
-        }
+          const code = urlParams.get('code');
+          const state = urlParams.get('state');
 
-      } catch (err) {
-        console.error('Callback error:', err);
-        setError(err instanceof Error ? err.message : 'Unknown error occurred');
-        setStatus('Authentication failed');
+          if (code && state) {
+            const processedCodes = JSON.parse(localStorage.getItem('processed-oauth-codes') || '[]');
+            if (processedCodes.includes(code)) {
+              setStatus('error');
+              setMessage('OAuth code already used. Please login again.');
+              setTimeout(() => router.push('/login'), 3000);
+              return;
+            }
+            processedCodes.push(code);
+            if (processedCodes.length > 10) processedCodes.shift();
+            localStorage.setItem('processed-oauth-codes', JSON.stringify(processedCodes));
+
+            const response = await fetch(`${API_URL}/api/auth/auth/google/callback`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code, state })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+              const userData = {
+                uid: data.user_id,
+                email: data.user?.email || '',
+                displayName: data.user?.display_name || '',
+                photoURL: data.user?.photo_url || '',
+                googleAuthEnabled: true,
+                properties: (data.properties || []).map((p: any) => ({
+                  property_url: p.property_url || p.site_url,
+                  property_type: p.property_type || 'URL_PREFIX',
+                  permission_level: p.permission_level || 'siteOwner',
+                  verified: p.verified !== undefined ? p.verified : true
+                }))
+              };
+
+              localStorage.setItem('Sitegrip-user', JSON.stringify(userData));
+              localStorage.removeItem('Sitegrip-temp-user-id');
+
+              setStatus('success');
+              setMessage('Signed in successfully. Redirecting...');
+              toast.success('Signed in successfully');
+              setTimeout(() => router.push('/profile'), 1500);
+            } else {
+              throw new Error(data.message || 'Google auth failed');
+            }
+          } else {
+            setStatus('error');
+            setMessage('Missing authentication parameters. Try again.');
+          }
+        }
+      } catch (err: any) {
+        setStatus('error');
+        setMessage('Authentication callback failed');
+        setErrorDetails(err.message || 'Unknown error');
+        toast.error('Authentication failed');
       }
     };
 
-    handleCallback();
-  }, [searchParams, router]);
+    handleAuthCallback();
+  }, [API_URL, processed, router]);
+
+  const processManualData = () => {
+    try {
+      const userData = JSON.parse(manualInput.trim());
+      if (!userData?.uid) throw new Error('Missing UID');
+
+      const userToSave = {
+        uid: userData.uid,
+        email: userData.email || '',
+        displayName: userData.display_name || userData.displayName || '',
+        photoURL: userData.photo_url || userData.photoURL || '',
+        googleAuthEnabled: userData.google_auth_enabled ?? true,
+        properties: userData.search_console_properties || userData.properties || []
+      };
+
+      localStorage.setItem('Sitegrip-user', JSON.stringify(userToSave));
+      localStorage.removeItem('Sitegrip-temp-user-id');
+
+      setStatus('success');
+      setMessage('Manual data processed. Redirecting...');
+      toast.success('Signed in manually');
+      setTimeout(() => router.push('/profile'), 1500);
+    } catch (e) {
+      toast.error('Failed to process manual data');
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-md w-full p-8 space-y-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Google Authentication
-        </h2>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <div className="max-w-md w-full space-y-8 bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+            {status === 'loading' ? 'Processing...' : status === 'success' ? 'Success' : 'Error'}
+          </h2>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{message}</p>
+          {errorDetails && (
+            <p className="mt-2 text-red-500 text-xs">{errorDetails}</p>
+          )}
+        </div>
 
-        <p className="text-sm text-gray-600 dark:text-gray-400">{status}</p>
-
-        {status.includes('Exchanging') && (
+        {status === 'loading' && (
           <div className="flex justify-center">
-            <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" />
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-green-600"></div>
           </div>
         )}
 
-        {status === 'Authentication successful! Redirecting...' && (
-          <div className="text-green-600 dark:text-green-400 text-lg font-semibold">
-            ✅ Success
-          </div>
-        )}
+        {status === 'error' && (
+          <div className="space-y-4">
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => router.push('/login')}
+                className="w-full bg-green-600 text-white px-4 py-2 rounded-md"
+              >
+                Return to Login
+              </button>
+              <button
+                onClick={() => router.push('/debug')}
+                className="w-full bg-blue-600 text-white px-4 py-2 rounded-md"
+              >
+                Debug Page
+              </button>
+              <button
+                onClick={() => setManualMode(!manualMode)}
+                className="w-full bg-yellow-600 text-white px-4 py-2 rounded-md"
+              >
+                {manualMode ? 'Hide Manual Input' : 'Manual Input'}
+              </button>
+            </div>
 
-        {error && (
-          <div className="text-red-600 dark:text-red-400 space-y-2">
-            <div className="font-semibold">❌ Error</div>
-            <p className="text-sm">{error}</p>
-            <button
-              onClick={() => router.push('/indexing')}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            >
-              Return to Indexing
-            </button>
+            {manualMode && (
+              <div className="space-y-2">
+                <textarea
+                  className="w-full h-32 text-sm p-2 border rounded bg-gray-100 dark:bg-gray-700 dark:text-white"
+                  placeholder='{"uid": "abc", "email": "you@example.com", ...}'
+                  value={manualInput}
+                  onChange={(e) => setManualInput(e.target.value)}
+                />
+                <button
+                  onClick={processManualData}
+                  className="w-full bg-green-600 text-white px-4 py-2 rounded-md"
+                  disabled={!manualInput}
+                >
+                  Submit Manual Data
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-export default function AuthCallback() {
-  return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Loading...
-          </h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Processing authentication
-          </p>
-        </div>
-      </div>
-    }>
-      <AuthCallbackContent />
-    </Suspense>
   );
 }

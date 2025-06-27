@@ -1,18 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { 
   RefreshCw, 
   ExternalLink, 
   RotateCcw, 
   Trash2, 
-  Clock, 
-  CheckCircle, 
-  AlertCircle, 
-  Loader,
+  Calendar, 
   Filter,
-  ChevronDown,
-  Calendar
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertTriangle,
+  Zap
 } from 'lucide-react';
 import { IndexingEntry } from '@/types/indexing';
 
@@ -20,7 +20,7 @@ interface EnhancedIndexingTableProps {
   entries: IndexingEntry[];
   loading: boolean;
   onRetry: (entry: IndexingEntry) => Promise<void>;
-  onDelete: (entryId: string) => Promise<void>;
+  onDelete: (entry: IndexingEntry) => Promise<void>;
   onRefresh: () => void;
 }
 
@@ -31,22 +31,43 @@ export default function EnhancedIndexingTable({
   onDelete,
   onRefresh,
 }: EnhancedIndexingTableProps) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'indexed' | 'error'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error'>('all');
   const [sortBy, setSortBy] = useState<'submittedAt' | 'status' | 'url'>('submittedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Helper function to get the submitted date with proper field mapping
+  const getSubmittedDate = (entry: IndexingEntry): string => {
+    return entry.created_at || entry.submitted_at || entry.submittedAt || new Date().toISOString();
+  };
+
+  // Helper function to get the last checked date with proper field mapping
+  const getLastCheckedDate = (entry: IndexingEntry): string | null => {
+    return entry.completed_at || entry.lastChecked || null;
+  };
+
+  // Helper function to get error message with proper field mapping
+  const getErrorMessage = (entry: IndexingEntry): string | null => {
+    return entry.error_message || (entry as any).errorMessage || null;
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Clock className="w-4 h-4 text-yellow-500" />;
+        return <Clock className="w-3 h-3" />;
       case 'submitted':
-        return <Loader className="w-4 h-4 text-blue-500 animate-spin" />;
+        return <Zap className="w-3 h-3" />;
+      case 'success':
       case 'indexed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-3 h-3" />;
+      case 'failed':
       case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="w-3 h-3" />;
+      case 'retrying':
+        return <RotateCcw className="w-3 h-3" />;
+      case 'quota_exceeded':
+        return <AlertTriangle className="w-3 h-3" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-400" />;
+        return <Clock className="w-3 h-3" />;
     }
   };
 
@@ -57,6 +78,15 @@ export default function EnhancedIndexingTable({
         return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300`;
       case 'submitted':
         return `${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300`;
+      case 'success':
+        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300`;
+      case 'failed':
+        return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300`;
+      case 'retrying':
+        return `${baseClasses} bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300`;
+      case 'quota_exceeded':
+        return `${baseClasses} bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300`;
+      // Legacy status support
       case 'indexed':
         return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300`;
       case 'error':
@@ -66,41 +96,48 @@ export default function EnhancedIndexingTable({
     }
   };
 
-  const getPriorityBadge = (priority: string) => {
-    const baseClasses = 'px-2 py-1 rounded text-xs font-medium';
-    switch (priority) {
+  const getPriorityBadge = (priority: string | undefined | null) => {
+    const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium';
+    const safePriority = priority || 'medium';
+    switch (safePriority) {
+      case 'critical':
+        return `${baseClasses} bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300`;
       case 'high':
-        return `${baseClasses} bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-300`;
+        return `${baseClasses} bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300`;
       case 'medium':
-        return `${baseClasses} bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300`;
+        return `${baseClasses} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300`;
       case 'low':
-        return `${baseClasses} bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300`;
+        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300`;
       default:
-        return `${baseClasses} bg-gray-100 text-gray-700 dark:bg-gray-900/20 dark:text-gray-300`;
+        return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-300`;
     }
   };
 
   const formatDate = (dateString: string) => {
+    try {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
       hour: '2-digit', 
       minute: '2-digit' 
     });
+    } catch {
+      return 'Invalid date';
+    }
   };
 
-  const filteredEntries = entries.filter(entry => {
-    if (filter === 'all') return true;
-    return entry.status === filter;
-  });
+  const filteredEntries = useMemo(() => {
+    if (filter === 'all') return entries;
+    return entries.filter(entry => entry.status === filter);
+  }, [entries, filter]);
 
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
-    let aValue: string | number;
-    let bValue: string | number;
+  const sortedEntries = useMemo(() => {
+    return [...filteredEntries].sort((a, b) => {
+      let aValue: any, bValue: any;
 
     switch (sortBy) {
       case 'submittedAt':
-        aValue = new Date(a.submittedAt).getTime();
-        bValue = new Date(b.submittedAt).getTime();
+          aValue = new Date(getSubmittedDate(a)).getTime();
+          bValue = new Date(getSubmittedDate(b)).getTime();
         break;
       case 'status':
         aValue = a.status;
@@ -111,25 +148,21 @@ export default function EnhancedIndexingTable({
         bValue = b.url;
         break;
       default:
-        aValue = a.submittedAt;
-        bValue = b.submittedAt;
+          aValue = getSubmittedDate(a);
+          bValue = getSubmittedDate(b);
     }
 
-    if (sortOrder === 'asc') {
-      return aValue > bValue ? 1 : -1;
-    } else {
-      return aValue < bValue ? 1 : -1;
-    }
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
   });
+  }, [filteredEntries, sortBy, sortOrder]);
 
   const getStatusCounts = () => {
-    const counts = {
-      all: entries.length,
-      pending: entries.filter(e => e.status === 'pending').length,
-      submitted: entries.filter(e => e.status === 'submitted').length,
-      indexed: entries.filter(e => e.status === 'indexed').length,
-      error: entries.filter(e => e.status === 'error').length,
-    };
+    const counts: Record<string, number> = { all: entries.length };
+    entries.forEach(entry => {
+      counts[entry.status] = (counts[entry.status] || 0) + 1;
+    });
     return counts;
   };
 
@@ -272,22 +305,22 @@ export default function EnhancedIndexingTable({
                         {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
                       </span>
                     </div>
-                    {entry.errorMessage && (
+                    {getErrorMessage(entry) && (
                       <div className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs truncate">
-                        {entry.errorMessage}
+                        {getErrorMessage(entry)}
                       </div>
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={getPriorityBadge(entry.priority)}>
-                      {entry.priority.charAt(0).toUpperCase() + entry.priority.slice(1)}
+                    <span className={getPriorityBadge(entry.priority || 'medium')}>
+                      {entry.priority ? (entry.priority.charAt(0).toUpperCase() + entry.priority.slice(1)) : 'Medium'}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                    {formatDate(entry.submittedAt)}
+                    {formatDate(getSubmittedDate(entry))}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300">
-                    {entry.lastChecked ? formatDate(entry.lastChecked) : 'Never'}
+                    {getLastCheckedDate(entry) ? formatDate(getLastCheckedDate(entry)!) : 'Never'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center gap-2">
@@ -301,7 +334,7 @@ export default function EnhancedIndexingTable({
                         <ExternalLink className="w-4 h-4" />
                       </a>
                       
-                      {(entry.status === 'error' || entry.status === 'pending') && (
+                      {(entry.status === 'error' || entry.status === 'failed' || entry.status === 'pending') && (
                         <button
                           onClick={() => onRetry(entry)}
                           className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
@@ -312,7 +345,7 @@ export default function EnhancedIndexingTable({
                       )}
                       
                       <button
-                        onClick={() => onDelete(entry.id)}
+                        onClick={() => onDelete(entry)}
                         className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
                         title="Delete"
                       >

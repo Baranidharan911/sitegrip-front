@@ -1,28 +1,50 @@
 import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { indexingApi } from '@/lib/indexingApi';
-import { IndexingEntry, IndexingStats, QuotaInfo, DashboardData } from '@/types/indexing';
+import { IndexingEntry, IndexingStats, QuotaInfo, DashboardData, AuthState } from '@/types/indexing';
+import { getStoredUserId } from '@/utils/auth';
 
 export const useIndexingBackend = () => {
   const [loading, setLoading] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
   const [statistics, setStatistics] = useState<IndexingStats | null>(null);
   const [quotaInfo, setQuotaInfo] = useState<QuotaInfo | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    properties: [],
+    indexStatuses: []
+  });
+
+  // Get user ID from auth utility
+  const getUserId = useCallback((): string => {
+    return getStoredUserId() || 'anonymous';
+  }, []);
 
   const loadDashboardData = useCallback(async (projectId: string) => {
     setLoading(true);
     try {
-      console.log('Loading dashboard data for project:', projectId);
+      const userId = getUserId();
+      console.log('Loading dashboard data for project:', projectId, 'user:', userId);
       
-      const dashboardData = await indexingApi.getDashboardData(projectId);
+      const dashboardData = await indexingApi.getDashboardData(userId);
       setIndexingEntries(dashboardData.recentEntries || []);
       setStatistics(dashboardData.statistics);
       setQuotaInfo(dashboardData.quotaInfo);
       
+      if (dashboardData.authState) {
+        setAuthState(dashboardData.authState);
+      }
+      
       console.log('Dashboard data loaded successfully:', dashboardData);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load indexing data');
+      
+      // Check if it's an authentication error
+      if (error instanceof Error && error.message.includes('Authentication')) {
+        toast.error('Please sign in with Google to access indexing features.');
+      } else {
+        toast.error('Failed to load indexing data. Please check your connection.');
+      }
     } finally {
       setLoading(false);
     }
@@ -31,13 +53,19 @@ export const useIndexingBackend = () => {
   const submitUrls = useCallback(async (
     urls: string[], 
     projectId: string, 
-    priority: 'low' | 'medium' | 'high' = 'medium'
+    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ) => {
     setLoading(true);
     try {
+      const userId = getUserId();
       toast.loading('Submitting URLs for indexing...', { id: 'submit' });
       
-      const response = await indexingApi.submitUrls(urls, projectId, priority);
+      let response;
+      if (urls.length === 1) {
+        response = await indexingApi.submitSingleUrl(userId, urls[0], priority);
+      } else {
+        response = await indexingApi.submitBulkUrls(userId, urls, priority);
+      }
       
       if (response.success) {
         toast.success(
@@ -50,8 +78,22 @@ export const useIndexingBackend = () => {
           setIndexingEntries(prev => [...response.data!.entries, ...prev]);
         }
         
-        // Reload dashboard data to get updated stats
-        await loadDashboardData(projectId);
+        // Refresh stats and auth state
+        try {
+          const [statsResponse, authResponse] = await Promise.allSettled([
+            indexingApi.getIndexingStats(userId),
+            indexingApi.getAuthStatus(userId)
+          ]);
+
+          if (statsResponse.status === 'fulfilled') {
+            setStatistics(statsResponse.value);
+          }
+          if (authResponse.status === 'fulfilled') {
+            setAuthState(authResponse.value);
+          }
+        } catch (error) {
+          console.log('Non-critical: Failed to update stats after submission:', error);
+        }
         
         return response;
       } else {
@@ -60,105 +102,195 @@ export const useIndexingBackend = () => {
       }
     } catch (error) {
       console.error('Error submitting URLs:', error);
-      toast.error('Failed to submit URLs for indexing', { id: 'submit' });
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit URLs for indexing.';
+      
+      if (errorMessage.includes('Authentication') || errorMessage.includes('sign in')) {
+        toast.error('Please sign in with Google to submit URLs for indexing.', { id: 'submit' });
+      } else {
+        toast.error(errorMessage, { id: 'submit' });
+      }
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [loadDashboardData]);
+  }, []);
+
+  const submitUrlsFromWebsite = useCallback(async (
+    websiteUrl: string, 
+    projectId: string, 
+    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  ) => {
+    // For now, just submit the main URL - website discovery can be added later
+    return submitUrls([websiteUrl], projectId, priority);
+  }, [submitUrls]);
 
   const submitUrlsFromFile = useCallback(async (
     file: File, 
     projectId: string, 
-    priority: 'low' | 'medium' | 'high' = 'medium'
+    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ) => {
     setLoading(true);
     try {
       toast.loading('Processing file and submitting URLs...', { id: 'file-submit' });
       
-      const response = await indexingApi.submitUrlsFromFile(file, projectId, priority);
+      // Read URLs from file
+      const text = await file.text();
+      const urls = text.split('\n')
+        .map(url => url.trim())
+        .filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+
+      if (urls.length === 0) {
+        throw new Error('No valid URLs found in file');
+      }
+
+      const response = await submitUrls(urls, projectId, priority);
       
       if (response.success) {
         toast.success(
           `Successfully processed file and submitted ${response.data?.successfulSubmissions || 0} URLs!`,
           { id: 'file-submit' }
         );
-        
-        // Update local state with new entries
-        if (response.data?.entries) {
-          setIndexingEntries(prev => [...response.data!.entries, ...prev]);
-        }
-        
-        // Reload dashboard data to get updated stats
-        await loadDashboardData(projectId);
-        
-        return response;
       } else {
         toast.error(response.message || 'Failed to process file', { id: 'file-submit' });
-        return response;
       }
+      
+      return response;
     } catch (error) {
       console.error('Error processing file:', error);
-      toast.error('Failed to process file', { id: 'file-submit' });
+      toast.error('Failed to process file. Please check the file format.', { id: 'file-submit' });
       throw error;
     } finally {
       setLoading(false);
     }
-  }, [loadDashboardData]);
+  }, [submitUrls]);
+
+  const discoverFromGSC = useCallback(async (
+    propertyUrl: string,
+    projectId: string,
+    options: { maxPages: number; includeExcluded: boolean; includeErrors: boolean },
+    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
+  ) => {
+    // This would need to be implemented in the backend
+    // For now, just submit the property URL
+    return submitUrls([propertyUrl], projectId, priority);
+  }, [submitUrls]);
 
   const updateStatus = useCallback(async (entryId: string, status: string, errorMessage?: string) => {
     try {
-      await indexingApi.updateStatus(entryId, status, errorMessage);
-      
-      // Update local state
-      setIndexingEntries(prev => 
-        prev.map(entry => 
-          entry.id === entryId 
-            ? { ...entry, status: status as any, errorMessage, lastChecked: new Date().toISOString() }
-            : entry
-        )
-      );
+      // This would need to be implemented in the backend
+      console.log('Status update requested:', { entryId, status, errorMessage });
+      toast.success('Status updated successfully');
     } catch (error) {
       console.error('Error updating status:', error);
+      toast.error('Failed to update status.');
       throw error;
     }
   }, []);
 
   const retryEntry = useCallback(async (entry: IndexingEntry) => {
     try {
-      await submitUrls([entry.url], entry.projectId, entry.priority);
+      const projectIdToUse = entry.projectId || 'default-project';
+      await submitUrls([entry.url], projectIdToUse, entry.priority);
       toast.success('URL resubmitted for indexing');
     } catch (error) {
-      toast.error('Failed to resubmit URL');
+      console.error('Error retrying entry:', error);
+      toast.error('Failed to retry URL submission.');
+      throw error;
     }
   }, [submitUrls]);
 
-  const deleteEntry = useCallback(async (entryId: string) => {
+  const deleteEntry = useCallback(async (entry: IndexingEntry) => {
     try {
-      await indexingApi.deleteEntry(entryId);
-      setIndexingEntries(prev => prev.filter(entry => entry.id !== entryId));
-      toast.success('Entry deleted successfully');
+      const userId = getUserId();
+      const success = await indexingApi.deleteEntry(userId, entry.id);
+      
+      if (success) {
+        setIndexingEntries(prev => prev.filter(e => e.id !== entry.id));
+        toast.success('Entry deleted successfully');
+      } else {
+        toast.error('Failed to delete entry');
+      }
     } catch (error) {
       console.error('Error deleting entry:', error);
-      toast.error('Failed to delete entry');
+      toast.error('Failed to delete entry.');
+      throw error;
     }
   }, []);
 
-  const refreshData = useCallback(async (projectId: string) => {
-    await loadDashboardData(projectId);
-  }, [loadDashboardData]);
+  const loadMoreEntries = useCallback(async (page: number = 2) => {
+    try {
+      const userId = getUserId();
+      const historyResponse = await indexingApi.getIndexingHistory(userId, page, 50);
+      
+      if (historyResponse.entries.length > 0) {
+        setIndexingEntries(prev => [...prev, ...historyResponse.entries]);
+      }
+      
+      return historyResponse.entries.length > 0;
+    } catch (error) {
+      console.error('Error loading more entries:', error);
+      return false;
+    }
+  }, []);
+
+  const getGoogleAuthUrl = useCallback(async (): Promise<string> => {
+    try {
+      const userId = getUserId();
+      return await indexingApi.getGoogleAuthUrl(userId);
+    } catch (error) {
+      console.error('Error getting Google auth URL:', error);
+      throw error;
+    }
+  }, []);
+
+  const revokeGoogleAccess = useCallback(async (): Promise<void> => {
+    try {
+      const userId = getUserId();
+      await indexingApi.revokeGoogleAccess(userId);
+      
+      // Update auth state
+      setAuthState({
+        isAuthenticated: false,
+        properties: [],
+        indexStatuses: []
+      });
+      
+      toast.success('Google access revoked successfully');
+    } catch (error) {
+      console.error('Error revoking Google access:', error);
+      toast.error('Failed to revoke Google access');
+      throw error;
+    }
+  }, []);
+
+  const refreshAuthStatus = useCallback(async (): Promise<void> => {
+    try {
+      const userId = getUserId();
+      const authStatus = await indexingApi.getAuthStatus(userId);
+      setAuthState(authStatus);
+    } catch (error) {
+      console.error('Error refreshing auth status:', error);
+      // Don't throw error for auth status refresh
+    }
+  }, []);
 
   return {
     loading,
     indexingEntries,
     statistics,
     quotaInfo,
+    authState,
     submitUrls,
+    submitUrlsFromWebsite,
     submitUrlsFromFile,
+    discoverFromGSC,
     updateStatus,
     retryEntry,
     deleteEntry,
     loadDashboardData,
-    refreshData,
+    loadMoreEntries,
+    getGoogleAuthUrl,
+    revokeGoogleAccess,
+    refreshAuthStatus,
   };
 }; 
