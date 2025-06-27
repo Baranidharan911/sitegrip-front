@@ -25,16 +25,20 @@ class UptimeApi {
     };
 
     try {
+      console.log(`📡 API Request: ${options.method || 'GET'} ${url}`);
       const response = await fetch(url, config);
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        console.error(`❌ API Error [${endpoint}]:`, errorData);
         throw new Error(errorData.detail || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log(`✅ API Response [${endpoint}]:`, data);
+      return data;
     } catch (error) {
-      console.error(`API Error [${endpoint}]:`, error);
+      console.error(`❌ API Error [${endpoint}]:`, error);
       throw error;
     }
   }
@@ -148,12 +152,64 @@ class UptimeApi {
     };
   }
 
-  // 🔄 Refresh monitor (trigger immediate check)
-  async refreshMonitor(monitorId: string): Promise<{ success: boolean }> {
-    // This would trigger an immediate check - might need backend endpoint
-    // For now, we'll simulate by fetching fresh data
-    await this.getMonitorStats(monitorId);
-    return { success: true };
+  // 🔄 Trigger immediate check
+  async triggerCheck(monitorId: string): Promise<{
+    success: boolean;
+    status: string;
+    response_time: number | null;
+    http_status: number | null;
+    ssl_status: any | null;
+    timestamp: string;
+  }> {
+    return this.request<{
+      success: boolean;
+      status: string;
+      response_time: number | null;
+      http_status: number | null;
+      ssl_status: any | null;
+      timestamp: string;
+    }>(`/monitor/${monitorId}/check`, {
+      method: 'POST',
+    });
+  }
+
+  // 🚨 Get monitor incidents
+  async getMonitorIncidents(monitorId: string, limit: number = 10): Promise<{
+    incidents: any[];
+    total: number;
+  }> {
+    return this.request<{
+      incidents: any[];
+      total: number;
+    }>(`/monitor/${monitorId}/incidents?limit=${limit}`);
+  }
+
+  // 🔄 Real-time monitoring helpers
+  async startRealtimeMonitoring(onUpdate: (monitors: Monitor[]) => void): Promise<() => void> {
+    let isActive = true;
+    
+    const poll = async () => {
+      if (!isActive) return;
+      
+      try {
+        const monitors = await this.getAllMonitors();
+        onUpdate(monitors);
+      } catch (error) {
+        console.error('Real-time monitoring error:', error);
+      }
+      
+      if (isActive) {
+        setTimeout(poll, 30000); // Poll every 30 seconds
+      }
+    };
+    
+    // Start polling
+    poll();
+    
+    // Return cleanup function
+    return () => {
+      isActive = false;
+    };
   }
 
   // 📋 Export monitor data
