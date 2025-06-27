@@ -10,7 +10,7 @@ export default function LoginCard() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
-  const { user, loading, signInWithEmail, signInWithGoogle } = useAuth();
+  const { user, loading, signIn, signInWithGoogle } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export default function LoginCard() {
     }
     
     try {
-      await signInWithEmail(email, password);
+      await signIn(email, password);
     } catch (error) {
       console.error('Email login error:', error);
     }

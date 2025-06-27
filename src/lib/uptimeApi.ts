@@ -10,15 +10,39 @@ import {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
 
 class UptimeApi {
+  private async getAuthHeaders(): Promise<Record<string, string>> {
+    // Get Firebase auth token if available
+    if (typeof window !== 'undefined') {
+      try {
+        // Import Firebase auth dynamically to avoid SSR issues
+        const { getAuth } = await import('firebase/auth');
+        const auth = getAuth();
+        
+        if (auth.currentUser) {
+          const token = await auth.currentUser.getIdToken();
+          return {
+            'Authorization': `Bearer ${token}`
+          };
+        }
+      } catch (error) {
+        console.warn('🔐 Failed to get Firebase auth token:', error);
+      }
+    }
+    
+    return {};
+  }
+
   private async request<T>(
     endpoint: string, 
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${API_BASE_URL}/api${endpoint}`;
+    const authHeaders = await this.getAuthHeaders();
     
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options.headers,
       },
       ...options,

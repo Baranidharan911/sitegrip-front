@@ -9,7 +9,7 @@ export default function SignupCard() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const { loading, signUpWithEmail, signInWithGoogle } = useAuth();
+  const { loading, signUp, signInWithGoogle } = useAuth();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +37,7 @@ export default function SignupCard() {
     }
 
     try {
-      await signUpWithEmail(email, password);
+      await signUp(email, password);
     } catch (error) {
       console.error('Signup error:', error);
     }

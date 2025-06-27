@@ -38,9 +38,21 @@ interface AuthResponse {
   error?: string;
 }
 
-export const useAuth = () => {
+interface UseAuthReturn {
+  user: User | null;
+  loading: boolean;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  clearError: () => void;
+}
+
+export const useAuth = (): UseAuthReturn => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
   const initializationRef = useRef(false);
 
@@ -210,130 +222,6 @@ export const useAuth = () => {
     }
   };
 
-  // Sign in with email and password
-  const signInWithEmail = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      console.log('🔐 Signing in with email...');
-      
-      const result = await signInWithEmailAndPassword(auth, email, password);
-      const success = await verifyTokenWithBackend(result.user, false);
-      
-      if (success) {
-        toast.success('Successfully signed in!');
-        router.push('/profile');
-      } else {
-        // Sign out from Firebase if backend verification failed
-        await firebaseSignOut(auth);
-        toast.error('Authentication verification failed');
-      }
-    } catch (error: any) {
-      console.error('❌ Email sign in error:', error);
-      toast.error(error.message || 'Failed to sign in');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign up with email and password
-  const signUpWithEmail = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      console.log('📝 Creating account with email...');
-      
-      const result = await createUserWithEmailAndPassword(auth, email, password);
-      const success = await verifyTokenWithBackend(result.user, false);
-      
-      if (success) {
-        toast.success('Account created successfully!');
-        router.push('/profile');
-      } else {
-        // Delete the Firebase user if backend verification failed
-        await result.user.delete();
-        toast.error('Account creation verification failed');
-      }
-    } catch (error: any) {
-      console.error('❌ Email sign up error:', error);
-      toast.error(error.message || 'Failed to create account');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign in with Google
-  const signInWithGoogle = async () => {
-    try {
-      setLoading(true);
-      console.log('🔐 Signing in with Google...');
-      
-      // Use popup method with better error handling
-      try {
-        // Small delay to ensure popup isn't blocked
-        await new Promise(resolve => setTimeout(resolve, 100));
-        
-        const result = await signInWithPopup(auth, provider);
-        console.log('✅ Google sign-in successful, extracting tokens...');
-        
-        const googleTokens = extractGoogleTokens(result);
-        const success = await verifyTokenWithBackend(result.user, true, googleTokens);
-        
-        if (success) {
-          toast.success('Successfully signed in with Google!');
-          router.push('/profile');
-        } else {
-          // Sign out from Firebase if backend verification failed
-          await firebaseSignOut(auth);
-          toast.error('Google authentication verification failed');
-        }
-      } catch (popupError: any) {
-        console.error('❌ Google popup error:', popupError);
-        
-        // Check for specific error types
-        if (popupError.code === 'auth/popup-closed-by-user') {
-          toast.error('Sign-in cancelled. Please try again.');
-        } else if (popupError.code === 'auth/popup-blocked') {
-          toast.error('Popup was blocked. Please allow popups for this site.');
-        } else if (popupError.code === 'auth/cancelled-popup-request') {
-          toast.error('Another sign-in popup is already open.');
-        } else if (popupError.code === 'auth/unauthorized-domain') {
-          toast.error('This domain is not authorized for Google sign-in. Please contact support.');
-        } else {
-          // For other errors, try redirect method as fallback
-          console.log('🔄 Trying redirect method as fallback...');
-          try {
-            const auth2 = getAuth();
-            await signInWithRedirect(auth2, provider);
-            // The rest will be handled in the redirect callback
-            return;
-          } catch (redirectError) {
-            console.error('❌ Redirect also failed:', redirectError);
-            toast.error('Google sign-in failed. Please check your browser settings and try again.');
-          }
-        }
-      }
-    } catch (error: any) {
-      console.error('❌ Google sign in error:', error);
-      toast.error(error.message || 'Failed to sign in with Google');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sign out
-  const signOut = async () => {
-    try {
-      console.log('👋 Signing out...');
-      await firebaseSignOut(auth);
-      setUser(null);
-      clearUserData();
-      toast.success('Signed out successfully');
-      router.push('/login');
-    } catch (error: any) {
-      console.error('❌ Sign out error:', error);
-      toast.error('Failed to sign out');
-    }
-  };
-
   // Initialize auth state
   useEffect(() => {
     if (initializationRef.current) return;
@@ -415,12 +303,115 @@ export const useAuth = () => {
     };
   }, []);
 
+  const signIn = async (email: string, password: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔐 Signing in user:', email);
+      
+      await signInWithEmailAndPassword(auth, email, password);
+      console.log('✅ Sign in successful');
+    } catch (error: any) {
+      console.error('❌ Sign in error:', error);
+      setError(getAuthErrorMessage(error.code));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signUp = async (email: string, password: string): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔐 Creating user account:', email);
+      
+      await createUserWithEmailAndPassword(auth, email, password);
+      console.log('✅ Sign up successful');
+    } catch (error: any) {
+      console.error('❌ Sign up error:', error);
+      setError(getAuthErrorMessage(error.code));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      setLoading(true);
+      setError(null);
+      console.log('🔐 Signing in with Google...');
+      
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      await signInWithPopup(auth, provider);
+      console.log('✅ Google sign in successful');
+    } catch (error: any) {
+      console.error('❌ Google sign in error:', error);
+      setError(getAuthErrorMessage(error.code));
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signOut = async (): Promise<void> => {
+    try {
+      console.log('🔐 Signing out user...');
+      await firebaseSignOut(auth);
+      console.log('✅ Sign out successful');
+    } catch (error: any) {
+      console.error('❌ Sign out error:', error);
+      setError(getAuthErrorMessage(error.code));
+      throw error;
+    }
+  };
+
+  const clearError = (): void => {
+    setError(null);
+  };
+
   return {
     user,
     loading,
-    signInWithEmail,
-    signUpWithEmail,
+    error,
+    signIn,
+    signUp,
     signInWithGoogle,
     signOut,
+    clearError,
   };
-}; 
+};
+
+// Helper function to convert Firebase error codes to user-friendly messages
+const getAuthErrorMessage = (errorCode: string): string => {
+  switch (errorCode) {
+    case 'auth/user-not-found':
+      return 'No account found with this email address.';
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters long.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection.';
+    case 'auth/popup-closed-by-user':
+      return 'Sign in was cancelled.';
+    case 'auth/popup-blocked':
+      return 'Pop-up was blocked by your browser. Please allow pop-ups for this site.';
+    case 'auth/cancelled-popup-request':
+      return 'Sign in was cancelled.';
+    default:
+      return 'An unexpected error occurred. Please try again.';
+  }
+};
+
+export default useAuth; 

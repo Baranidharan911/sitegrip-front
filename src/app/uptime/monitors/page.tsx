@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useUptime } from '../../../hooks/useUptime';
+import { useAuth } from '../../../hooks/useAuth';
 import UptimeStatsCard from '../../../components/Uptime/UptimeStatsCard';
 import MonitorForm from '../../../components/Uptime/MonitorForm';
 import UptimeHistory from '../../../components/Uptime/UptimeHistory';
@@ -19,6 +20,7 @@ const RefreshIcon = () => (
 );
 
 export default function MonitorsPage() {
+  const { user, loading: authLoading } = useAuth();
   const {
     monitors,
     selectedMonitor,
@@ -55,6 +57,51 @@ export default function MonitorsPage() {
       console.error('Failed to refresh monitors:', error);
     }
   };
+
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-2 text-gray-500 dark:text-gray-400">Checking authentication...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!user) {
+    return (
+      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+          <div className="text-center max-w-md mx-auto">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                Authentication Required
+              </h2>
+              <p className="text-gray-500 dark:text-gray-400 mb-6">
+                Please log in to access your uptime monitors and manage your websites.
+              </p>
+              <a
+                href="/login"
+                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Sign In
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

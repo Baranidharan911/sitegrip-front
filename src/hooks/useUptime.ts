@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Monitor, UptimeLog, MonitorStats, SSLInfoResponse, CreateMonitorRequest, UpdateMonitorRequest } from '../types/uptime';
 import { uptimeApi } from '../lib/uptimeApi';
+import { useAuth } from './useAuth';
 
 interface UseUptimeState {
   monitors: Monitor[];
@@ -42,6 +43,7 @@ interface UseUptimeReturn extends UseUptimeState, UseUptimeActions {
 }
 
 export const useUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseUptimeReturn => {
+  const { user, loading: authLoading } = useAuth();
   const [state, setState] = useState<UseUptimeState>({
     monitors: [],
     selectedMonitor: null,
@@ -81,12 +83,24 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
 
   // Refresh all monitors with real-time data
   const refreshMonitors = useCallback(async () => {
+    // Don't fetch data if user is not authenticated
+    if (!user) {
+      console.log('📵 Not authenticated, skipping monitor refresh');
+      setStateIfMounted(prev => ({ 
+        ...prev, 
+        monitors: [], 
+        loading: false, 
+        error: 'Please log in to view your monitors' 
+      }));
+      return;
+    }
+
     try {
-      console.log('🔄 Refreshing monitors...');
+      console.log('🔄 Refreshing monitors for authenticated user...');
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
       const monitors = await uptimeApi.getAllMonitors();
-      console.log(`✅ Loaded ${monitors.length} monitors`);
+      console.log(`✅ Loaded ${monitors.length} monitors for user ${user.uid}`);
       
       setStateIfMounted(prev => ({
         ...prev,
@@ -97,7 +111,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     } catch (error) {
       handleError(error, 'refreshMonitors');
     }
-  }, [setStateIfMounted, handleError]);
+  }, [user, setStateIfMounted, handleError]);
 
   // Create new monitor
   const createMonitor = useCallback(async (data: CreateMonitorRequest): Promise<string> => {
@@ -312,10 +326,10 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     m.ssl_cert_days_until_expiry <= 30
   );
 
-  // Real-time auto-refresh setup
+  // Real-time auto-refresh setup - only when authenticated
   useEffect(() => {
-    if (autoRefresh && refreshInterval > 0) {
-      console.log(`🔄 Setting up auto-refresh every ${refreshInterval}ms`);
+    if (autoRefresh && refreshInterval > 0 && user && !authLoading) {
+      console.log(`🔄 Setting up auto-refresh every ${refreshInterval}ms for user ${user.uid}`);
       refreshIntervalRef.current = setInterval(() => {
         refreshMonitors();
       }, refreshInterval);
@@ -327,13 +341,15 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
         }
       };
     }
-  }, [autoRefresh, refreshInterval, refreshMonitors]);
+  }, [autoRefresh, refreshInterval, user, authLoading, refreshMonitors]);
 
-  // Initial load
+  // Initial load - only when user is available and not loading
   useEffect(() => {
-    console.log('🚀 Initial monitor load...');
-    refreshMonitors();
-  }, [refreshMonitors]);
+    if (!authLoading) {
+      console.log('🚀 Initial monitor load...');
+      refreshMonitors();
+    }
+  }, [authLoading, refreshMonitors]);
 
   return {
     // State
