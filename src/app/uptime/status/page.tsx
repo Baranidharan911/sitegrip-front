@@ -52,7 +52,7 @@ export default function StatusPage() {
   const [autoRefresh, setAutoRefresh] = useState(true);
 
   // Filter public monitors (you might want to add a public field to monitors)
-  const publicMonitors = monitors.filter(monitor => monitor.public !== false);
+  const publicMonitors = monitors.filter(monitor => monitor.is_public !== false);
 
   // Get overall system status
   const getOverallStatus = () => {
@@ -231,7 +231,7 @@ export default function StatusPage() {
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {monitor.last_status === 'down' ? (
-                          `Down since ${new Date(monitor.last_checked_at).toLocaleString()}`
+                          `Down since ${monitor.last_checked ? new Date(monitor.last_checked).toLocaleString() : 'Unknown'}`
                         ) : (
                           `${monitor.failures_in_a_row} failed attempts`
                         )}
@@ -353,8 +353,8 @@ export default function StatusPage() {
                 {(showAllMonitors ? publicMonitors : publicMonitors.slice(0, 5))
                   .map((monitor) => {
                     const badge = getMonitorStatusBadge(monitor);
-                    const uptime = monitor.uptime_24h 
-                      ? `${(monitor.uptime_24h * 100).toFixed(2)}%`
+                    const uptime = monitor.uptime_stats?.['24h'] 
+                      ? `${(monitor.uptime_stats['24h'] * 100).toFixed(2)}%`
                       : 'N/A';
                     
                     return (
@@ -395,9 +395,9 @@ export default function StatusPage() {
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             24h average
                           </div>
-                          {monitor.avg_response_time && (
+                          {monitor.last_response_time && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {monitor.avg_response_time}ms avg response
+                              {monitor.last_response_time}ms last response
                             </div>
                           )}
                         </div>
