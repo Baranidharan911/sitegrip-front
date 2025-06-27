@@ -42,7 +42,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
         const res = await fetch(`${apiUrl}/api/keywords/recommend`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -87,7 +87,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const res = await fetch(`${apiUrl}/api/keywords/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

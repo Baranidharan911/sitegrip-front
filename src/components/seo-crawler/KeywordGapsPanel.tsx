@@ -30,7 +30,7 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
       const encodedUrl = encodeURIComponent(url);
       const response = await fetch(`${apiUrl}/api/keywords/gaps/${encodedUrl}?days=30`);
 

@@ -23,7 +23,7 @@ export default function KeywordPerformanceChart({ keyword, url }: { keyword: str
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
         const encodedUrl = encodeURIComponent(url);
         const keywords = encodeURIComponent(keyword);
         const response = await fetch(`${apiUrl}/api/keywords/performance/${encodedUrl}?keywords=${keywords}&days=90`);

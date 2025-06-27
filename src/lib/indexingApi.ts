@@ -11,7 +11,7 @@ import {
   BulkIndexingRequest
 } from '@/types/indexing';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
 
 // Helper function to get user ID from localStorage
 const getUserId = (): string | null => {

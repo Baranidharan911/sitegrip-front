@@ -7,7 +7,7 @@ import {
   UpdateMonitorRequest 
 } from '../types/uptime';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
 
 class UptimeApi {
   private async request<T>(

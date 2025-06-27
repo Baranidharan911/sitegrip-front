@@ -45,8 +45,8 @@ export const useAuth = () => {
   const initializationRef = useRef(false);
 
   // Use localhost for development, production URL for production
-  const API_BASE_URL = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8000' 
+  const API_BASE_URL = process.env.NODE_ENV === 'development'
+    ? (process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app')
     : (process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app');
 
   // Store user data in localStorage
