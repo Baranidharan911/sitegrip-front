@@ -40,7 +40,7 @@ export default function AuthCallback() {
           setMessage('Authentication successful! Fetching real user details...');
 
           try {
-            const response = await fetch(`${API_URL}/api/auth/auth/user/${user_id}`, {
+            const response = await fetch(`${API_URL}/api/auth/user/${user_id}`, {
               headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
@@ -92,7 +92,7 @@ export default function AuthCallback() {
             if (processedCodes.length > 10) processedCodes.shift();
             localStorage.setItem('processed-oauth-codes', JSON.stringify(processedCodes));
 
-            const response = await fetch(`${API_URL}/api/auth/auth/google/callback`, {
+            const response = await fetch(`${API_URL}/api/auth/google/callback`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ code, state })

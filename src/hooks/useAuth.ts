@@ -100,7 +100,7 @@ export const useAuth = () => {
       console.log(`🔐 Verifying token with backend (Google: ${isGoogleAuth})...`);
       
       const idToken = await firebaseUser.getIdToken();
-      const endpoint = isGoogleAuth ? '/api/auth/auth/verify-token-with-google' : '/api/auth/auth/verify-token';
+      const endpoint = isGoogleAuth ? '/api/auth/verify-token-with-google' : '/api/auth/verify-token';
       
       let requestBody: any;
       

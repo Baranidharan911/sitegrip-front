@@ -28,16 +28,34 @@ const getUserId = (): string | null => {
   return null;
 };
 
-// Helper function to get Firebase ID token
-const getAuthToken = (): string | null => {
+// Helper function to get Firebase ID token (always get fresh token)
+const getAuthToken = async (): Promise<string | null> => {
   try {
+    // First try to get fresh token from Firebase Auth
+    const { auth } = await import('@/lib/firebase');
+    const { getAuth } = await import('firebase/auth');
+    
+    const firebaseAuth = getAuth();
+    const currentUser = firebaseAuth.currentUser;
+    
+    if (currentUser) {
+      try {
+        // Get fresh token from Firebase (this automatically handles refresh)
+        const freshToken = await currentUser.getIdToken(true); // Force refresh
+        console.log('🔍 [Auth Token] Got fresh token from Firebase');
+        return freshToken;
+      } catch (tokenError) {
+        console.warn('⚠️ [Auth Token] Failed to get fresh token from Firebase:', tokenError);
+      }
+    }
+    
+    // Fallback to localStorage token (though it might be stale)
     const userData = localStorage.getItem('Sitegrip-user');
     if (userData) {
       const user = JSON.parse(userData);
-      // Try different possible token fields
       const token = user.idToken || user.token || null;
       if (token) {
-        console.log('🔍 [Auth Token] Found token for API calls');
+        console.log('🔍 [Auth Token] Using stored token as fallback');
         return token;
       } else {
         console.warn('⚠️ [Auth Token] No Firebase token found in localStorage');
@@ -57,7 +75,7 @@ const fetchWithAuth = async (
   options: RequestInit = {},
   timeout: number = 60000  // Increased timeout to 60 seconds
 ): Promise<Response> => {
-  const token = getAuthToken();
+  const token = await getAuthToken();
   const userId = getUserId();
   
   const headers: Record<string, string> = {
@@ -183,7 +201,7 @@ export const indexingApi = {
   async getAuthStatus(userId: string): Promise<AuthState> {
     try {
       console.log('🔍 [Frontend] Checking auth status for user:', userId);
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/auth/google/status?user_id=${userId}`);
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/google/status?user_id=${userId}`);
 
       if (!response.ok) {
         console.error('❌ [Frontend] Auth status request failed:', response.status, response.statusText);
@@ -234,7 +252,7 @@ export const indexingApi = {
 
   async revokeGoogleAccess(userId: string): Promise<boolean> {
     try {
-          const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/gsc/revoke-access`, {
+          const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/revoke-access`, {
           method: 'DELETE'
       });
 

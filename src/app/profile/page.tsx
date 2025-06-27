@@ -51,7 +51,7 @@ export default function ProfilePage() {
 
         // Try to fetch user profile from the backend to verify authentication
         try {
-          const response = await fetch(`${API_URL}/api/auth/auth/user/${userData.uid}`);
+          const response = await fetch(`${API_URL}/api/auth/user/${userData.uid}`);
           if (response.ok) {
             const profileData = await response.json();
             if (profileData.success) {
@@ -107,7 +107,7 @@ export default function ProfilePage() {
       
       // Save to backend Firebase
       try {
-        const response = await fetch(`${API_URL}/api/auth/auth/user/${user.uid}`, {
+        const response = await fetch(`${API_URL}/api/auth/user/${user.uid}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
