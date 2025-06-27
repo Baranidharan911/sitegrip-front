@@ -44,7 +44,7 @@ const UptimeHistory: React.FC<UptimeHistoryProps> = ({ monitor, onClose }) => {
     getMonitorHistory, 
     getSSLInfo, 
     exportMonitorData, 
-    refreshMonitor,
+    refreshMonitors,
     deleteMonitor,
     updateMonitor 
   } = useUptime(false);
@@ -81,7 +81,7 @@ const UptimeHistory: React.FC<UptimeHistoryProps> = ({ monitor, onClose }) => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await refreshMonitor(monitor.id);
+      await refreshMonitors();
       await loadData();
     } catch (error) {
       console.error('Failed to refresh monitor:', error);
