@@ -205,6 +205,29 @@ export const indexingApi = {
 
       if (!response.ok) {
         console.error('❌ [Frontend] Auth status request failed:', response.status, response.statusText);
+        
+        // If backend auth endpoints are down (405 errors), use localStorage fallback
+        if (response.status === 405) {
+          console.warn('⚠️ Backend auth endpoint down, using localStorage fallback');
+          
+          const userData = localStorage.getItem('Sitegrip-user');
+          if (userData) {
+            const user = JSON.parse(userData);
+            return {
+              isAuthenticated: true,
+              user: {
+                uid: user.uid,
+                email: user.email,
+                display_name: user.displayName,
+                photo_url: user.photoURL
+              },
+              properties: user.properties || [],
+              indexStatuses: [],
+              selectedProperty: user.properties && user.properties.length > 0 ? user.properties[0] : undefined
+            };
+          }
+        }
+        
         throw new Error(await extractErrorMessage(response));
       }
 
@@ -305,6 +328,10 @@ export const indexingApi = {
       });
 
       if (!response.ok) {
+        // If backend is down, provide helpful error message
+        if (response.status === 405) {
+          throw new Error('Backend services temporarily unavailable. Please try again later.');
+        }
         throw new Error(await extractErrorMessage(response));
       }
 
