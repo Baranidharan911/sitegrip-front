@@ -43,30 +43,34 @@ const getAuthToken = async (): Promise<string | null> => {
         // Get fresh token from Firebase (this automatically handles refresh)
         const freshToken = await currentUser.getIdToken(true); // Force refresh
         console.log('🔍 [Auth Token] Got fresh token from Firebase');
+        
+        // Update localStorage with fresh token
+        const userData = localStorage.getItem('Sitegrip-user');
+        if (userData) {
+          const user = JSON.parse(userData);
+          user.idToken = freshToken;
+          localStorage.setItem('Sitegrip-user', JSON.stringify(user));
+          console.log('✅ [Auth Token] Updated localStorage with fresh token');
+        }
+        
         return freshToken;
       } catch (tokenError) {
         console.warn('⚠️ [Auth Token] Failed to get fresh token from Firebase:', tokenError);
-      }
-    }
-    
-    // Fallback to localStorage token (though it might be stale)
-    const userData = localStorage.getItem('Sitegrip-user');
-    if (userData) {
-      const user = JSON.parse(userData);
-      const token = user.idToken || user.token || null;
-      if (token) {
-        console.log('🔍 [Auth Token] Using stored token as fallback');
-        return token;
-      } else {
-        console.warn('⚠️ [Auth Token] No Firebase token found in localStorage');
+        
+        // If refresh fails, user needs to re-authenticate
+        console.warn('⚠️ [Auth Token] Token refresh failed - user may need to sign in again');
+        
+        // Don't fall back to stale token - return null to force re-auth
+        return null;
       }
     } else {
-      console.warn('⚠️ [Auth Token] No user data in localStorage');
+      console.warn('⚠️ [Auth Token] No current Firebase user found');
+      return null;
     }
   } catch (error) {
     console.warn('❌ Failed to get auth token:', error);
+    return null;
   }
-  return null;
 };
 
 // Helper function for authenticated requests
@@ -88,7 +92,11 @@ const fetchWithAuth = async (
     headers['Authorization'] = `Bearer ${token}`;
     console.log('🔑 [Auth] Sending request with Authorization header');
   } else {
-    console.warn('⚠️ [Auth] No token available for API request');
+    console.warn('⚠️ [Auth] No token available for API request - user may need to re-authenticate');
+    // For critical auth-required endpoints, we should fail fast
+    if (url.includes('/indexing/') || url.includes('/gsc/')) {
+      throw new Error('Authentication required - please sign in again');
+    }
   }
 
   // Add user ID header if available
