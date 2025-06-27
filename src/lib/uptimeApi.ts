@@ -14,15 +14,17 @@ class UptimeApi {
     // Get Firebase auth token if available
     if (typeof window !== 'undefined') {
       try {
-        // Import Firebase auth dynamically to avoid SSR issues
-        const { getAuth } = await import('firebase/auth');
-        const auth = getAuth();
+        // Import Firebase auth directly from our configured firebase instance
+        const { auth } = await import('../lib/firebase');
         
         if (auth.currentUser) {
           const token = await auth.currentUser.getIdToken();
+          console.log('🔐 Successfully retrieved Firebase auth token');
           return {
             'Authorization': `Bearer ${token}`
           };
+        } else {
+          console.warn('🔐 No current user found in Firebase auth');
         }
       } catch (error) {
         console.warn('🔐 Failed to get Firebase auth token:', error);
