@@ -86,11 +86,15 @@ const fetchWithAuth = async (
   // Add authorization header if token is available
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
+    console.log('🔑 [Auth] Sending request with Authorization header');
+  } else {
+    console.warn('⚠️ [Auth] No token available for API request');
   }
 
   // Add user ID header if available
   if (userId) {
     headers['X-User-ID'] = userId;
+    console.log('👤 [Auth] Sending request for user:', userId);
   }
 
   const controller = new AbortController();
@@ -197,6 +201,29 @@ const mapBackendQuotaToFrontend = (backendQuota: any): QuotaInfo => {
 };
 
 export const indexingApi = {
+  // Debug endpoints
+  async debugGoogleCredentials(userId: string): Promise<any> {
+    try {
+      console.log('🔍 [Debug] Testing Google credentials for user:', userId);
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/debug/google-credentials/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(await extractErrorMessage(response));
+      }
+      
+      const data = await response.json();
+      console.log('🔍 [Debug] Google credentials test result:', data);
+      return data;
+    } catch (error) {
+      console.error('❌ [Debug] Error testing Google credentials:', error);
+      return {
+        success: false,
+        message: `Debug test failed: ${error}`,
+        error: error
+      };
+    }
+  },
+
   // Authentication endpoints
   async getAuthStatus(userId: string): Promise<AuthState> {
     try {
