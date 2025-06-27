@@ -100,8 +100,9 @@ export const useAuth = () => {
       console.log(`🔐 Verifying token with backend (Google: ${isGoogleAuth})...`);
       
       const idToken = await firebaseUser.getIdToken();
-      const endpoint = isGoogleAuth ? '/api/auth/verify-token-with-google' : '/api/auth/verify-token';
       
+      // Try Google endpoint first, fallback to regular if it fails
+      let endpoint = isGoogleAuth ? '/api/auth/verify-token-with-google' : '/api/auth/verify-token';
       let requestBody: any;
       
       if (isGoogleAuth) {
@@ -114,13 +115,28 @@ export const useAuth = () => {
         requestBody = { idToken };
       }
 
-      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      let response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
+
+      // If Google endpoint fails with 405, fallback to regular endpoint
+      if (!response.ok && isGoogleAuth && response.status === 405) {
+        console.warn('⚠️ Google endpoint failed with 405, trying regular endpoint as fallback...');
+        endpoint = '/api/auth/verify-token';
+        requestBody = { idToken };
+        
+        response = await fetch(`${API_BASE_URL}${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(requestBody),
+        });
+      }
 
       const data: AuthResponse = await response.json();
       console.log('📊 Backend verification response:', data);
