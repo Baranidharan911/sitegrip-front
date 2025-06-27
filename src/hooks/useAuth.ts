@@ -138,6 +138,26 @@ export const useAuth = () => {
         });
       }
 
+      // If both endpoints fail with 405, proceed with Firebase-only auth
+      if (!response.ok && response.status === 405) {
+        console.warn('⚠️ Backend auth endpoints unavailable, proceeding with Firebase-only authentication');
+        
+        // Just use Firebase user data directly - no need for mock responses
+        const userData: User = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          idToken
+        };
+
+        setUser(userData);
+        storeUserData(userData);
+        
+        toast.success('✅ Signed in successfully (Firebase auth)');
+        return true;
+      }
+
       const data: AuthResponse = await response.json();
       console.log('📊 Backend verification response:', data);
       
