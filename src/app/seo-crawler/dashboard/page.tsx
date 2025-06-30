@@ -89,22 +89,54 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const res = await fetch(`${apiUrl}/api/discover`, {
+      // Validate URL before sending request
+      if (!url.trim()) {
+        throw new Error('Please enter a valid URL');
+      }
+
+      // Get Firebase auth token for authentication
+      const { auth } = await import('@/lib/firebase');
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Add authentication token if available
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const requestBody = { url: url.trim(), depth };
+      console.log('🔍 [Frontend] Sending discovery request:', {
+        url: `${apiUrl}/api/discover`,
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, depth }),
+        headers,
+        body: requestBody
+      });
+      
+      const res = await fetch(`${apiUrl}/api/discover`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('🔍 [Frontend] Discovery response status:', res.status, res.statusText);
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to discover URLs.');
+        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
+        console.error('🔍 [Frontend] Discovery error response:', errorData);
+        const errorMessage = errorData.detail || errorData.message || `HTTP ${res.status}: ${res.statusText}`;
+        throw new Error(errorMessage);
       }
 
       const data: DiscoveredPage[] = await res.json();
+      console.log('🔍 [Frontend] Discovery success:', data.length, 'pages found');
       setDiscovered(data);
     } catch (err: any) {
-      setError(err.message || 'Discovery failed.');
+      console.error('❌ [Frontend] Discovery error:', err);
+      setError(err.message || 'Discovery failed. Please check the URL and try again.');
     } finally {
       setLoading(false);
     }
