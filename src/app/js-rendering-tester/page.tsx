@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe } from 'lucide-react';
-import { Tabs, Tab } from '@headlessui/react';
+import { Tab } from '@headlessui/react';
 
 interface ComparisonResult {
   initialHtml: string;
@@ -210,7 +210,7 @@ export default function JsRenderingTesterPage() {
             </div>
 
             {/* Animated Tabs */}
-            <Tabs defaultIndex={0} className="w-full">
+            <Tab.Group>
               <Tab.List className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-4">
                 {tabList.map((tab, idx) => (
                   <Tab
@@ -277,7 +277,7 @@ export default function JsRenderingTesterPage() {
                   </div>
                 </Tab.Panel>
               </Tab.Panels>
-            </Tabs>
+            </Tab.Group>
           </motion.div>
         )}
       </div>
