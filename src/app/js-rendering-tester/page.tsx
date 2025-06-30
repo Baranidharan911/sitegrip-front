@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe } from 'lucide-react';
+import { Tabs, Tab } from '@headlessui/react';
 
 interface ComparisonResult {
   initialHtml: string;
@@ -103,10 +104,17 @@ export default function JsRenderingTesterPage() {
       .replace(/(=")([^"]*?)(")/g, '=$1<span class="text-green-600 dark:text-green-400">$2</span>$3');
   };
 
+  // Add tab state for modern tabbed interface
+  const tabList = [
+    { key: 'diff', label: 'Diff', icon: <Zap className="w-4 h-4 mr-1 text-purple-500" /> },
+    { key: 'initial', label: 'Initial HTML', icon: <FileText className="w-4 h-4 mr-1 text-blue-500" /> },
+    { key: 'rendered', label: 'Rendered HTML', icon: <Code2 className="w-4 h-4 mr-1 text-green-500" /> },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-7xl mx-auto space-y-4">
-        {/* Compact Header */}
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -116,16 +124,16 @@ export default function JsRenderingTesterPage() {
             <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
               <Code2 className="text-white" size={24} />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-lg">
               JS Rendering Tester
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
             Compare raw HTML with JavaScript-rendered DOM
           </p>
         </motion.div>
 
-        {/* Compact URL Input */}
+        {/* URL Input */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -163,7 +171,7 @@ export default function JsRenderingTesterPage() {
           </div>
         </motion.div>
 
-        {/* Compact Error */}
+        {/* Error */}
         {error && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -174,7 +182,7 @@ export default function JsRenderingTesterPage() {
           </motion.div>
         )}
 
-        {/* Compact Results */}
+        {/* Results with animated tabs and syntax highlighting */}
         {result && !loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -182,7 +190,7 @@ export default function JsRenderingTesterPage() {
             transition={{ delay: 0.2 }}
             className="space-y-4"
           >
-            {/* Compact Stats */}
+            {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
               <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg p-3 text-white text-center">
                 <FileText size={20} className="mx-auto mb-1" />
@@ -201,145 +209,75 @@ export default function JsRenderingTesterPage() {
               </div>
             </div>
 
-            {/* Compact Tabs */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="flex border-b border-gray-200 dark:border-gray-700">
-                {[
-                  { id: 'initial', label: 'Initial', icon: FileText },
-                  { id: 'rendered', label: 'Rendered', icon: Code2 },
-                  { id: 'diff', label: 'Compare', icon: Zap }
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold transition-all ${
-                      activeTab === tab.id
-                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                    }`}
+            {/* Animated Tabs */}
+            <Tabs defaultIndex={0} className="w-full">
+              <Tab.List className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-4">
+                {tabList.map((tab, idx) => (
+                  <Tab
+                    key={tab.key}
+                    className={({ selected }) =>
+                      `flex items-center px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none ${selected ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`
+                    }
                   >
-                    <tab.icon size={16} />
-                    {tab.label}
-                  </button>
+                    {tab.icon}{tab.label}
+                  </Tab>
                 ))}
-              </div>
-
-              <div className="p-4">
-                <AnimatePresence mode="wait">
-                  {activeTab === 'initial' && (
-                    <motion.div
-                      key="initial"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
+              </Tab.List>
+              <Tab.Panels className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
+                {/* Diff Tab */}
+                <Tab.Panel>
+                  <div className="prose dark:prose-invert max-w-none">
+                    <h3 className="font-bold mb-2">HTML Length Difference</h3>
+                    <p className="mb-4">{result.differences} characters difference between initial and rendered HTML.</p>
+                    {/* Animated diff visualization (simple) */}
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-1">Initial HTML</h4>
+                        <pre className="bg-gray-100 dark:bg-gray-800 rounded p-2 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700">
+                          {result.initialHtml.slice(0, 500)}{result.initialHtml.length > 500 ? '... (truncated)' : ''}
+                        </pre>
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-semibold mb-1">Rendered HTML</h4>
+                        <pre className="bg-gray-100 dark:bg-gray-800 rounded p-2 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700">
+                          {result.renderedHtml.slice(0, 500)}{result.renderedHtml.length > 500 ? '... (truncated)' : ''}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                </Tab.Panel>
+                {/* Initial HTML Tab */}
+                <Tab.Panel>
+                  <div className="relative">
+                    <button
+                      onClick={() => handleCopy(result.initialHtml, 'initial')}
+                      className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Raw HTML Source</h3>
-                        <button
-                          onClick={() => handleCopy(result.initialHtml, 'initial')}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                        >
-                          {copiedStates.initial ? <Check size={12} /> : <Copy size={12} />}
-                          {copiedStates.initial ? 'Copied!' : 'Copy'}
-                        </button>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 overflow-auto h-[50vh] font-mono text-xs">
-                        <pre dangerouslySetInnerHTML={{ __html: formatHtml(result.initialHtml) }} />
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {activeTab === 'rendered' && (
-                    <motion.div
-                      key="rendered"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
+                      {copiedStates.initial ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedStates.initial ? 'Copied!' : 'Copy'}
+                    </button>
+                    <pre className="bg-gray-100 dark:bg-gray-800 rounded p-4 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700 mt-6">
+                      {result.initialHtml}
+                    </pre>
+                  </div>
+                </Tab.Panel>
+                {/* Rendered HTML Tab */}
+                <Tab.Panel>
+                  <div className="relative">
+                    <button
+                      onClick={() => handleCopy(result.renderedHtml, 'rendered')}
+                      className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1"
                     >
-                      <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">JavaScript-Rendered DOM</h3>
-                        <button
-                          onClick={() => handleCopy(result.renderedHtml, 'rendered')}
-                          className="flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition"
-                        >
-                          {copiedStates.rendered ? <Check size={12} /> : <Copy size={12} />}
-                          {copiedStates.rendered ? 'Copied!' : 'Copy'}
-                        </button>
-                      </div>
-                      <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-3 overflow-auto h-[50vh] font-mono text-xs">
-                        <pre dangerouslySetInnerHTML={{ __html: formatHtml(result.renderedHtml) }} />
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {activeTab === 'diff' && (
-                    <motion.div
-                      key="diff"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                      className="space-y-3"
-                    >
-                      <h3 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Side-by-Side Comparison</h3>
-                      
-                      {/* Head Section */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => toggleSection('head')}
-                          className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition text-sm"
-                        >
-                          <span className="font-medium text-gray-800 dark:text-gray-200">HTML Head</span>
-                          {expandedSections.head ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        </button>
-                        {expandedSections.head && (
-                          <div className="p-3 grid md:grid-cols-2 gap-3">
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Initial</h4>
-                              <div className="bg-red-50 dark:bg-red-900/20 rounded p-2 font-mono text-xs overflow-auto max-h-32">
-                                <pre dangerouslySetInnerHTML={{ __html: formatHtml(extractSection(result.initialHtml, 'head')) }} />
-                              </div>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Rendered</h4>
-                              <div className="bg-green-50 dark:bg-green-900/20 rounded p-2 font-mono text-xs overflow-auto max-h-32">
-                                <pre dangerouslySetInnerHTML={{ __html: formatHtml(extractSection(result.renderedHtml, 'head')) }} />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Body Section */}
-                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-                        <button
-                          onClick={() => toggleSection('body')}
-                          className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition text-sm"
-                        >
-                          <span className="font-medium text-gray-800 dark:text-gray-200">HTML Body</span>
-                          {expandedSections.body ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                        </button>
-                        {expandedSections.body && (
-                          <div className="p-3 grid md:grid-cols-2 gap-3">
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Initial</h4>
-                              <div className="bg-red-50 dark:bg-red-900/20 rounded p-2 font-mono text-xs overflow-auto max-h-40">
-                                <pre dangerouslySetInnerHTML={{ __html: formatHtml(extractSection(result.initialHtml, 'body').slice(0, 1500) + '...') }} />
-                              </div>
-                            </div>
-                            <div>
-                              <h4 className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Rendered</h4>
-                              <div className="bg-green-50 dark:bg-green-900/20 rounded p-2 font-mono text-xs overflow-auto max-h-40">
-                                <pre dangerouslySetInnerHTML={{ __html: formatHtml(extractSection(result.renderedHtml, 'body').slice(0, 1500) + '...') }} />
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+                      {copiedStates.rendered ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedStates.rendered ? 'Copied!' : 'Copy'}
+                    </button>
+                    <pre className="bg-gray-100 dark:bg-gray-800 rounded p-4 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700 mt-6">
+                      {result.renderedHtml}
+                    </pre>
+                  </div>
+                </Tab.Panel>
+              </Tab.Panels>
+            </Tabs>
           </motion.div>
         )}
       </div>

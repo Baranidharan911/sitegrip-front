@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, Globe, Gauge, Smartphone, Monitor } from 'lucide-react';
+import { Tooltip } from 'react-tooltip';
 
 interface WebVitalsResult {
   mobile: {
@@ -25,6 +26,7 @@ export default function WebVitalsCheckerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<WebVitalsResult | null>(null);
+  const [view, setView] = useState<'mobile' | 'desktop'>('mobile');
 
   const handleCheck = async () => {
     setLoading(true);
@@ -118,11 +120,11 @@ export default function WebVitalsCheckerPage() {
             <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
               <Gauge className="text-white" size={24} />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent drop-shadow-lg">
               Core Web Vitals Checker
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
             Analyze your website's Core Web Vitals performance metrics
           </p>
         </motion.div>
@@ -184,165 +186,53 @@ export default function WebVitalsCheckerPage() {
             transition={{ delay: 0.2 }}
             className="space-y-4"
           >
+            {/* Toggle for Mobile/Desktop */}
+            <div className="flex justify-center gap-4 mb-4">
+              <button
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none ${view === 'mobile' ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                onClick={() => setView('mobile')}
+              >
+                <Smartphone className="w-5 h-5" /> Mobile
+              </button>
+              <button
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none ${view === 'desktop' ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`}
+                onClick={() => setView('desktop')}
+              >
+                <Monitor className="w-5 h-5" /> Desktop
+              </button>
+            </div>
             {/* Performance Scores */}
             <div className="grid md:grid-cols-2 gap-4">
               <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-3 mb-4">
-                  <Smartphone className="text-blue-500" size={24} />
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Mobile Performance</h3>
+                  {view === 'mobile' ? <Smartphone className="text-blue-500" size={24} /> : <Monitor className="text-green-500" size={24} />}
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">{view === 'mobile' ? 'Mobile' : 'Desktop'} Performance</h3>
                 </div>
                 <div className="flex items-center justify-center">
-                  <CircularGauge score={result.mobile.performanceScore} size={120} />
+                  <CircularGauge score={result[view].performanceScore} size={120} />
                 </div>
               </div>
-              
-              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
-                <div className="flex items-center gap-3 mb-4">
-                  <Monitor className="text-purple-500" size={24} />
-                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Desktop Performance</h3>
+              {/* Metrics */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 flex flex-col gap-4">
+                <div className="flex items-center gap-2">
+                  <Gauge className="text-green-500" size={20} />
+                  <span className="font-semibold">Core Metrics</span>
                 </div>
-                <div className="flex items-center justify-center">
-                  <CircularGauge score={result.desktop.performanceScore} size={120} />
-                </div>
-              </div>
-            </div>
-
-            {/* Core Web Vitals */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Core Web Vitals Breakdown</h3>
-              </div>
-              
-              <div className="grid md:grid-cols-2 gap-6 p-6">
-                {/* Mobile Vitals */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Smartphone className="text-blue-500" size={20} />
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-200">Mobile</h4>
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">LCP</span>
+                    <span className="text-xs text-gray-400">Largest Contentful Paint</span>
+                    <span className="ml-auto font-mono text-sm px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700">{formatLCP(result[view].lcp)}</span>
                   </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">LCP (Largest Contentful Paint)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Loading performance</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatLCP(result.mobile.lcp)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.mobile.lcp <= 2500 ? 'bg-green-500' : 
-                              result.mobile.lcp <= 4000 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.mobile.lcp / 4000) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">FID (First Input Delay)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Interactivity</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatFID(result.mobile.fid)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.mobile.fid <= 100 ? 'bg-green-500' : 
-                              result.mobile.fid <= 300 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.mobile.fid / 300) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">CLS (Cumulative Layout Shift)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Visual stability</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatCLS(result.mobile.cls)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.mobile.cls <= 0.1 ? 'bg-green-500' : 
-                              result.mobile.cls <= 0.25 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.mobile.cls / 0.25) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">FID</span>
+                    <span className="text-xs text-gray-400">First Input Delay</span>
+                    <span className="ml-auto font-mono text-sm px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700">{formatFID(result[view].fid)}</span>
                   </div>
-                </div>
-
-                {/* Desktop Vitals */}
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <Monitor className="text-purple-500" size={20} />
-                    <h4 className="font-semibold text-gray-800 dark:text-gray-200">Desktop</h4>
-                  </div>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">LCP (Largest Contentful Paint)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Loading performance</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatLCP(result.desktop.lcp)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.desktop.lcp <= 2500 ? 'bg-green-500' : 
-                              result.desktop.lcp <= 4000 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.desktop.lcp / 4000) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">FID (First Input Delay)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Interactivity</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatFID(result.desktop.fid)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.desktop.fid <= 100 ? 'bg-green-500' : 
-                              result.desktop.fid <= 300 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.desktop.fid / 300) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium text-gray-800 dark:text-gray-200">CLS (Cumulative Layout Shift)</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Visual stability</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg">{formatCLS(result.desktop.cls)}</p>
-                        <div className="w-16 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-1000 ${
-                              result.desktop.cls <= 0.1 ? 'bg-green-500' : 
-                              result.desktop.cls <= 0.25 ? 'bg-yellow-500' : 'bg-red-500'
-                            }`}
-                            style={{ width: `${Math.min(100, (result.desktop.cls / 0.25) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">CLS</span>
+                    <span className="text-xs text-gray-400">Cumulative Layout Shift</span>
+                    <span className="ml-auto font-mono text-sm px-2 py-1 rounded-lg bg-gray-100 dark:bg-gray-700">{formatCLS(result[view].cls)}</span>
                   </div>
                 </div>
               </div>

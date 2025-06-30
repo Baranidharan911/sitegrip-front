@@ -101,11 +101,11 @@ export default function HreflangGeneratorPage() {
             <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
               <Globe2 className="text-white" size={24} />
             </div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+            <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-lg">
               Hreflang Tag Generator
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-sm max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
             Generate hreflang tags for international SEO and multilingual websites
           </p>
         </motion.div>
@@ -198,13 +198,10 @@ export default function HreflangGeneratorPage() {
               </button>
             </div>
           </div>
-
           <div className="p-4">
-            <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4 font-mono text-sm overflow-x-auto">
-              <pre className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                {generateHreflangTags() || '<!-- Add URLs and languages above to generate hreflang tags -->'}
-              </pre>
-            </div>
+            <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 text-xs font-mono overflow-x-auto border border-gray-200 dark:border-gray-700 transition-all duration-200">
+              {generateHreflangTags()}
+            </pre>
           </div>
         </motion.div>
 

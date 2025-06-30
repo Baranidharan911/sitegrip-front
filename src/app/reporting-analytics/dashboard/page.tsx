@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Grid3X3, Plus, Settings, Save, RotateCcw, TrendingUp, Users, Globe, BarChart3, Eye, Clock } from 'lucide-react';
 import { Responsive, WidthProvider, Layouts } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -372,7 +372,16 @@ export default function CustomDashboardPage() {
                     >
                       ×
                     </button>
-                    <widget.component id={widgetId} />
+                    <AnimatePresence>
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        className="h-full bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4"
+                      >
+                        <widget.component id={widgetId} />
+                      </motion.div>
+                    </AnimatePresence>
                   </div>
                 );
               })}

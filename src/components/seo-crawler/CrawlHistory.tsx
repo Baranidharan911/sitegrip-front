@@ -72,6 +72,7 @@ export default function CrawlHistory() {
         // Get Firebase auth token
         const { auth } = await import('../../lib/firebase');
         const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        const userId = auth.currentUser ? auth.currentUser.uid : null;
         
         if (!token) {
           throw new Error('Authentication required. Please log in to view crawl history.');
@@ -83,7 +84,10 @@ export default function CrawlHistory() {
           'Authorization': `Bearer ${token}`
         };
         
-        const response = await fetch(`${apiUrl}/api/crawl/history?limit=50`, {
+        // Use new /api/history endpoint
+        let historyUrl = `${apiUrl}/api/history?limit=50`;
+        if (userId) historyUrl += `&userId=${userId}`;
+        const response = await fetch(historyUrl, {
           headers
         });
         

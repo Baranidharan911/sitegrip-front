@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MonitorSmartphone, Smartphone, Tablet, Laptop, Monitor, XCircle, Loader2 } from 'lucide-react';
 
 interface DevicePreset {
   name: string;
@@ -95,75 +96,99 @@ const devicePresets: { category: string; items: DevicePreset[] }[] = [
   },
 ];
 
+const deviceIcons: Record<string, JSX.Element> = {
+  'Android smartphones': <Smartphone className="w-6 h-6 text-primary" />, 
+  'Apple smartphones': <Smartphone className="w-6 h-6 text-pink-500" />, 
+  'Tablets': <Tablet className="w-6 h-6 text-orange-500" />, 
+  'Laptops': <Laptop className="w-6 h-6 text-blue-500" />, 
+  'Desktops': <Monitor className="w-6 h-6 text-green-500" />
+};
+
 export default function ScreenResponsivenessPage() {
   const [inputUrl, setInputUrl] = useState<string>('https://example.com');
   const [previewUrl, setPreviewUrl] = useState<string>('https://example.com');
   const [selectedDevice, setSelectedDevice] = useState<DevicePreset>(devicePresets[0].items[0]);
+  const [iframeLoading, setIframeLoading] = useState(false);
 
   const handlePreview = () => {
-    if (!inputUrl.startsWith('http://') && !inputUrl.startsWith('https://')) {
-      setPreviewUrl(`https://${inputUrl}`);
-    } else {
-      setPreviewUrl(inputUrl);
+    let url = inputUrl.trim();
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `https://${url}`;
     }
+    setPreviewUrl(url);
+    setIframeLoading(true);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Responsive Preview Tool</h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">
-            Enter any public URL, choose a device, and instantly preview how the site looks on different screens.
-          </p>
+          <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight drop-shadow-lg">Responsive Preview Tool</h1>
+          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-lg">Enter any public URL, choose a device, and instantly preview how the site looks on different screens.</p>
         </div>
 
-        {/* URL input */}
+        {/* URL input with floating label and clear button */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-3xl mx-auto">
-          <input
-            type="text"
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            placeholder="https://your-site.com"
-            className="flex-1 px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 focus:outline-none focus:ring-2 focus:ring-primary"
-          />
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={inputUrl}
+              onChange={(e) => setInputUrl(e.target.value)}
+              placeholder=" "
+              className="peer w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-primary text-base shadow-sm"
+            />
+            <label className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none transition-all duration-200 peer-focus:-top-3 peer-focus:text-xs peer-focus:text-primary peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400">
+              Website URL
+            </label>
+            {inputUrl && (
+              <button
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+                onClick={() => setInputUrl('')}
+                aria-label="Clear URL"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            )}
+          </div>
           <button
             onClick={handlePreview}
-            className="px-6 py-3 rounded-lg text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition"
+            className="px-6 py-3 rounded-lg text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition font-semibold shadow-md flex items-center gap-2"
           >
+            <MonitorSmartphone className="w-5 h-5" />
             Preview
           </button>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-10">
-          {/* Device list */}
+          {/* Device list with icons and animation */}
           <div className="lg:w-2/5 space-y-8 max-h-[70vh] overflow-y-auto pr-2">
             {devicePresets.map((section) => (
               <div key={section.category}>
-                <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                <h2 className="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
+                  {deviceIcons[section.category]}
                   {section.category}
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {section.items.map((device) => {
                     const active = selectedDevice.name === device.name;
                     return (
-                      <button
+                      <motion.button
                         key={device.name}
                         onClick={() => setSelectedDevice(device)}
-                        className={`group relative p-4 flex flex-col items-center rounded-lg border ${active ? 'border-primary shadow-lg' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800 hover:shadow-md transition`}
+                        className={`group relative p-4 flex flex-col items-center rounded-xl border ${active ? 'border-primary shadow-lg scale-105 bg-gradient-to-br from-primary/10 to-secondary/10' : 'border-gray-300 dark:border-gray-700'} bg-white dark:bg-gray-800 hover:shadow-md transition-all duration-200`}
+                        whileTap={{ scale: 0.97 }}
+                        whileHover={{ scale: 1.04 }}
                       >
-                        {/* simple device silhouette */}
                         <span className="w-6 h-10 mb-2 bg-gray-200 dark:bg-gray-600 rounded-sm group-hover:bg-primary group-hover:opacity-80 transition"></span>
-                        <span className="text-xs text-center text-gray-700 dark:text-gray-300 leading-tight">
+                        <span className="text-xs text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
                           {device.name}
                         </span>
                         {active && (
-                          <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full px-2 py-0.5">
-                            ✓
-                          </span>
+                          <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full px-2 py-0.5 shadow">✓</span>
                         )}
-                      </button>
+                        <span className="absolute bottom-2 right-2 text-xs text-gray-400">{device.width}×{device.height}</span>
+                      </motion.button>
                     );
                   })}
                 </div>
@@ -171,7 +196,7 @@ export default function ScreenResponsivenessPage() {
             ))}
           </div>
 
-          {/* Preview */}
+          {/* Preview with animated skeleton loader */}
           <div className="flex-1 flex justify-center items-start lg:items-center">
             <AnimatePresence mode="wait">
               <motion.div
@@ -180,13 +205,21 @@ export default function ScreenResponsivenessPage() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
-                className="rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-200 dark:border-gray-700"
+                className="rounded-2xl overflow-hidden shadow-2xl bg-white border border-gray-200 dark:border-gray-700 relative"
+                style={{ width: selectedDevice.width, height: selectedDevice.height }}
               >
+                {iframeLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
+                    <span className="text-gray-500 dark:text-gray-300 text-sm">Loading preview...</span>
+                  </div>
+                )}
                 <iframe
                   src={previewUrl}
                   title="website preview"
                   style={{ width: selectedDevice.width, height: selectedDevice.height }}
                   className="border-0"
+                  onLoad={() => setIframeLoading(false)}
                 />
               </motion.div>
             </AnimatePresence>
@@ -194,7 +227,7 @@ export default function ScreenResponsivenessPage() {
         </div>
 
         {/* Disclaimer */}
-        <p className="text-xs text-center text-gray-500 dark:text-gray-400 max-w-4xl mx-auto">
+        <p className="text-xs text-center text-gray-500 dark:text-gray-400 max-w-4xl mx-auto mt-6">
           Some websites may block being embedded in an iframe due to security policies (X-Frame-Options / Content-Security-Policy). If the preview remains blank, the target site likely prevents embedding.
         </p>
       </div>

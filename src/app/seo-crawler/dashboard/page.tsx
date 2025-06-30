@@ -125,13 +125,14 @@ export default function SeoCrawlerDashboardPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const res = await fetch(`${apiUrl}/api/crawl`, {
+      // Use new selective crawl endpoint
+      const res = await fetch(`${apiUrl}/api/crawl/selected`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ url, depth, selectedUrls }),
+        body: JSON.stringify({ urls: selectedUrls, baseUrl: url }),
       });
 
       if (!res.ok) {
