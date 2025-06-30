@@ -33,11 +33,11 @@ interface UseUptimeReturn extends UseUptimeState {
   updateMonitor: (id: string, data: UpdateMonitorRequest) => Promise<void>;
   deleteMonitor: (id: string) => Promise<void>;
   selectMonitor: (monitor: Monitor | null) => void;
-  getMonitorHistory: (monitorId: string) => Promise<UptimeLog[]>;
+  getMonitorHistory: (monitorId: string, timeRange?: number) => Promise<UptimeLog[]>;
   getMonitorStats: (monitorId: string) => Promise<MonitorStats>;
   getSSLInfo: (monitorId: string) => Promise<SSLInfoResponse>;
   triggerCheck: (monitorId: string) => Promise<void>;
-  exportMonitorData: (monitorId: string, format: 'csv' | 'json') => Promise<Blob>;
+  exportMonitorData: (monitorId: string, format: 'csv' | 'json', timeRange?: number) => Promise<Blob>;
   clearError: () => void;
 }
 
@@ -163,16 +163,16 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   }, [setStateIfMounted]);
 
   // Get monitor history
-  const getMonitorHistory = useCallback(async (monitorId: string): Promise<UptimeLog[]> => {
+  const getMonitorHistory = useCallback(async (monitorId: string, timeRange?: number): Promise<UptimeLog[]> => {
     try {
-      console.log('📊 Getting monitor history...', monitorId);
+      console.log('📊 Getting monitor history...', monitorId, timeRange ? `for ${timeRange}h` : '');
       
       // Check if we already have it cached
       if (state.monitorHistory[monitorId]) {
         return state.monitorHistory[monitorId];
       }
       
-      const history = await uptimeApi.getMonitorHistory(monitorId);
+      const history = await uptimeApi.getMonitorHistory(monitorId, timeRange);
       console.log(`✅ Loaded ${history.length} history entries`);
       
       // Cache the result
@@ -267,11 +267,11 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   }, [refreshMonitors, setStateIfMounted, handleError]);
 
   // Export monitor data
-  const exportMonitorData = useCallback(async (monitorId: string, format: 'csv' | 'json'): Promise<Blob> => {
+  const exportMonitorData = useCallback(async (monitorId: string, format: 'csv' | 'json', timeRange?: number): Promise<Blob> => {
     try {
-      console.log('📁 Exporting monitor data...', { monitorId, format });
+      console.log('📁 Exporting monitor data...', { monitorId, format, timeRange });
       
-      const blob = await uptimeApi.exportMonitorData(monitorId, format);
+      const blob = await uptimeApi.exportMonitorData(monitorId, format, timeRange);
       console.log('✅ Monitor data exported');
       
       return blob;

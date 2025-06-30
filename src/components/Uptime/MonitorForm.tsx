@@ -74,7 +74,8 @@ const MonitorForm: React.FC<MonitorFormProps> = ({
       const result = await uptimeApi.validateUrl(url);
       setUrlValid(result.valid);
       if (!result.valid && result.message) {
-        setErrors(prev => ({ ...prev, url: result.message }));
+        const errorMessage = String(result.message);
+        setErrors(prev => ({ ...prev, url: errorMessage }));
       } else {
         setErrors(prev => {
           const newErrors = { ...prev };

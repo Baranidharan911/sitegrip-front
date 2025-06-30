@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     // Launch headless browser
     const browser = await puppeteer.launch({
-      headless: 'new',
+      headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
     });
 
