@@ -198,9 +198,9 @@ export default function CrawlHistory() {
                 <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-6 bg-gray-50/50 dark:bg-black/20">
                   <CrawlSummary
                     summary={crawl.summary}
-                    pages={crawl.pages || []}
+                    pages={crawl.pages}
                   />
-                  <ResultsTable pages={crawl.pages || []} />
+                  <ResultsTable pages={crawl.pages} />
                 </div>
               )}
             </div>

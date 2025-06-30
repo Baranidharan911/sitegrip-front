@@ -56,7 +56,7 @@ interface CrawlSummaryData {
 interface CrawlResult {
   crawlId: string;
   summary: CrawlSummaryData;
-  pages?: PageData[];
+  pages: PageData[];
   sitemapUrls: string[];
   aiSummaryText?: string;
 }
@@ -89,54 +89,22 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      // Validate URL before sending request
-      if (!url.trim()) {
-        throw new Error('Please enter a valid URL');
-      }
-
-      // Get Firebase auth token for authentication
-      const { auth } = await import('@/lib/firebase');
-      const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-      
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Add authentication token if available
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-      
-      const requestBody = { url: url.trim(), depth };
-      console.log('🔍 [Frontend] Sending discovery request:', {
-        url: `${apiUrl}/api/discover`,
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const res = await fetch(`${apiUrl}/api/discover`, {
         method: 'POST',
-        headers,
-        body: requestBody
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, depth }),
       });
-      
-      const res = await fetch(`${apiUrl}/api/discover`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
-      });
-
-      console.log('🔍 [Frontend] Discovery response status:', res.status, res.statusText);
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({ detail: 'Unknown error' }));
-        console.error('🔍 [Frontend] Discovery error response:', errorData);
-        const errorMessage = errorData.detail || errorData.message || `HTTP ${res.status}: ${res.statusText}`;
-        throw new Error(errorMessage);
+        const data = await res.json();
+        throw new Error(data.detail || 'Failed to discover URLs.');
       }
 
       const data: DiscoveredPage[] = await res.json();
-      console.log('🔍 [Frontend] Discovery success:', data.length, 'pages found');
       setDiscovered(data);
     } catch (err: any) {
-      console.error('❌ [Frontend] Discovery error:', err);
-      setError(err.message || 'Discovery failed. Please check the URL and try again.');
+      setError(err.message || 'Discovery failed.');
     } finally {
       setLoading(false);
     }
@@ -183,7 +151,7 @@ export default function SeoCrawlerDashboardPage() {
   };
 
   const handleCSVExport = async () => {
-    if (!crawlResult || !crawlResult.pages) return;
+    if (!crawlResult) return;
 
     try {
               const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -221,7 +189,7 @@ export default function SeoCrawlerDashboardPage() {
           onSubmit={handleDiscover}
         />
 
-        {discovered && discovered.length > 0 && (
+        {discovered.length > 0 && (
           <DiscoveredTable
             discovered={discovered}
             selected={selectedUrls}
@@ -272,7 +240,7 @@ export default function SeoCrawlerDashboardPage() {
               <>
                 <CrawlSummary
                   summary={crawlResult.summary}
-                  pages={crawlResult.pages || []}
+                  pages={crawlResult.pages}
                   aiSummaryText={crawlResult.aiSummaryText}
                 />
               </>
@@ -280,7 +248,7 @@ export default function SeoCrawlerDashboardPage() {
 
             {activeTab === 'results' && (
               <>
-                <ResultsTable pages={crawlResult.pages || []} />
+                <ResultsTable pages={crawlResult.pages} />
               </>
             )}
 
@@ -297,7 +265,7 @@ export default function SeoCrawlerDashboardPage() {
                     Keyword Analysis Available
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Your crawl has been completed! You can now analyze keywords for all {crawlResult.pages?.length || 0} crawled pages. 
+                    Your crawl has been completed! You can now analyze keywords for all {crawlResult.pages.length} crawled pages. 
                     Get insights on keyword opportunities, ranking potential, and SEO optimization recommendations for each page.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">

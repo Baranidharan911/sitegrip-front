@@ -12,7 +12,7 @@ interface DiscoveredPage {
 }
 
 interface DiscoveredTableProps {
-  discovered?: DiscoveredPage[];
+  discovered: DiscoveredPage[];
   selected: string[];
   onToggle: (url: string) => void;
   onAnalyze: () => void;
@@ -22,7 +22,7 @@ interface DiscoveredTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export default function DiscoveredTable({
-  discovered = [],
+  discovered,
   selected,
   onToggle,
   onAnalyze,
@@ -30,7 +30,7 @@ export default function DiscoveredTable({
 }: DiscoveredTableProps) {
   const [page, setPage] = useState(1);
 
-  const totalPages = Math.max(1, Math.ceil((discovered.length || 0) / ITEMS_PER_PAGE));
+  const totalPages = Math.ceil(discovered.length / ITEMS_PER_PAGE);
   const paginated = useMemo(() => {
     const start = (page - 1) * ITEMS_PER_PAGE;
     return discovered.slice(start, start + ITEMS_PER_PAGE);

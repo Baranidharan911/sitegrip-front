@@ -14,7 +14,7 @@ interface PageData {
   title?: string;
   statusCode: number;
   wordCount: number;
-  issues?: string[];
+  issues: string[];
   seoScore: number;
 }
 
@@ -132,7 +132,7 @@ export default function CrawlSummary({ summary, pages, aiSummaryText }: SummaryP
                       {page.seoScore}
                     </td>
                     <td className="px-4 py-2 text-center">{page.statusCode}</td>
-                    <td className="px-4 py-2 text-center">{page.issues?.length || 0}</td>
+                    <td className="px-4 py-2 text-center">{page.issues.length}</td>
                   </tr>
                 ))}
               </tbody>
