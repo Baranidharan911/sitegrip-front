@@ -25,20 +25,19 @@ interface PageData {
   issues: string[];
   redirectChain: string[];
   consoleErrors?: string[];
-  loadTime: number;
+  loadTime?: number;
   hasSchema?: boolean;
   pageSizeBytes: number;
   hasViewport: boolean;
   suggestions?: AISuggestions;
   seoScore: number;
-  lcp: number;
-  cls: number;
-  ttfb: number;
+  lcp?: number;
+  cls?: number;
+  ttfb?: number;
   linkedFrom?: string[];
   depth: number;
   mobileScreenshot?: string;
   desktopScreenshot?: string;
-
 }
 
 interface ResultsTableProps {
@@ -151,16 +150,16 @@ const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => vo
             <strong>Page Size:</strong> {formatBytes(page.pageSizeBytes)}
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <strong>Load Time:</strong> {page.loadTime.toFixed(2)}s
+            <strong>Load Time:</strong> {(page.loadTime ?? 0).toFixed(2)}s
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <strong>LCP:</strong> <span className={getColorForLCP(page.lcp)}>{page.lcp.toFixed(2)}s</span>
+            <strong>LCP:</strong> <span className={getColorForLCP(page.lcp ?? 0)}>{(page.lcp ?? 0).toFixed(2)}s</span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <strong>CLS:</strong> <span className={getColorForCLS(page.cls)}>{page.cls.toFixed(2)}</span>
+            <strong>CLS:</strong> <span className={getColorForCLS(page.cls ?? 0)}>{(page.cls ?? 0).toFixed(2)}</span>
           </div>
           <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb)}>{page.ttfb.toFixed(2)}s</span>
+            <strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb ?? 0)}>{(page.ttfb ?? 0).toFixed(2)}s</span>
           </div>
           {page.redirectChain && page.redirectChain.length > 0 && (
             <div className="p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg col-span-2">
@@ -196,7 +195,8 @@ const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => vo
         </div>
 
         {page.suggestions && <AISuggestionsCard suggestions={page.suggestions} />}
-        {/* {(page.mobileScreenshot || page.desktopScreenshot) && (
+
+        {(page.mobileScreenshot || page.desktopScreenshot) && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">📸 Screenshots</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -222,7 +222,7 @@ const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => vo
               )}
             </div>
           </div>
-        )} */}
+        )}
 
       </div>
     </div>
@@ -265,9 +265,9 @@ export default function ResultsTable({ pages }: ResultsTableProps) {
       <div className="text-sm text-gray-600 dark:text-gray-300">
         <div><strong>Status:</strong> <span className={page.statusCode >= 400 ? 'text-red-500' : 'text-green-600'}>{page.statusCode}</span></div>
         <div><strong>Depth:</strong> {page.depth}</div>
-        <div><strong>LCP:</strong> <span className={getColorForLCP(page.lcp)}>{page.lcp.toFixed(2)}s</span></div>
-        <div><strong>CLS:</strong> <span className={getColorForCLS(page.cls)}>{page.cls.toFixed(2)}</span></div>
-        <div><strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb)}>{page.ttfb.toFixed(2)}s</span></div>
+        <div><strong>LCP:</strong> <span className={getColorForLCP(page.lcp ?? 0)}>{(page.lcp ?? 0).toFixed(2)}s</span></div>
+        <div><strong>CLS:</strong> <span className={getColorForCLS(page.cls ?? 0)}>{(page.cls ?? 0).toFixed(2)}</span></div>
+        <div><strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb ?? 0)}>{(page.ttfb ?? 0).toFixed(2)}s</span></div>
         <div><strong>SEO Score:</strong> <span className={getScoreClass(page.seoScore)}>{page.seoScore}</span></div>
         <div className="mt-2 flex justify-between items-center">
           <span><strong>JS:</strong> {page.consoleErrors?.length ? <XCircle className="inline h-5 w-5 text-red-500" /> : <CheckCircle className="inline h-5 w-5 text-green-500" />}</span>
