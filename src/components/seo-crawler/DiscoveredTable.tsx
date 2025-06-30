@@ -12,7 +12,7 @@ interface DiscoveredPage {
 }
 
 interface DiscoveredTableProps {
-  discovered: DiscoveredPage[];
+  discovered?: DiscoveredPage[];
   selected: string[];
   onToggle: (url: string) => void;
   onAnalyze: () => void;
@@ -22,7 +22,7 @@ interface DiscoveredTableProps {
 const ITEMS_PER_PAGE = 10;
 
 export default function DiscoveredTable({
-  discovered,
+  discovered = [],
   selected,
   onToggle,
   onAnalyze,

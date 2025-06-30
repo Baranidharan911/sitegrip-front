@@ -41,7 +41,7 @@ interface PageData {
 }
 
 interface ResultsTableProps {
-  pages: PageData[];
+  pages?: PageData[];
 }
 
 const getColorForLCP = (lcp: number) =>
@@ -232,13 +232,16 @@ const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => vo
 export default function ResultsTable({ pages }: ResultsTableProps) {
   const [selectedPage, setSelectedPage] = useState<PageData | null>(null);
 
+  // Safety check for undefined or null pages
+  const safePages = pages || [];
+  
   const ITEMS_PER_PAGE = 15;
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(pages.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(safePages.length / ITEMS_PER_PAGE);
 
   const paginatedPages = useMemo(
-    () => pages.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
-    [pages, currentPage]
+    () => safePages.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
+    [safePages, currentPage]
   );
 
   const handlePrev = () => setCurrentPage((p) => Math.max(1, p - 1));
@@ -352,8 +355,8 @@ export default function ResultsTable({ pages }: ResultsTableProps) {
         {/* Pagination */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
           <div className="text-sm text-gray-600 dark:text-gray-400">
-            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, pages.length)}–
-            {Math.min(currentPage * ITEMS_PER_PAGE, pages.length)} of {pages.length}
+            Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, safePages.length)}–
+            {Math.min(currentPage * ITEMS_PER_PAGE, safePages.length)} of {safePages.length}
           </div>
           <div className="flex gap-2">
             <button

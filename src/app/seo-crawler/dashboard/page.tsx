@@ -56,7 +56,7 @@ interface CrawlSummaryData {
 interface CrawlResult {
   crawlId: string;
   summary: CrawlSummaryData;
-  pages: PageData[];
+  pages?: PageData[];
   sitemapUrls: string[];
   aiSummaryText?: string;
 }
@@ -151,7 +151,7 @@ export default function SeoCrawlerDashboardPage() {
   };
 
   const handleCSVExport = async () => {
-    if (!crawlResult) return;
+    if (!crawlResult || !crawlResult.pages) return;
 
     try {
               const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -189,7 +189,7 @@ export default function SeoCrawlerDashboardPage() {
           onSubmit={handleDiscover}
         />
 
-        {discovered.length > 0 && (
+        {discovered && discovered.length > 0 && (
           <DiscoveredTable
             discovered={discovered}
             selected={selectedUrls}
@@ -240,7 +240,7 @@ export default function SeoCrawlerDashboardPage() {
               <>
                 <CrawlSummary
                   summary={crawlResult.summary}
-                  pages={crawlResult.pages}
+                  pages={crawlResult.pages || []}
                   aiSummaryText={crawlResult.aiSummaryText}
                 />
               </>
@@ -248,7 +248,7 @@ export default function SeoCrawlerDashboardPage() {
 
             {activeTab === 'results' && (
               <>
-                <ResultsTable pages={crawlResult.pages} />
+                <ResultsTable pages={crawlResult.pages || []} />
               </>
             )}
 
@@ -265,7 +265,7 @@ export default function SeoCrawlerDashboardPage() {
                     Keyword Analysis Available
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-4">
-                    Your crawl has been completed! You can now analyze keywords for all {crawlResult.pages.length} crawled pages. 
+                    Your crawl has been completed! You can now analyze keywords for all {crawlResult.pages?.length || 0} crawled pages. 
                     Get insights on keyword opportunities, ranking potential, and SEO optimization recommendations for each page.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
