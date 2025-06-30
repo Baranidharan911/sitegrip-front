@@ -237,7 +237,7 @@ export default function ResultsTable({ pages }: ResultsTableProps) {
   
   const ITEMS_PER_PAGE = 15;
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(safePages.length / ITEMS_PER_PAGE);
+  const totalPages = Math.max(1, Math.ceil((safePages.length || 0) / ITEMS_PER_PAGE));
 
   const paginatedPages = useMemo(
     () => safePages.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE),
