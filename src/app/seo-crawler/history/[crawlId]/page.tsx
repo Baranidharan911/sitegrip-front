@@ -65,9 +65,62 @@ export default function CrawlDetailsPage() {
     const fetchCrawlDetails = async () => {
       if (!params.crawlId) return;
 
+      // 1. Try fetching directly from backend REST API first
+      try {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const res = await fetch(`${apiUrl}/api/crawl/results/${params.crawlId}`);
+        if (res.ok) {
+          const data = await res.json();
+
+          let domain = '';
+          try {
+            domain = data.url ? new URL(data.url).hostname : '';
+          } catch {
+            domain = data.url || '';
+          }
+
+          const crawlResult: CrawlResult = {
+            crawlId: data.crawlId || (params.crawlId as string),
+            url: data.url || '',
+            domain,
+            createdAt: data.crawledAt || data.createdAt || new Date().toISOString(),
+            totalPages: data.summary?.totalPages || data.pages?.length || 0,
+            depth: data.depth || 1,
+            pages: data.pages || [],
+            summary: {
+              totalPages: data.summary?.totalPages || data.pages?.length || 0,
+              missingTitles: data.summary?.missingTitles || 0,
+              brokenLinks: data.summary?.brokenLinks || 0,
+              orphanPages: data.summary?.orphanPages || 0,
+              duplicateTitles: data.summary?.duplicateTitles || 0,
+              duplicateDescriptions: data.summary?.duplicateDescriptions || 0,
+              averageSeoScore: data.summary?.averageSeoScore || 0,
+              redirectChains: data.summary?.redirectChains || 0,
+              pagesWithSlowLoad: data.summary?.pagesWithSlowLoad || 0,
+              lowWordCountPages: data.summary?.lowWordCountPages || 0,
+              mobileFriendlyPages: data.summary?.mobileFriendlyPages || 0,
+              nonMobilePages: data.summary?.nonMobilePages || 0
+            },
+            performance: {
+              crawlTime: data.performance?.crawlTime || 0,
+              avgLoadTime: data.performance?.avgLoadTime || 0,
+              totalSize: data.performance?.totalSize || 0
+            }
+          };
+
+          setCrawl(crawlResult);
+          setLoading(false);
+          return; // ✅ successfully loaded from backend – no need to hit Firestore
+        }
+      } catch (err) {
+        console.warn('Remote crawl results fetch failed, falling back to Firestore:', err);
+        // Intentionally fall through to Firestore logic below
+      }
+
+      // 2. Fallback: try loading from Firestore (legacy behaviour)
       try {
         const crawlDoc = await getDoc(doc(db, 'crawls', params.crawlId as string));
-        
+
         if (!crawlDoc.exists()) {
           setError('Crawl not found');
           return;
@@ -84,7 +137,7 @@ export default function CrawlDetailsPage() {
         setCrawl({
           crawlId: crawlDoc.id,
           url: data.url || '',
-          domain: domain,
+          domain,
           createdAt: data.crawledAt || data.createdAt || new Date().toISOString(),
           totalPages: data.summary?.totalPages || data.pages?.length || 0,
           userId: data.userId,

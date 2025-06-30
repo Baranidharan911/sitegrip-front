@@ -12,9 +12,9 @@ export const useGoogleAuth = () => {
     indexStatuses: []
   });
 
-  const getApiUrl = () => {
-    return process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
-  };
+  function getApiBaseUrl(): string {
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  }
 
   const getUserId = (): string | null => {
     try {
@@ -31,7 +31,7 @@ export const useGoogleAuth = () => {
 
   const checkAuthStatus = async (userId: string): Promise<AuthState> => {
     try {
-      const apiUrl = getApiUrl();
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/api/status/${userId}`);
       
       if (!response.ok) {
@@ -53,7 +53,7 @@ export const useGoogleAuth = () => {
 
   const getGoogleAuthUrl = async (userId: string): Promise<string> => {
     try {
-      const apiUrl = getApiUrl();
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/api/google/url?user_id=${userId}`);
       
       if (!response.ok) {
@@ -101,7 +101,7 @@ export const useGoogleAuth = () => {
         throw new Error('User not logged in');
       }
       
-      const apiUrl = getApiUrl();
+      const apiUrl = getApiBaseUrl();
       const response = await fetch(`${apiUrl}/api/google/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

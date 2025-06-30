@@ -15,9 +15,16 @@ export interface StoredUser {
 }
 
 /**
+ * Check if we're in a browser environment
+ */
+const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined';
+
+/**
  * Get user data from localStorage with proper error handling
  */
 export const getStoredUser = (): StoredUser | null => {
+  if (!isBrowser) return null;
+  
   try {
     const userData = localStorage.getItem('Sitegrip-user');
     if (!userData) return null;
@@ -54,6 +61,8 @@ export const getStoredUser = (): StoredUser | null => {
  * Store user data in localStorage
  */
 export const storeUser = (user: StoredUser): boolean => {
+  if (!isBrowser) return false;
+  
   try {
     localStorage.setItem('Sitegrip-user', JSON.stringify(user));
     return true;
@@ -67,6 +76,8 @@ export const storeUser = (user: StoredUser): boolean => {
  * Clear stored user data
  */
 export const clearStoredUser = (): void => {
+  if (!isBrowser) return;
+  
   try {
     localStorage.removeItem('Sitegrip-user');
     localStorage.removeItem('Sitegrip-temp-user-id');

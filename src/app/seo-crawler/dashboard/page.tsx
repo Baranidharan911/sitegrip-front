@@ -89,7 +89,7 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const res = await fetch(`${apiUrl}/api/discover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -116,28 +116,27 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      // Get user ID from localStorage
-      let userId = 'anonymous';
-      try {
-        const userData = localStorage.getItem('Sitegrip-user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          userId = user.uid || user.id || user.user_id || 'anonymous';
-        }
-      } catch (err) {
-        console.warn('Failed to parse user data from localStorage');
+      // Get Firebase auth token for authentication
+      const { auth } = await import('@/lib/firebase');
+      const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+      
+      if (!token) {
+        throw new Error('Authentication required. Please log in to run crawls.');
       }
 
-              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
-        const res = await fetch(`${apiUrl}/api/crawl`, {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const res = await fetch(`${apiUrl}/api/crawl`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, depth, selectedUrls, user_id: userId }),
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ url, depth, selectedUrls }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.detail || 'Analysis failed.');
+        throw new Error(data.detail || data.message || 'Analysis failed.');
       }
 
       const result: CrawlResult = await res.json();
@@ -154,7 +153,7 @@ export default function SeoCrawlerDashboardPage() {
     if (!crawlResult) return;
 
     try {
-              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const res = await fetch(`${apiUrl}/api/export/csv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

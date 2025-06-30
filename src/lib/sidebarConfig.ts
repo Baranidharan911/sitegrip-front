@@ -12,6 +12,13 @@ import {
   BarChart3,
   Clock,
   Eye,
+  MonitorSmartphone,
+  Braces,
+  Gauge,
+  Globe2,
+  Calculator,
+  MessageSquare,
+  Grid3X3,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -60,6 +67,31 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Incidents', path: '/uptime/incidents', icon: AlertCircle, pro: false },
       { name: 'SSL Certificates', path: '/uptime/ssl', icon: Shield, pro: false },
       { name: 'Status Page', path: '/uptime/status', icon: Globe, pro: false },
+    ],
+  },
+
+  {
+    name: 'Screen-Preview',
+    path: '/screen-preview',
+    icon: Settings,
+    subItems: [
+      { name: 'Responsive Preview', path: '/screen-responsiveness', icon: MonitorSmartphone, pro: false },
+      { name: 'JS Rendering Tester', path: '/js-rendering-tester', icon: Braces, pro: false },
+      { name: 'HTTP Header Checker', path: '/header-checker', icon: Shield, pro: false },
+      { name: 'Core Web Vitals', path: '/web-vitals-checker', icon: Gauge, pro: false },
+      { name: 'Hreflang Generator', path: '/hreflang-generator', icon: Globe2, pro: false },
+    ],
+  },
+
+  {
+    name: 'Reporting & Analytics',
+    path: '/reporting-analytics',
+    icon: BarChart3,
+    subItems: [
+      { name: 'PDF Report Generator', path: '/reporting-analytics/pdf-generator', icon: FileText, pro: false },
+      { name: 'Custom Dashboard', path: '/reporting-analytics/dashboard', icon: Grid3X3, pro: false },
+      { name: 'SEO ROI Calculator', path: '/reporting-analytics/roi-calculator', icon: Calculator, pro: false },
+      { name: 'Chart Annotations', path: '/reporting-analytics/annotations', icon: MessageSquare, pro: false },
     ],
   },
 ];

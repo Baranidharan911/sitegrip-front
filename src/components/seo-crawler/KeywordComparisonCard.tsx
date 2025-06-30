@@ -1,16 +1,32 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface ComparisonResult {
-  current_keyword: string;
-  proposed_keyword: string;
-  overall_score: number;
-  recommendation: string;
-  volume_score: number;
-  difficulty_score: number;
-  content_relevance: number;
-  estimated_traffic_change: number;
+  success: boolean;
+  comparison: {
+    current_keyword: {
+      keyword: string;
+      search_volume: number;
+      difficulty: number;
+      cpc: number;
+      competition: string;
+    };
+    proposed_keyword: {
+      keyword: string;
+      search_volume: number;
+      difficulty: number;
+      cpc: number;
+      competition: string;
+    };
+    analysis: {
+      volume_difference: number;
+      difficulty_difference: number;
+      cpc_difference: number;
+      recommendation: string;
+    };
+  };
 }
 
 export default function KeywordComparisonCard({ current, proposed }: { current: string; proposed: string }) {
@@ -23,16 +39,29 @@ export default function KeywordComparisonCard({ current, proposed }: { current: 
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        // Get authentication token
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error('Authentication required. Please log in to compare keywords.');
+        }
+
+        const token = await user.getIdToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        
         const res = await fetch(`${apiUrl}/api/keywords/compare-keywords`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ current_keyword: current, proposed_keyword: proposed })
         });
+        
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.detail || 'Comparison failed');
+          throw new Error(err.message || 'Comparison failed');
         }
+        
         const data = await res.json();
         setResult(data);
       } catch (err: any) {
@@ -52,15 +81,15 @@ export default function KeywordComparisonCard({ current, proposed }: { current: 
       {error && <p className="text-red-500 text-sm">{error}</p>}
       {result && (
         <>
-          <p className="text-sm text-gray-500 mb-2">Comparing <b>{result.current_keyword}</b> vs <b>{result.proposed_keyword}</b></p>
+          <p className="text-sm text-gray-500 mb-2">Comparing <b>{result.comparison.current_keyword.keyword}</b> vs <b>{result.comparison.proposed_keyword.keyword}</b></p>
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>📈 Volume Score: <b>{result.volume_score}/100</b></div>
-            <div>💪 Difficulty Score: <b>{result.difficulty_score}/100</b></div>
-            <div>🔗 Relevance: <b>{result.content_relevance}/100</b></div>
-            <div>🚀 Traffic Boost: +<b>{result.estimated_traffic_change}%</b></div>
+            <div>📈 Volume Score: <b>{result.comparison.current_keyword.search_volume}/100</b></div>
+            <div>💪 Difficulty Score: <b>{result.comparison.current_keyword.difficulty}/100</b></div>
+            <div>🔗 Relevance: <b>{result.comparison.current_keyword.cpc}/100</b></div>
+            <div>🚀 Traffic Boost: +<b>{result.comparison.analysis.volume_difference}%</b></div>
           </div>
           <div className="mt-4 font-semibold">
-            Final Verdict: <span className="text-green-600">{result.recommendation.toUpperCase()}</span> (Score {result.overall_score}/100)
+            Final Verdict: <span className="text-green-600">{result.comparison.analysis.recommendation.toUpperCase()}</span>
           </div>
         </>
       )}

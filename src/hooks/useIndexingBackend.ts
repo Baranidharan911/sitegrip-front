@@ -120,9 +120,63 @@ export const useIndexingBackend = () => {
     projectId: string, 
     priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ) => {
-    // For now, just submit the main URL - website discovery can be added later
-    return submitUrls([websiteUrl], projectId, priority);
-  }, [submitUrls]);
+    setLoading(true);
+    try {
+      toast.loading('Discovering pages from website...', { id: 'website-discovery' });
+      
+      // Check if we're in browser environment before accessing localStorage
+      if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+        throw new Error('Browser environment required.');
+      }
+      
+      const storedUser = localStorage.getItem('Sitegrip-user');
+      if (!storedUser) {
+        throw new Error('Authentication required. Please sign in.');
+      }
+      
+      const userData = JSON.parse(storedUser);
+      const idToken = userData.token || userData.idToken;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const response = await fetch(`${apiUrl}/api/indexing/discover-website`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          websiteUrl: websiteUrl,
+          priority: priority,
+          maxPages: 10
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const submitted = data.summary?.submitted || 0;
+        toast.success(
+          `Website discovery completed! Discovered ${data.summary?.total_discovered} pages, submitted ${submitted} URLs for indexing.`,
+          { id: 'website-discovery' }
+        );
+        
+        // Refresh the entries
+        await loadDashboardData(projectId);
+        
+        return data;
+      } else {
+        toast.error(data.message || 'Failed to discover website pages', { id: 'website-discovery' });
+        return data;
+      }
+    } catch (error) {
+      console.error('Error discovering website:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to discover website pages.';
+      toast.error(errorMessage, { id: 'website-discovery' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadDashboardData]);
 
   const submitUrlsFromFile = useCallback(async (
     file: File, 
@@ -170,10 +224,59 @@ export const useIndexingBackend = () => {
     options: { maxPages: number; includeExcluded: boolean; includeErrors: boolean },
     priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
   ) => {
-    // This would need to be implemented in the backend
-    // For now, just submit the property URL
-    return submitUrls([propertyUrl], projectId, priority);
-  }, [submitUrls]);
+    setLoading(true);
+    try {
+      toast.loading('Discovering pages from Google Search Console...', { id: 'gsc-discovery' });
+      
+      const storedUser = localStorage.getItem('Sitegrip-user');
+      if (!storedUser) {
+        throw new Error('Authentication required. Please sign in.');
+      }
+      
+      const userData = JSON.parse(storedUser);
+      const idToken = userData.token || userData.idToken;
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const response = await fetch(`${apiUrl}/api/indexing/discover-gsc`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({
+          propertyUrl: propertyUrl,
+          maxPages: options.maxPages,
+          includeExcluded: options.includeExcluded,
+          includeErrors: options.includeErrors
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        const submitted = data.summary?.submitted || 0;
+        toast.success(
+          `GSC discovery completed! Discovered ${data.summary?.total_discovered} pages, submitted ${submitted} URLs for indexing.`,
+          { id: 'gsc-discovery' }
+        );
+        
+        // Refresh the entries
+        await loadDashboardData(projectId);
+        
+        return data;
+      } else {
+        toast.error(data.message || 'Failed to discover pages from Google Search Console', { id: 'gsc-discovery' });
+        return data;
+      }
+    } catch (error) {
+      console.error('Error discovering from GSC:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to discover pages from Google Search Console.';
+      toast.error(errorMessage, { id: 'gsc-discovery' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [loadDashboardData]);
 
   const updateStatus = useCallback(async (entryId: string, status: string, errorMessage?: string) => {
     try {
@@ -274,6 +377,71 @@ export const useIndexingBackend = () => {
     }
   }, []);
 
+  const checkStatus = useCallback(async (entries: IndexingEntry[]) => {
+    if (entries.length === 0) return;
+    
+    setLoading(true);
+    try {
+      toast.loading(`Checking status for ${entries.length} URLs...`, { id: 'check-status' });
+      
+      const response = await indexingApi.checkStatus(entries);
+      
+      if (response.success) {
+        toast.success(
+          `Status check completed: ${response.data.indexed_count} indexed, ${response.data.not_indexed_count} not indexed`,
+          { id: 'check-status' }
+        );
+        
+        // Force a complete dashboard data refresh after status check
+        console.log('🔄 Refreshing dashboard data after status check...');
+        
+        // Add a small delay to allow database updates to propagate
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        try {
+          const userId = getUserId();
+          const dashboardData = await indexingApi.getDashboardData(userId);
+          setIndexingEntries(dashboardData.recentEntries || []);
+          setStatistics(dashboardData.statistics);
+          setQuotaInfo(dashboardData.quotaInfo);
+          
+          if (dashboardData.authState) {
+            setAuthState(dashboardData.authState);
+          }
+          
+          console.log('✅ Dashboard refreshed successfully after status check');
+        } catch (refreshError) {
+          console.error('Failed to refresh dashboard after status check:', refreshError);
+          
+          // Fallback: try to refresh just the entries
+          try {
+            const userId = getUserId();
+            const historyResponse = await indexingApi.getIndexingHistory(userId, 1, 50);
+            setIndexingEntries(historyResponse.entries || []);
+            
+            // Also try to update statistics
+            const statsResponse = await indexingApi.getIndexingStats(userId);
+            setStatistics(statsResponse);
+          } catch (fallbackError) {
+            console.error('Fallback refresh also failed:', fallbackError);
+          }
+        }
+        
+        return response;
+      } else {
+        toast.error(response.message || 'Status check failed', { id: 'check-status' });
+        return response;
+      }
+    } catch (error) {
+      console.error('Error checking status:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to check indexing status.';
+      toast.error(errorMessage, { id: 'check-status' });
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   return {
     loading,
     indexingEntries,
@@ -292,5 +460,6 @@ export const useIndexingBackend = () => {
     getGoogleAuthUrl,
     revokeGoogleAccess,
     refreshAuthStatus,
+    checkStatus,
   };
 }; 

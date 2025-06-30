@@ -27,7 +27,7 @@ export default function DomainKeywordProfile({ domain }: { domain: string }) {
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
         const response = await fetch(`${apiUrl}/api/keywords/domain-summary/${encodeURIComponent(domain)}`);
         if (!response.ok) throw new Error('Failed to fetch domain summary');
         const result = await response.json();

@@ -56,10 +56,8 @@ export const useAuth = (): UseAuthReturn => {
   const router = useRouter();
   const initializationRef = useRef(false);
 
-  // Use localhost for development, production URL for production
-  const API_BASE_URL = process.env.NODE_ENV === 'development'
-    ? (process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app')
-    : (process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app');
+  // Use TypeScript backend URL
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   // Store user data in localStorage
   const storeUserData = (userData: User) => {
@@ -341,14 +339,28 @@ export const useAuth = (): UseAuthReturn => {
     try {
       setLoading(true);
       setError(null);
-      console.log('🔐 Signing in with Google...');
+      console.log('🔐 Signing in with Google (with GSC scopes)...');
       
-      const provider = new GoogleAuthProvider();
-      provider.addScope('email');
-      provider.addScope('profile');
-      
-      await signInWithPopup(auth, provider);
+      // Use pre-configured provider with GSC scopes from firebase.js
+      const result = await signInWithPopup(auth, provider);
       console.log('✅ Google sign in successful');
+      
+      // Extract Google tokens
+      const googleTokens = extractGoogleTokens(result);
+      
+      // Verify with backend
+      const success = await verifyTokenWithBackend(result.user, true, googleTokens);
+      
+      if (success) {
+        toast.success('Successfully signed in with Google!');
+        console.log('🚀 Redirecting to profile page...');
+        router.push('/profile');
+      } else {
+        // Sign out from Firebase if backend verification failed
+        await firebaseSignOut(auth);
+        toast.error('Google authentication verification failed');
+        throw new Error('Backend verification failed');
+      }
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
       setError(getAuthErrorMessage(error.code));

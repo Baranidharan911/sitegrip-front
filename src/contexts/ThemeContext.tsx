@@ -16,19 +16,32 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isDark, setIsDark] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    return saved ? saved === 'dark' : true; // Default to dark theme
-  });
+  // Initialize with default theme (dark) to prevent hydration mismatch
+  const [isDark, setIsDark] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    // Set mounted state
+    setMounted(true);
+    
+    // Only access localStorage after component is mounted
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      setIsDark(saved === 'dark');
+    }
+  }, []);
+
+  useEffect(() => {
+    // Only update localStorage and DOM after component is mounted
+    if (!mounted) return;
+    
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
-  }, [isDark]);
+  }, [isDark, mounted]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);

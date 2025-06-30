@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface CurrentKeywords {
   primary_keywords: string[];
@@ -42,17 +43,31 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
       setLoading(true);
       setError(null);
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+        // Get authentication token
+        const user = auth.currentUser;
+        if (!user) {
+          throw new Error('Authentication required. Please log in to get recommendations.');
+        }
+
+        const token = await user.getIdToken();
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        
         const res = await fetch(`${apiUrl}/api/keywords/recommend`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
           body: JSON.stringify({ url, body_text: bodyText || '' }),
         });
+        
         if (!res.ok) {
           let errorMessage = 'Failed to get recommendations';
           try {
             const err = await res.json();
-            if (err.detail) {
+            if (err.message) {
+              errorMessage = err.message;
+            } else if (err.detail) {
               if (typeof err.detail === 'string' && err.detail.includes('Keyword analysis failed:')) {
                 errorMessage = 'Keyword recommendation service is currently unavailable. Please try again later.';
               } else {
@@ -64,6 +79,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
           }
           throw new Error(errorMessage);
         }
+        
         const result: RecommendationResponse = await res.json();
         if (result.success && result.current_keywords && result.recommendations) {
           setCurrentKeywords(result.current_keywords);
@@ -72,14 +88,13 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
           throw new Error('Invalid response format from recommendation service');
         }
       } catch (err: any) {
-        console.error('Keyword recommendation error:', err);
         setError(err.message);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchRecommendations();
+    if (url) fetchRecommendations();
   }, [url, bodyText]);
 
   const retryRecommendations = async () => {
@@ -87,7 +102,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
     setLoading(true);
     setError(null);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const res = await fetch(`${apiUrl}/api/keywords/recommend`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

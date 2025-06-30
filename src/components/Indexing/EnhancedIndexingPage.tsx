@@ -8,6 +8,7 @@ import EnhancedIndexingTable from './EnhancedIndexingTable';
 import { Toaster } from 'react-hot-toast';
 
 export default function EnhancedIndexingPage() {
+  const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [projectId, setProjectId] = useState('default-project');
@@ -28,9 +29,18 @@ export default function EnhancedIndexingPage() {
     deleteEntry,
     loadDashboardData,
     loadMoreEntries,
+    checkStatus,
   } = useIndexingBackend();
 
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only access localStorage after component is mounted
+    if (!mounted) return;
+    
     // Load user from localStorage and check authentication
     const loadUserAndCheckAuth = async () => {
       const storedUser = localStorage.getItem('Sitegrip-user');
@@ -75,15 +85,15 @@ export default function EnhancedIndexingPage() {
     };
 
     loadUserAndCheckAuth();
-  }, [currentUser?.uid]);
+  }, [mounted, currentUser?.uid]);
 
   useEffect(() => {
-    if (currentUser && authToken && projectId && !hasLoadedData.current) {
+    if (mounted && currentUser && authToken && projectId && !hasLoadedData.current) {
       console.log('Loading dashboard data for authenticated user...');
       hasLoadedData.current = true;
       loadDashboardData(projectId);
     }
-  }, [currentUser, authToken, projectId, loadDashboardData]);
+  }, [mounted, currentUser, authToken, projectId, loadDashboardData]);
 
   // Cleanup effect
   useEffect(() => {
@@ -91,6 +101,18 @@ export default function EnhancedIndexingPage() {
       hasLoadedData.current = false;
     };
   }, []);
+
+  // Don't render anything until component is mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleDiscoverFromGSC = async (
     propertyUrl: string, 
@@ -107,8 +129,6 @@ export default function EnhancedIndexingPage() {
     loadDashboardData(projectId);
   };
 
-
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4 py-8">
@@ -123,8 +143,6 @@ export default function EnhancedIndexingPage() {
               Submit your URLs to Google for indexing using your own Google Search Console account
             </p>
           </div>
-
-
 
           {/* Dashboard */}
           <IndexingDashboard />
@@ -148,6 +166,7 @@ export default function EnhancedIndexingPage() {
               onRetry={retryEntry}
               onDelete={deleteEntry}
               onRefresh={handleRefresh}
+              onCheckStatus={checkStatus}
             />
           </div>
 

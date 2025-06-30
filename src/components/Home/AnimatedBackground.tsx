@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 
 interface Dot {
@@ -15,13 +15,24 @@ interface Connection {
 }
 
 const AnimatedBackground: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dotsRef = useRef<Dot[]>([]);
   const connectionsRef = useRef<Connection[]>([]);
   const animationRef = useRef<number>();
   const { theme } = useTheme();
 
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use default theme during SSR to prevent hydration mismatch
+  const isDark = mounted ? theme === 'dark' : false;
+
+  useEffect(() => {
+    if (!mounted) return;
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -93,7 +104,7 @@ const AnimatedBackground: React.FC = () => {
         ctx.beginPath();
         ctx.moveTo(connection.from.x, connection.from.y);
         ctx.lineTo(connection.to.x, connection.to.y);
-        ctx.strokeStyle = theme === 'dark'
+        ctx.strokeStyle = isDark
           ? `rgba(139, 92, 246, ${connection.opacity})` 
           : `rgba(139, 92, 246, ${connection.opacity * 0.6})`;
         ctx.lineWidth = 1;
@@ -104,7 +115,7 @@ const AnimatedBackground: React.FC = () => {
       dotsRef.current.forEach(dot => {
         ctx.beginPath();
         ctx.arc(dot.x, dot.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = theme === 'dark'
+        ctx.fillStyle = isDark
           ? 'rgba(139, 92, 246, 0.6)' 
           : 'rgba(139, 92, 246, 0.4)';
         ctx.fill();
@@ -130,9 +141,9 @@ const AnimatedBackground: React.FC = () => {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [theme]);
+  }, [mounted, isDark]);
 
-  const backgroundStyle = theme === 'dark'
+  const backgroundStyle = isDark
     ? 'radial-gradient(ellipse at center, #1a1b3a 0%, #0a0b1e 100%)'
     : 'radial-gradient(ellipse at center, #f8fafc 0%, #e2e8f0 100%)';
 

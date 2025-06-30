@@ -12,7 +12,9 @@ import {
   XCircle,
   Clock,
   AlertTriangle,
-  Zap
+  Zap,
+  Search,
+  Eye
 } from 'lucide-react';
 import { IndexingEntry } from '@/types/indexing';
 
@@ -22,6 +24,7 @@ interface EnhancedIndexingTableProps {
   onRetry: (entry: IndexingEntry) => Promise<void>;
   onDelete: (entry: IndexingEntry) => Promise<void>;
   onRefresh: () => void;
+  onCheckStatus: (entries: IndexingEntry[]) => Promise<void>;
 }
 
 export default function EnhancedIndexingTable({
@@ -30,10 +33,13 @@ export default function EnhancedIndexingTable({
   onRetry,
   onDelete,
   onRefresh,
+  onCheckStatus,
 }: EnhancedIndexingTableProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error'>('all');
   const [sortBy, setSortBy] = useState<'submittedAt' | 'status' | 'url'>('submittedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [checkingStatus, setCheckingStatus] = useState<boolean>(false);
+  const [checkingIds, setCheckingIds] = useState<Set<string>>(new Set());
 
   // Helper function to get the submitted date with proper field mapping
   const getSubmittedDate = (entry: IndexingEntry): string => {
@@ -42,7 +48,7 @@ export default function EnhancedIndexingTable({
 
   // Helper function to get the last checked date with proper field mapping
   const getLastCheckedDate = (entry: IndexingEntry): string | null => {
-    return entry.completed_at || entry.lastChecked || null;
+    return entry.status_checked_at || entry.completed_at || entry.lastChecked || null;
   };
 
   // Helper function to get error message with proper field mapping
@@ -168,6 +174,41 @@ export default function EnhancedIndexingTable({
 
   const statusCounts = getStatusCounts();
 
+  // Handle checking status for a single entry
+  const handleCheckSingle = async (entry: IndexingEntry) => {
+    setCheckingIds(prev => new Set(prev).add(entry.id));
+    try {
+      await onCheckStatus([entry]);
+    } finally {
+      setCheckingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(entry.id);
+        return newSet;
+      });
+    }
+  };
+
+  // Handle checking status for all submitted entries
+  const handleCheckAll = async () => {
+    const submittedEntries = entries.filter(entry => 
+      entry.status === 'submitted' && !entry.indexing_status
+    );
+    
+    if (submittedEntries.length === 0) return;
+
+    setCheckingStatus(true);
+    try {
+      await onCheckStatus(submittedEntries);
+    } finally {
+      setCheckingStatus(false);
+    }
+  };
+
+  // Get entries that can be checked (submitted but not yet checked for indexing status)
+  const checkableEntries = entries.filter(entry => 
+    entry.status === 'submitted' && !entry.indexing_status
+  );
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
       {/* Header */}
@@ -181,14 +222,27 @@ export default function EnhancedIndexingTable({
               {entries.length} total entries
             </p>
           </div>
-          <button
-            onClick={onRefresh}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
-          >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            {checkableEntries.length > 0 && (
+              <button
+                onClick={handleCheckAll}
+                disabled={checkingStatus || loading}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+              >
+                <Search className={`w-4 h-4 ${checkingStatus ? 'animate-spin' : ''}`} />
+                Check All Status ({checkableEntries.length})
+              </button>
+            )}
+            
+            <button
+              onClick={onRefresh}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Filters and Sorting */}
@@ -299,12 +353,30 @@ export default function EnhancedIndexingTable({
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      <span className={getStatusBadge(entry.status)}>
-                        {getStatusIcon(entry.status)}
-                        {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                    {entry.indexing_status === 'indexed' ? (
+                      <span className={getStatusBadge('success')}>
+                        {getStatusIcon('success')}
+                        Success
                       </span>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center">
+                          <span className={getStatusBadge(entry.status)}>
+                            {getStatusIcon(entry.status)}
+                            {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
+                          </span>
+                        </div>
+                        {entry.indexing_status === 'not_indexed' && (
+                          <div className="mt-1">
+                            <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-300`}>
+                              <AlertTriangle className="w-3 h-3" />
+                              Not Indexed
+                            </span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    
                     {getErrorMessage(entry) && (
                       <div className="text-xs text-red-600 dark:text-red-400 mt-1 max-w-xs truncate">
                         {getErrorMessage(entry)}
@@ -341,6 +413,17 @@ export default function EnhancedIndexingTable({
                           title="Retry"
                         >
                           <RotateCcw className="w-4 h-4" />
+                        </button>
+                      )}
+                      
+                      {entry.status === 'submitted' && !entry.indexing_status && (
+                        <button
+                          onClick={() => handleCheckSingle(entry)}
+                          disabled={checkingIds.has(entry.id)}
+                          className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 disabled:opacity-50"
+                          title="Check Indexing Status"
+                        >
+                          <Eye className={`w-4 h-4 ${checkingIds.has(entry.id) ? 'animate-spin' : ''}`} />
                         </button>
                       )}
                       

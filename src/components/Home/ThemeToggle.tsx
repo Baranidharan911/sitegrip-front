@@ -1,9 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 const ThemeToggle: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const { theme, setTheme } = useTheme();
+
+  // Set mounted state after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Don't render anything until mounted to prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="p-2 rounded-lg border border-gray-600 dark:border-gray-600 bg-white/10 dark:bg-gray-800/50 backdrop-blur-sm w-9 h-9">
+        <div className="w-5 h-5 bg-gray-300 dark:bg-gray-600 rounded animate-pulse"></div>
+      </div>
+    );
+  }
 
   return (
     <button

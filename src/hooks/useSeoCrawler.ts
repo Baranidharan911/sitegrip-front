@@ -1,16 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  Timestamp,
-  query,
-  orderBy,
-  limit,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { indexingApi } from '../lib/indexingApi';
 
 interface Issue {
   page: string;
@@ -35,60 +26,98 @@ export function useSeoCrawler() {
 
     const start = performance.now();
 
-    const mockResults: Issue[] = [
-      { page: `${url}/about`, issue: 'Missing meta description', source: 'live' },
-      { page: `${url}/products`, issue: 'Broken image link', source: 'live' },
-      { page: `${url}/`, issue: 'Title tag too short', source: 'live' },
-    ];
+    try {
+      // Use the authenticated backend API
+      const crawlResult = await indexingApi.crawlUrl(url, {
+        depth: 2,
+        waitForJs: true
+      });
 
-    await new Promise((res) => setTimeout(res, 2500));
+      const duration = Math.round((performance.now() - start) / 1000);
 
-    const duration = Math.round((performance.now() - start) / 1000);
+      // Process the crawl results into issues format
+      const issues: Issue[] = [];
+      if (crawlResult.pages) {
+        crawlResult.pages.forEach((page: any) => {
+          // Add SEO issues based on page analysis
+          if (!page.title || page.title.length < 30) {
+            issues.push({ page: page.url, issue: 'Title tag too short', source: 'live' });
+          }
+          if (!page.meta_description || page.meta_description.length < 120) {
+            issues.push({ page: page.url, issue: 'Missing or short meta description', source: 'live' });
+          }
+          if (page.status_code >= 400) {
+            issues.push({ page: page.url, issue: `HTTP ${page.status_code} error`, source: 'live' });
+          }
+          // Add more SEO checks as needed
+        });
+      }
 
-    setResults(mockResults);
-    setSummary({ issues: mockResults.length, pagesCrawled: 3, duration });
-    setStatus('Completed');
+      setResults(issues);
+      setSummary({ 
+        issues: issues.length, 
+        pagesCrawled: crawlResult.pages?.length || 0, 
+        duration 
+      });
+      setStatus('Completed');
 
-    await addDoc(collection(db, 'seoCrawls'), {
-      url,
-      crawledAt: Timestamp.now(),
-      issues: mockResults,
-      durationMs: duration * 1000,
-    });
-
-    setIsLoading(false);
+    } catch (error) {
+      console.error('Crawl failed:', error);
+      setStatus('Failed');
+      setResults([{ page: url, issue: 'Crawl failed - please try again', source: 'live' }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const loadHistoryUrls = async () => {
-    const q = query(collection(db, 'seoCrawls'), orderBy('crawledAt', 'desc'), limit(10));
-    const snapshot = await getDocs(q);
-    const urls = snapshot.docs.map((doc) => doc.data().url);
-    setHistoryUrls(Array.from(new Set(urls)));
+    try {
+      // Get crawl history from the backend
+      const history = await indexingApi.getIndexingHistory(1, 50);
+      const urls = history.entries
+        .filter((entry: any) => entry.url)
+        .map((entry: any) => entry.url);
+      setHistoryUrls(Array.from(new Set(urls)));
+    } catch (error) {
+      console.error('Failed to load history:', error);
+    }
   };
 
   const loadCrawlByUrl = async (url: string) => {
     setIsLoading(true);
-    const q = query(collection(db, 'seoCrawls'), orderBy('crawledAt', 'desc'));
-    const snapshot = await getDocs(q);
-    const crawls = snapshot.docs.map((doc) => doc.data());
-    const latest = crawls.find((c) => c.url === url);
+    try {
+      // Get crawl history for the specific URL
+      const history = await indexingApi.getIndexingHistory(1, 100);
+      const urlEntries = history.entries.filter((entry: any) => entry.url === url);
+      
+      if (urlEntries.length > 0) {
+        const latest = urlEntries[0];
+        
+        // Since indexing history doesn't have crawl-specific data, 
+        // we'll show basic information
+        const loadedResults = [{
+          page: url,
+          issue: `Last indexed: ${new Date(latest.created_at).toLocaleDateString()}`,
+          source: 'history' as const
+        }];
 
-    if (latest) {
-      const loadedResults = latest.issues.map((i: any) => ({
-        ...i,
-        source: 'history',
-      }));
-
-      setResults(loadedResults);
-      setSummary({
-        issues: loadedResults.length,
-        pagesCrawled: 3,
-        duration: Math.round((latest.durationMs || 0) / 1000),
-      });
-      setStatus('Loaded from History');
+        setResults(loadedResults);
+        setSummary({
+          issues: 1,
+          pagesCrawled: 1,
+          duration: 0,
+        });
+        setStatus('Loaded from History');
+      } else {
+        setResults([{ page: url, issue: 'No crawl history found for this URL', source: 'history' }]);
+        setStatus('No History');
+      }
+    } catch (error) {
+      console.error('Failed to load crawl history:', error);
+      setResults([{ page: url, issue: 'Failed to load history', source: 'history' }]);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   };
 
   return {

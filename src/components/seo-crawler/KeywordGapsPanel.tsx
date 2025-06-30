@@ -1,46 +1,54 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface KeywordGap {
   keyword: string;
-  missing_frequency: number;
+  search_volume: number;
+  difficulty: number;
   opportunity_score: number;
-  competitor_usage: string[];
-  suggested_placement: string;
+  reason: string;
 }
 
-interface KeywordGapsResponse {
+interface GapsResponse {
   success: boolean;
-  url: string;
   keyword_gaps: KeywordGap[];
   total_gaps: number;
-  period_days: number;
 }
 
 export default function KeywordGapsPanel({ url }: { url: string }) {
-  const [gapsData, setGapsData] = useState<KeywordGapsResponse | null>(null);
+  const [gaps, setGaps] = useState<KeywordGap[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchKeywordGaps = async () => {
-    if (!url) return;
-    
     setLoading(true);
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
-      const encodedUrl = encodeURIComponent(url);
-      const response = await fetch(`${apiUrl}/api/keywords/gaps/${encodedUrl}?days=30`);
+      // Get authentication token
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please log in to analyze keyword gaps.');
+      }
+
+      const token = await user.getIdToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const response = await fetch(`${apiUrl}/api/keywords/gaps/${encodeURIComponent(url)}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch keyword gaps');
+        throw new Error(errorData.message || 'Failed to fetch keyword gaps');
       }
 
-      const result = await response.json();
-      setGapsData(result);
+      const result: GapsResponse = await response.json();
+      setGaps(result.keyword_gaps || []);
       
     } catch (err: any) {
       setError(err.message);
@@ -50,7 +58,9 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
   };
 
   useEffect(() => {
-    fetchKeywordGaps();
+    if (url) {
+      fetchKeywordGaps();
+    }
   }, [url]);
 
   const getOpportunityColor = (score: number) => {
@@ -104,7 +114,7 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
       )}
 
       {/* Gaps Data */}
-      {gapsData && !loading && (
+      {gaps.length > 0 && !loading && !error && (
         <div className="space-y-6">
           {/* Summary */}
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/30 dark:to-pink-900/30 rounded-lg p-6 border dark:border-gray-700">
@@ -115,101 +125,71 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
               <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total Gaps Found</div>
                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {gapsData.total_gaps}
-                </div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
-                <div className="text-sm text-gray-600 dark:text-gray-400">Analysis Period</div>
-                <div className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {gapsData.period_days} days
+                  {gaps.length}
                 </div>
               </div>
               <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
                 <div className="text-sm text-gray-600 dark:text-gray-400">URL Analyzed</div>
                 <div className="text-sm font-medium text-gray-800 dark:text-white truncate">
-                  {gapsData.url}
+                  {url}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Keyword Gaps List */}
-          {gapsData.keyword_gaps && gapsData.keyword_gaps.length > 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
-                  🎯 Identified Keyword Gaps
-                </h3>
-              </div>
-              <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {gapsData.keyword_gaps.map((gap, index) => (
-                  <div key={index} className="p-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <h4 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
-                          {gap.keyword}
-                        </h4>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
-                          <span>Missing Frequency: {gap.missing_frequency}</span>
-                          <span>Suggested: {gap.suggested_placement}</span>
-                        </div>
-                      </div>
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${getOpportunityColor(gap.opportunity_score)}`}>
-                        {getOpportunityLabel(gap.opportunity_score)}
+          <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
+            <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
+                🎯 Identified Keyword Gaps
+              </h3>
+            </div>
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {gaps.map((gap, index) => (
+                <div key={index} className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h4 className="text-lg font-medium text-gray-800 dark:text-white mb-2">
+                        {gap.keyword}
+                      </h4>
+                      <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span>Search Volume: {gap.search_volume}</span>
+                        <span>Difficulty: {gap.difficulty}</span>
                       </div>
                     </div>
-                    
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-gray-600 dark:text-gray-400">Opportunity Score</span>
-                        <span className="text-sm font-medium">{gap.opportunity_score}/100</span>
-                      </div>
-                      <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                        <div 
-                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                          style={{ width: `${gap.opportunity_score}%` }}
-                        />
-                      </div>
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${getOpportunityColor(gap.opportunity_score)}`}>
+                      {getOpportunityLabel(gap.opportunity_score)}
                     </div>
-
-                    {gap.competitor_usage && gap.competitor_usage.length > 0 && (
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                          🏆 Competitor Usage
-                        </h5>
-                        <div className="flex flex-wrap gap-2">
-                          {gap.competitor_usage.map((competitor, idx) => (
-                            <span 
-                              key={idx}
-                              className="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded text-sm"
-                            >
-                              {competitor}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
+                  
+                  <div className="mb-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Opportunity Score</span>
+                      <span className="text-sm font-medium">{gap.opportunity_score}/100</span>
+                    </div>
+                    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${gap.opportunity_score}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {gap.reason && (
+                    <div>
+                      <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🎯 Reason
+                      </h5>
+                      <p className="text-gray-700 dark:text-gray-300">{gap.reason}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
-          ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border dark:border-gray-700">
-              <div className="text-center py-8">
-                <div className="text-gray-400 text-4xl mb-4">🎯</div>
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                  No keyword gaps found
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Great! Your content appears to be well-optimized for relevant keywords,
-                  or there isn't enough data to identify gaps yet.
-                </p>
-              </div>
-            </div>
-          )}
+          </div>
 
           {/* Recommendations */}
-          {gapsData.keyword_gaps && gapsData.keyword_gaps.length > 0 && (
+          {gaps.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border dark:border-gray-700">
               <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-4">💡 Optimization Recommendations</h4>
               <div className="space-y-3 text-sm">
@@ -249,7 +229,7 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
       )}
 
       {/* Empty State */}
-      {!loading && !error && !gapsData && (
+      {!loading && !error && gaps.length === 0 && (
         <div className="text-center py-12">
           <div className="text-gray-400 text-6xl mb-4">🕳️</div>
           <p className="text-gray-600 dark:text-gray-400">

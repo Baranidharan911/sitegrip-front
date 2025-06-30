@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
 
 const AppHeader = () => {
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -15,7 +16,18 @@ const AppHeader = () => {
   const { theme, setTheme } = useTheme();
   const pathname = usePathname();
 
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use default theme during SSR to prevent hydration mismatch
+  const isDark = mounted ? theme === 'dark' : false;
+
+  useEffect(() => {
+    // Only access localStorage after component is mounted
+    if (!mounted) return;
+    
     const fetchUser = async () => {
       try {
         const stored = localStorage.getItem('Sitegrip-user');
@@ -49,11 +61,13 @@ const AppHeader = () => {
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [mounted]);
 
   const handleLogout = () => {
-    localStorage.removeItem('Sitegrip-user');
-    window.location.href = '/login';
+    if (typeof window !== 'undefined' && localStorage) {
+      localStorage.removeItem('Sitegrip-user');
+      window.location.href = '/login';
+    }
   };
 
   const getInitial = (nameOrEmail: string | undefined) =>
@@ -75,7 +89,7 @@ const AppHeader = () => {
       className={`
         sticky top-0 left-0 w-full z-50
         backdrop-blur-md
-        ${theme === 'dark' ? 'bg-black/30 text-white' : 'bg-white/60 text-gray-900'}
+        ${isDark ? 'bg-black/30 text-white' : 'bg-white/60 text-gray-900'}
         shadow-md border-b border-white/10 transition-all
       `}
     >
@@ -94,19 +108,19 @@ const AppHeader = () => {
           <div className="flex items-center gap-4">
             {/* Theme Toggle */}
             <button
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              onClick={() => setTheme(isDark ? 'light' : 'dark')}
               className="p-2 rounded-full bg-gray-200 dark:bg-gray-800 hover:bg-gray-300 dark:hover:bg-gray-700 transition"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? (
+              {isDark ? (
                 <Sun className="w-5 h-5 text-yellow-400" />
               ) : (
                 <Moon className="w-5 h-5 text-purple-600" />
               )}
             </button>
 
-            {/* Avatar Dropdown */}
-            {user && (
+            {/* Avatar Dropdown - Only render after mounted to prevent hydration mismatch */}
+            {mounted && user && (
               <div className="relative" ref={dropdownRef}>
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, Globe, FileText, Search } from 'lucide-react';
-import { QuotaInfo, AuthState } from '@/types/indexing';
+import { QuotaInfo, AuthState, GSCProperty } from '@/types/indexing';
+import { indexingApi } from '@/lib/indexingApi';
 
 interface EnhancedIndexingFormProps {
   onSubmitUrls: (urls: string[], priority: 'low' | 'medium' | 'high' | 'critical') => Promise<void>;
@@ -32,9 +33,35 @@ export default function EnhancedIndexingForm({
   const [maxPages, setMaxPages] = useState(100);
   const [includeExcluded, setIncludeExcluded] = useState(false);
   const [includeErrors, setIncludeErrors] = useState(false);
+  const [gscProperties, setGscProperties] = useState<GSCProperty[]>([]);
+  const [gscLoading, setGscLoading] = useState(false);
+  const [gscError, setGscError] = useState<string | null>(null);
 
   const isAuthenticated = authState?.isAuthenticated || false;
-  const properties = authState?.properties || [];
+
+  useEffect(() => {
+    const fetchGSCProperties = async () => {
+      if (activeTab === 'gsc' && isAuthenticated) {
+        setGscLoading(true);
+        setGscError(null);
+        try {
+          const props = await indexingApi.getGSCProperties();
+          setGscProperties(props);
+          if (props.length > 0 && !selectedProperty) {
+            setSelectedProperty(props[0].site_url);
+          }
+        } catch (error: any) {
+          console.error("Failed to fetch GSC properties:", error);
+          setGscError(error.message || 'Failed to load your Google Search Console properties. Please try reconnecting your account.');
+          setGscProperties([]);
+        } finally {
+          setGscLoading(false);
+        }
+      }
+    };
+
+    fetchGSCProperties();
+  }, [activeTab, isAuthenticated]);
 
   const handleSubmitUrls = async () => {
     if (!urls.trim()) return;
@@ -81,16 +108,12 @@ export default function EnhancedIndexingForm({
     });
   };
 
-
-
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
       <div className="flex items-center gap-2 mb-6">
         <Upload className="h-5 w-5 text-blue-600" />
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Submit URLs for Indexing</h2>
       </div>
-
-
 
       {/* Priority Selection */}
       <div className="mb-6">
@@ -215,9 +238,25 @@ export default function EnhancedIndexingForm({
 
         {activeTab === 'gsc' && (
           <div>
-            {properties.length > 0 ? (
+            {!isAuthenticated ? (
+              <div className="text-center py-8">
+                <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  Please connect your Google Search Console account to use this feature.
+                </p>
+              </div>
+            ) : gscLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">Loading your properties...</p>
+              </div>
+            ) : gscError ? (
+              <div className="text-center py-8 text-red-500">
+                <p>{gscError}</p>
+              </div>
+            ) : gscProperties.length > 0 ? (
               <>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Search Console Property
                 </label>
                 <select
@@ -227,7 +266,7 @@ export default function EnhancedIndexingForm({
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white disabled:opacity-50"
                 >
                   <option value="">Select a property</option>
-                  {properties.map((property) => (
+                  {gscProperties.map((property) => (
                     <option key={property.site_url} value={property.site_url}>
                       {property.site_url} ({property.property_type})
                     </option>
@@ -238,7 +277,7 @@ export default function EnhancedIndexingForm({
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       Maximum Pages
-            </label>
+                    </label>
                     <input
                       type="number"
                       value={maxPages}
@@ -250,43 +289,51 @@ export default function EnhancedIndexingForm({
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={includeExcluded}
-                        onChange={(e) => setIncludeExcluded(e.target.checked)}
-                        disabled={loading}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Include excluded pages</span>
+                  <div className="flex items-center">
+                    <input
+                      id="include-excluded"
+                      type="checkbox"
+                      checked={includeExcluded}
+                      onChange={(e) => setIncludeExcluded(e.target.checked)}
+                      disabled={loading}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="include-excluded" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                      Include excluded pages
                     </label>
-                    <label className="flex items-center">
-                  <input
-                        type="checkbox"
-                        checked={includeErrors}
-                        onChange={(e) => setIncludeErrors(e.target.checked)}
-                        disabled={loading}
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Include pages with errors</span>
-                </label>
-              </div>
-              </div>
+                  </div>
 
-              <button
+                  <div className="flex items-center">
+                    <input
+                      id="include-errors"
+                      type="checkbox"
+                      checked={includeErrors}
+                      onChange={(e) => setIncludeErrors(e.target.checked)}
+                      disabled={loading}
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="include-errors" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                      Include pages with errors
+                    </label>
+                  </div>
+                </div>
+                
+                <button
                   onClick={handleGSCDiscovery}
                   disabled={loading || !selectedProperty}
                   className="mt-3 w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? 'Discovering...' : 'Discover from Search Console'}
-              </button>
+                </button>
               </>
             ) : (
               <div className="text-center py-8">
                 <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500 dark:text-gray-400">
-                  No Search Console properties found. Make sure you have verified properties in your Google Search Console account.
+                  No Search Console properties found.
+                </p>
+                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                  Make sure you have verified properties in your Google Search Console account and have connected it on this page.
                 </p>
             </div>
             )}

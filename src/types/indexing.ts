@@ -21,6 +21,19 @@ export interface IndexingEntry {
   // Quota tracking
   quota_used: boolean;
   
+  // Real indexing status fields from backend
+  indexing_status?: 'indexed' | 'not_indexed' | string;
+  indexing_state?: string;
+  coverage_state?: string;
+  last_crawl_time?: string;
+  google_canonical?: string;
+  status_checked_at?: string;
+  indexing_details?: {
+    crawled_as?: string;
+    page_fetch_state?: string;
+    error?: string;
+  };
+  
   // Legacy fields for backward compatibility
   submittedAt: string;
   lastChecked?: string;
@@ -81,6 +94,7 @@ export interface IndexingStats {
   // Legacy fields for backward compatibility
   totalUrlsSubmitted: number;
   totalUrlsIndexed: number;
+  totalUrlsNotIndexed: number;
   totalUrlsPending: number;
   totalUrlsError: number;
   indexingSuccessRate: number;

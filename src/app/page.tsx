@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AnimatedBackground from '../components/Home/AnimatedBackground';
 import NewHeader from '../components/Home/NewHeader';
@@ -23,9 +23,18 @@ import CookieBanner from '../components/Common/CookieBanner';
 import { Toaster } from 'react-hot-toast';
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    // Only access localStorage after component is mounted
+    if (!mounted) return;
+    
     // Optional: Check if the user is authenticated and show different content
     // For now, we'll let users browse the home page and interact with OAuth
     const storedUser = localStorage.getItem('Sitegrip-user');
@@ -34,9 +43,7 @@ export default function Home() {
     } else {
       console.log('User not authenticated, showing public home page');
     }
-  }, [router]);
-
-
+  }, [mounted, router]);
 
   return (
     <div className="min-h-screen relative overflow-x-hidden bg-gray-50 dark:bg-[#0a0b1e] transition-colors duration-300">
@@ -63,8 +70,6 @@ export default function Home() {
       
       {/* GDPR Cookie Banner */}
       <CookieBanner />
-
-
 
       {/* Toast notifications */}
       <Toaster 

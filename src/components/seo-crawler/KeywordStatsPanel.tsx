@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface KeywordStats {
   success: boolean;
@@ -22,12 +23,24 @@ export default function KeywordStatsPanel() {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
-      const response = await fetch(`${apiUrl}/api/keywords/stats`);
+      // Get authentication token
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please log in to view statistics.');
+      }
+
+      const token = await user.getIdToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const response = await fetch(`${apiUrl}/api/keywords/stats`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to fetch statistics');
+        throw new Error(errorData.message || 'Failed to fetch statistics');
       }
 
       const result = await response.json();

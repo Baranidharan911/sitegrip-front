@@ -79,7 +79,7 @@ function KeywordToolsContent() {
         console.warn('Failed to parse user data from localStorage');
       }
       
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sitegrip-backend-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/history/user/${userId}`);
       
       if (response.ok) {
@@ -105,7 +105,7 @@ function KeywordToolsContent() {
     setError('');
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sitegrip-backend-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/history/crawl/${crawlId}`);
       
       if (!response.ok) {
@@ -177,7 +177,7 @@ function KeywordToolsContent() {
   // Function to fetch page content when missing
   const fetchPageContent = async (url: string): Promise<Partial<PageData>> => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sitegrip-backend-pu22v4ao5a-uc.a.run.app';
       const response = await fetch(`${apiUrl}/api/crawl/single`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

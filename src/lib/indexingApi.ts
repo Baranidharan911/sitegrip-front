@@ -11,7 +11,7 @@ import {
   BulkIndexingRequest
 } from '@/types/indexing';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
 // Helper function to get user ID from localStorage
 const getUserId = (): string | null => {
@@ -28,632 +28,670 @@ const getUserId = (): string | null => {
   return null;
 };
 
-// Helper function to get Firebase ID token (always get fresh token)
+// Helper function to get auth token from Firebase
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    // First try to get fresh token from Firebase Auth
-    const { auth } = await import('@/lib/firebase');
-    const { getAuth } = await import('firebase/auth');
+    // Import Firebase auth and ensure app is initialized
+    const { auth } = await import('../lib/firebase');
     
-    const firebaseAuth = getAuth();
-    const currentUser = firebaseAuth.currentUser;
+    // Wait for auth state to be ready
+    await new Promise((resolve) => {
+      const unsubscribe = auth.onAuthStateChanged((user) => {
+        unsubscribe();
+        resolve(user);
+      });
+    });
     
-    if (currentUser) {
-      try {
-        // Get fresh token from Firebase (this automatically handles refresh)
-        const freshToken = await currentUser.getIdToken(true); // Force refresh
-        console.log('🔍 [Auth Token] Got fresh token from Firebase');
-        
-        // Update localStorage with fresh token
-        const userData = localStorage.getItem('Sitegrip-user');
-        if (userData) {
-          const user = JSON.parse(userData);
-          user.idToken = freshToken;
-          localStorage.setItem('Sitegrip-user', JSON.stringify(user));
-          console.log('✅ [Auth Token] Updated localStorage with fresh token');
-        }
-        
-        return freshToken;
-      } catch (tokenError) {
-        console.warn('⚠️ [Auth Token] Failed to get fresh token from Firebase:', tokenError);
-        
-        // If refresh fails, user needs to re-authenticate
-        console.warn('⚠️ [Auth Token] Token refresh failed - user may need to sign in again');
-        
-        // Don't fall back to stale token - return null to force re-auth
-        return null;
-      }
+    if (auth.currentUser) {
+      const token = await auth.currentUser.getIdToken();
+      return token;
     } else {
       console.warn('⚠️ [Auth Token] No current Firebase user found');
       return null;
     }
   } catch (error) {
-    console.warn('❌ Failed to get auth token:', error);
+    console.error('❌ [Auth Token] Failed to get Firebase token:', error);
     return null;
   }
 };
 
-// Helper function for authenticated requests
-const fetchWithAuth = async (
-  url: string, 
-  options: RequestInit = {},
-  timeout: number = 60000  // Increased timeout to 60 seconds
-): Promise<Response> => {
+// Enhanced fetch function with authentication
+const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = await getAuthToken();
-  const userId = getUserId();
   
-  const headers: Record<string, string> = {
+  const headers = {
     'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) || {})
+    ...(token && { 'Authorization': `Bearer ${token}` }),
+    ...options.headers,
   };
 
-  // Add authorization header if token is available
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    console.log('🔑 [Auth] Sending request with Authorization header');
-  } else {
-    console.warn('⚠️ [Auth] No token available for API request - user may need to re-authenticate');
-    // For critical auth-required endpoints, we should fail fast
-    if (url.includes('/indexing/') || url.includes('/gsc/')) {
-      throw new Error('Authentication required - please sign in again');
-    }
-  }
-
-  // Add user ID header if available
-  if (userId) {
-    headers['X-User-ID'] = userId;
-    console.log('👤 [Auth] Sending request for user:', userId);
-  }
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    console.warn(`⏰ Request timeout after ${timeout}ms: ${url}`);
-    controller.abort();
-  }, timeout);
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-      signal: controller.signal
-    });
-    
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    
-    // Handle specific abort errors more gracefully
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.error(`🚫 Request aborted: ${url}`, error);
-      throw new Error(`Request timed out after ${timeout}ms`);
-    }
-    
-    console.error(`❌ Request failed: ${url}`, error);
-    throw error;
-  }
+  return fetch(url, {
+    ...options,
+    headers,
+  });
 };
 
-// Helper function to extract error message from response
-const extractErrorMessage = async (response: Response): Promise<string> => {
-  try {
-    const errorData = await response.json();
-    return errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`;
-  } catch {
-    return `HTTP ${response.status}: ${response.statusText}`;
-  }
-};
-
-// Map backend entry to frontend format
-const mapBackendEntryToFrontend = (backendEntry: any): IndexingEntry => {
-  return {
-    id: backendEntry.id,
-    url: backendEntry.url,
-    domain: backendEntry.domain,
-    user_id: backendEntry.user_id,
-    priority: backendEntry.priority,
-    action: backendEntry.action,
-    status: backendEntry.status,
-    created_at: backendEntry.created_at,
-    submitted_at: backendEntry.submitted_at,
-    completed_at: backendEntry.completed_at,
-    google_response: backendEntry.google_response,
-    error_message: backendEntry.error_message,
-    retry_count: backendEntry.retry_count || 0,
-    max_retries: backendEntry.max_retries || 3,
-    quota_used: backendEntry.quota_used || false,
-    
-    // Legacy compatibility fields
-    submittedAt: backendEntry.submitted_at || backendEntry.created_at,
-    lastChecked: backendEntry.completed_at,
-    projectId: 'default-project',
-    userId: backendEntry.user_id,
-    indexingState: backendEntry.status
-  };
-};
-
-// Map backend quota to frontend format
-const mapBackendQuotaToFrontend = (backendQuota: any): QuotaInfo => {
-  return {
-    id: backendQuota.id,
-    domain: backendQuota.domain,
-    user_id: backendQuota.user_id,
-    date: backendQuota.date,
-    daily_limit: backendQuota.daily_limit,
-    priority_reserve: backendQuota.priority_reserve,
-    total_used: backendQuota.total_used,
-    low_priority_used: backendQuota.low_priority_used,
-    medium_priority_used: backendQuota.medium_priority_used,
-    high_priority_used: backendQuota.high_priority_used,
-    critical_priority_used: backendQuota.critical_priority_used,
-    created_at: backendQuota.created_at,
-    updated_at: backendQuota.updated_at,
-    remaining_quota: backendQuota.remaining_quota,
-    priority_remaining: backendQuota.priority_remaining,
-    can_submit_priority: backendQuota.can_submit_priority,
-    can_submit_regular: backendQuota.can_submit_regular,
-    
-    // Legacy compatibility fields
-    dailyLimit: backendQuota.daily_limit,
-    priorityReserve: backendQuota.priority_reserve,
-    totalUsed: backendQuota.total_used,
-    highPriorityUsed: backendQuota.high_priority_used,
-    criticalPriorityUsed: backendQuota.critical_priority_used,
-    remainingQuota: backendQuota.remaining_quota,
-    priorityRemaining: backendQuota.priority_remaining,
-    canSubmitPriority: backendQuota.can_submit_priority,
-    canSubmitRegular: backendQuota.can_submit_regular,
-    dailyUsed: backendQuota.total_used,
-    dailyRemaining: backendQuota.remaining_quota
-  };
-};
-
-export const indexingApi = {
-  // Debug endpoints
-  async debugGoogleCredentials(userId: string): Promise<any> {
-    try {
-      console.log('🔍 [Debug] Testing Google credentials for user:', userId);
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/debug/google-credentials/${userId}`);
-      
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-      
-      const data = await response.json();
-      console.log('🔍 [Debug] Google credentials test result:', data);
-      return data;
-    } catch (error) {
-      console.error('❌ [Debug] Error testing Google credentials:', error);
-      return {
-        success: false,
-        message: `Debug test failed: ${error}`,
-        error: error
-      };
-    }
-  },
-
+class IndexingAPI {
   // Authentication endpoints
   async getAuthStatus(userId: string): Promise<AuthState> {
     try {
       console.log('🔍 [Frontend] Checking auth status for user:', userId);
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/google/status?user_id=${userId}`);
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/status`);
 
       if (!response.ok) {
         console.error('❌ [Frontend] Auth status request failed:', response.status, response.statusText);
-        
-        // If backend auth endpoints are down (405 errors), use localStorage fallback
-        if (response.status === 405) {
-          console.warn('⚠️ Backend auth endpoint down, using localStorage fallback');
-          
-          const userData = localStorage.getItem('Sitegrip-user');
-          if (userData) {
-            const user = JSON.parse(userData);
-            return {
-              isAuthenticated: true,
-              user: {
-                uid: user.uid,
-                email: user.email,
-                display_name: user.displayName,
-                photo_url: user.photoURL
-              },
-              properties: user.properties || [],
-              indexStatuses: [],
-              selectedProperty: user.properties && user.properties.length > 0 ? user.properties[0] : undefined
-            };
-          }
-        }
-        
-        throw new Error(await extractErrorMessage(response));
+        throw new Error(`Auth status check failed: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('🔍 [Frontend] Auth status response:', data);
-      
+      console.log('✅ [Frontend] Auth status received:', data);
+
       return {
         isAuthenticated: data.isAuthenticated || false,
         user: data.user || null,
         properties: data.properties || [],
         indexStatuses: data.indexStatuses || [],
-        selectedProperty: data.selectedProperty || (data.properties && data.properties.length > 0 ? data.properties[0] : undefined)
+        selectedProperty: data.selectedProperty || null,
       };
-    } catch (error) {
-      console.error('❌ [Frontend] Error getting auth status:', error);
-      return {
-        isAuthenticated: false,
-        properties: [],
-        indexStatuses: []
-      };
+    } catch (error: any) {
+      console.error('❌ [Frontend] Auth status check failed:', error);
+      throw new Error(`Auth status check failed: ${error.message}`);
     }
-  },
+  }
 
-  async getGoogleAuthUrl(userId: string): Promise<string> {
+  async verifyTokenWithBackend(idToken: string, googleAccessToken?: string, googleRefreshToken?: string): Promise<any> {
     try {
-      console.log('🔗 [Frontend] Getting Google auth URL for user:', userId);
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/google/url?user_id=${userId}`);
+      console.log('🔐 [Frontend] Verifying token with backend...');
       
-      if (!response.ok) {
-        console.error('❌ [Frontend] Auth URL request failed:', response.status, response.statusText);
-        throw new Error(await extractErrorMessage(response));
-      }
-      
-      const data = await response.json();
-      if (!data.url) {
-        throw new Error('No auth URL received from server');
-      }
-      console.log('✅ [Frontend] Got Google auth URL');
-      return data.url;
-    } catch (error) {
-      console.error('❌ [Frontend] Error getting Google auth URL:', error);
-      throw new Error('Failed to get Google authentication URL');
-    }
-  },
+      const endpoint = googleAccessToken 
+        ? `${API_BASE_URL}/api/auth/verify-token-with-google`
+        : `${API_BASE_URL}/api/auth/verify-token`;
 
-  async revokeGoogleAccess(userId: string): Promise<boolean> {
-    try {
-          const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/revoke-access`, {
-          method: 'DELETE'
-      });
+      const body = googleAccessToken 
+        ? { idToken, googleAccessToken, googleRefreshToken }
+        : { idToken };
 
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      return data.success || false;
-    } catch (error) {
-      console.error('Error revoking Google access:', error);
-      throw new Error('Failed to revoke Google access');
-    }
-  },
-
-  // GSC properties
-  async getGSCProperties(userId: string): Promise<GSCProperty[]> {
-    try {
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/properties?user_id=${userId}`);
-      
-      if (!response.ok) {
-        if (response.status === 401) {
-          return [];
-        }
-        throw new Error(await extractErrorMessage(response));
-      }
-      
-      const properties = await response.json();
-      return Array.isArray(properties) ? properties : [];
-    } catch (error) {
-      console.error('Error getting GSC properties:', error);
-      return [];
-    }
-  },
-
-  // Indexing endpoints
-  async submitSingleUrl(
-    userId: string, 
-    url: string, 
-    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
-  ): Promise<IndexingResponse> {
-    try {
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit/single?user_id=${userId}`, {
+      const response = await fetch(endpoint, {
         method: 'POST',
-        body: JSON.stringify({
-          url,
-          priority,
-          action: 'URL_UPDATED'
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
 
       if (!response.ok) {
-        // If backend is down, provide helpful error message
-        if (response.status === 405) {
-          throw new Error('Backend services temporarily unavailable. Please try again later.');
-        }
-        throw new Error(await extractErrorMessage(response));
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Backend verification failed: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('✅ [Frontend] Backend verification successful:', data);
       
-      return {
-        success: data.success,
-        message: data.message,
-        data: {
-          submittedUrls: 1,
-          successfulSubmissions: data.success ? 1 : 0,
-          failedSubmissions: data.success ? 0 : 1,
-          entries: data.entry_id ? [mapBackendEntryToFrontend({
-            id: data.entry_id,
-            url: data.url,
-            status: data.status,
-            error_message: data.error,
-            google_response: data.google_response,
-            user_id: userId
-          })] : [],
-          quotaUsed: data.success ? 1 : 0,
-          quotaRemaining: 0 // Will be updated by quota info
-        }
-      };
-    } catch (error) {
-      console.error('Error submitting single URL:', error);
+      return data;
+    } catch (error: any) {
+      console.error('❌ [Frontend] Backend verification failed:', error);
       throw error;
     }
-  },
+  }
 
-  async submitBulkUrls(
-    userId: string, 
-    urls: string[], 
-    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
-  ): Promise<IndexingResponse> {
-    try {
-      const request: BulkIndexingRequest = {
-        urls,
-        priority,
-        action: 'URL_UPDATED'
-      };
-
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit?user_id=${userId}`, {
-        method: 'POST',
-        body: JSON.stringify(request)
-      });
-
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      
-      return {
-        success: data.success,
-        message: data.message,
-        data: {
-          submittedUrls: data.total_submitted || urls.length,
-          successfulSubmissions: data.total_success || 0,
-          failedSubmissions: data.total_failed || 0,
-          entries: (data.entries || []).map(mapBackendEntryToFrontend),
-          quotaUsed: data.total_success || 0,
-          quotaRemaining: 0 // Will be updated by quota info
-        }
-      };
-    } catch (error) {
-      console.error('Error submitting bulk URLs:', error);
-      throw error;
-    }
-  },
-
-  async getIndexingHistory(
-    userId: string, 
-    page: number = 1, 
-    pageSize: number = 50
-  ): Promise<IndexingHistoryResponse> {
-    try {
-      const response = await fetchWithAuth(
-        `${API_BASE_URL}/api/indexing/history?user_id=${userId}&page=${page}&page_size=${pageSize}`
-      );
-
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      
-      return {
-        entries: (data.entries || []).map(mapBackendEntryToFrontend),
-        total_count: data.total_count || 0,
-        page: data.page || page,
-        page_size: data.page_size || pageSize
-      };
-    } catch (error) {
-      console.error('Error getting indexing history:', error);
-      throw error;
-    }
-  },
-
-  async getIndexingStats(userId: string, days: number = 30): Promise<IndexingStats> {
-    try {
-      const response = await fetchWithAuth(
-        `${API_BASE_URL}/api/indexing/stats?user_id=${userId}&days=${days}`
-      );
-
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      
-      return {
-        total_submitted: data.total_submitted || 0,
-        pending: data.pending || 0,
-        success: data.success || 0,
-        failed: data.failed || 0,
-        quota_used: data.quota_used || 0,
-        quota_remaining: data.quota_remaining || 0,
-        success_rate: data.success_rate || 0,
-        
-        // Legacy compatibility fields
-        totalUrlsSubmitted: data.total_submitted || 0,
-        totalUrlsIndexed: data.success || 0,
-        totalUrlsPending: data.pending || 0,
-        totalUrlsError: data.failed || 0,
-        indexingSuccessRate: data.success_rate || 0,
-        averageIndexingTime: 0,
-        quotaUsed: data.quota_used || 0,
-        quotaLimit: 200,
-        remainingQuota: data.quota_remaining || 0,
-        lastUpdated: new Date().toISOString(),
-        dailySubmissions: data.total_submitted || 0,
-        weeklySubmissions: data.total_submitted || 0,
-        monthlySubmissions: data.total_submitted || 0
-      };
-    } catch (error) {
-      console.error('Error getting indexing stats:', error);
-      throw error;
-    }
-  },
-
-  async getQuotaInfo(userId: string, domain?: string): Promise<QuotaInfo | null> {
-    try {
-      let url = `${API_BASE_URL}/api/quota/summary`;
-      if (domain) {
-        url = `${API_BASE_URL}/api/quota/${domain}`;
-      }
-
-      const response = await fetchWithAuth(url);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null;
-        }
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      
-      if (domain) {
-        return mapBackendQuotaToFrontend(data);
-      } else {
-        // For summary, create a synthetic quota info
-        return {
-          id: 'summary',
-          domain: 'all',
-          user_id: userId,
-          date: new Date().toISOString().split('T')[0],
-          daily_limit: data.total_limits || 200,
-          priority_reserve: 50,
-          total_used: data.total_used || 0,
-          low_priority_used: 0,
-          medium_priority_used: 0,
-          high_priority_used: 0,
-          critical_priority_used: 0,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          remaining_quota: data.total_remaining || 0,
-          priority_remaining: 50,
-          can_submit_priority: true,
-          can_submit_regular: true,
-          
-          // Legacy fields
-          dailyLimit: data.total_limits || 200,
-          priorityReserve: 50,
-          totalUsed: data.total_used || 0,
-          highPriorityUsed: 0,
-          criticalPriorityUsed: 0,
-          remainingQuota: data.total_remaining || 0,
-          priorityRemaining: 50,
-          canSubmitPriority: true,
-          canSubmitRegular: true,
-          dailyUsed: data.total_used || 0,
-          dailyRemaining: data.total_remaining || 0
-        };
-      }
-    } catch (error) {
-      console.error('Error getting quota info:', error);
-      return null;
-    }
-  },
-
-  async deleteEntry(userId: string, entryId: string): Promise<boolean> {
-    try {
-      const response = await fetchWithAuth(
-        `${API_BASE_URL}/api/indexing/entry/${entryId}?user_id=${userId}`,
-        { method: 'DELETE' }
-      );
-
-      if (!response.ok) {
-        throw new Error(await extractErrorMessage(response));
-      }
-
-      const data = await response.json();
-      return data.success || false;
-    } catch (error) {
-      console.error('Error deleting entry:', error);
-      throw error;
-    }
-  },
-
+  // Dashboard data
   async getDashboardData(userId: string): Promise<DashboardData> {
     try {
       console.log('🔄 Loading dashboard data for user:', userId);
       
-      // Fetch critical data first (auth status)
-      let authState: AuthState = {
-        isAuthenticated: false,
-        properties: [],
-        indexStatuses: []
-      };
-      
-      try {
-        authState = await this.getAuthStatus(userId);
-        console.log('✅ Auth status loaded:', authState.isAuthenticated);
-      } catch (error) {
-        console.warn('⚠️ Auth status failed, using defaults:', error);
-      }
-      
-      // Then fetch other data with better error handling
-      const [historyResponse, statsResponse, quotaResponse] = await Promise.allSettled([
-        this.getIndexingHistory(userId, 1, 10),
-        this.getIndexingStats(userId),
-        this.getQuotaInfo(userId)
-      ]);
-
-      const history = historyResponse.status === 'fulfilled' ? historyResponse.value : null;
-      const stats = statsResponse.status === 'fulfilled' ? statsResponse.value : null;
-      const quota = quotaResponse.status === 'fulfilled' ? quotaResponse.value : null;
-      
-      // Log what failed for debugging
-      if (historyResponse.status === 'rejected') {
-        console.warn('⚠️ History fetch failed:', historyResponse.reason);
-      }
-      if (statsResponse.status === 'rejected') {
-        console.warn('⚠️ Stats fetch failed:', statsResponse.reason);
-      }
-      if (quotaResponse.status === 'rejected') {
-        console.warn('⚠️ Quota fetch failed:', quotaResponse.reason);
+      // First verify authentication
+      const authStatus = await this.getAuthStatus(userId);
+      if (!authStatus.isAuthenticated) {
+        throw new Error('User not authenticated');
       }
 
-      const result = {
-        statistics: stats,
-        quotaInfo: quota,
-        recentEntries: history?.entries || [],
-        recentHistory: history?.entries || [],
-        authState: authState
-      };
-      
-      console.log('✅ Dashboard data loaded:', result);
-      return result;
-      
-    } catch (error) {
-      console.error('❌ Error getting dashboard data:', error);
-      
-      // Return minimal working state instead of throwing
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/dashboard`);
+
+      if (!response.ok) {
+        throw new Error(`Dashboard request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Dashboard data loaded:', data);
+
       return {
-        statistics: null,
-        quotaInfo: null,
-        recentEntries: [],
-        recentHistory: [],
-        authState: {
-          isAuthenticated: false,
-          properties: [],
-          indexStatuses: []
-        }
+        statistics: data.statistics || {
+          total_submitted: 0,
+          pending: 0,
+          success: 0,
+          failed: 0,
+          quota_used: 0,
+          quota_remaining: 200,
+          success_rate: 0,
+          totalUrlsSubmitted: 0,
+          totalUrlsIndexed: 0,
+          totalUrlsNotIndexed: 0,
+          totalUrlsPending: 0,
+          totalUrlsError: 0,
+          indexingSuccessRate: 0,
+          averageIndexingTime: 0,
+          quotaUsed: 0,
+          quotaLimit: 200,
+          remainingQuota: 200,
+          lastUpdated: new Date().toISOString(),
+          dailySubmissions: 0,
+          weeklySubmissions: 0,
+          monthlySubmissions: 0,
+        },
+        quotaInfo: data.quotaInfo || null,
+        recentEntries: data.recentEntries || [],
+        recentHistory: data.recentHistory || [],
+        authState: authStatus,
+      };
+    } catch (error: any) {
+      console.error('❌ Failed to load dashboard data:', error);
+      throw error;
+    }
+  }
+
+  // Indexing operations
+  async submitUrls(urls: string[], priority: 'low' | 'medium' | 'high' = 'medium'): Promise<IndexingResponse> {
+    try {
+      console.log('📤 Submitting URLs for indexing:', urls);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ urls, priority }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Submission failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ URLs submitted successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ URL submission failed:', error);
+      throw error;
+    }
+  }
+
+  // Add the missing checkStatus function
+  async checkStatus(entries: any[]): Promise<any> {
+    try {
+      console.log('🔍 Checking status for entries:', entries.length);
+      
+      const urls = entries.map(entry => entry.url);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/check-status`, {
+        method: 'POST',
+        body: JSON.stringify({ urls }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Status check failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Status check completed:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Status check failed:', error);
+      throw error;
+    }
+  }
+
+  // Legacy method for single URL submission (for backward compatibility)
+  async submitSingleUrl(userId: string, url: string, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): Promise<IndexingResponse> {
+    try {
+      console.log('📤 Submitting single URL for indexing:', url);
+      
+      // Convert critical to high for API compatibility
+      const apiPriority = priority === 'critical' ? 'high' : priority;
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ urls: [url], priority: apiPriority }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Submission failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Single URL submitted successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Single URL submission failed:', error);
+      throw error;
+    }
+  }
+
+  // Legacy method for bulk URL submission (for backward compatibility)
+  async submitBulkUrls(userId: string, urls: string[], priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): Promise<IndexingResponse> {
+    try {
+      console.log('📤 Bulk submitting URLs for indexing:', urls);
+      
+      // Convert critical to high for API compatibility
+      const apiPriority = priority === 'critical' ? 'high' : priority;
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
+        method: 'POST',
+        body: JSON.stringify({ urls, priority: apiPriority }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Bulk submission failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Bulk URLs submitted successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Bulk URL submission failed:', error);
+      throw error;
+    }
+  }
+
+  async bulkSubmitUrls(request: BulkIndexingRequest): Promise<IndexingResponse> {
+    try {
+      console.log('📤 Bulk submitting URLs:', request);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/bulk-submit`, {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Bulk submission failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Bulk URLs submitted successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Bulk URL submission failed:', error);
+      throw error;
+    }
+  }
+
+  // Updated getIndexingHistory to support both old and new signatures
+  async getIndexingHistory(userIdOrPage: string | number = 1, pageOrPageSize: number = 20, pageSizeOrUndefined?: number): Promise<IndexingHistoryResponse> {
+    try {
+      // Handle both old signature (userId, page, pageSize) and new signature (page, pageSize)
+      let page: number;
+      let pageSize: number;
+      
+      if (typeof userIdOrPage === 'string') {
+        // Old signature: getIndexingHistory(userId, page, pageSize)
+        page = pageOrPageSize;
+        pageSize = pageSizeOrUndefined || 20;
+        console.log('📋 Loading indexing history (legacy), page:', page, 'pageSize:', pageSize);
+      } else {
+        // New signature: getIndexingHistory(page, pageSize)
+        page = userIdOrPage;
+        pageSize = pageOrPageSize;
+        console.log('📋 Loading indexing history, page:', page, 'pageSize:', pageSize);
+      }
+      
+      const response = await fetchWithAuth(
+        `${API_BASE_URL}/api/indexing/history?page=${page}&pageSize=${pageSize}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`History request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Indexing history loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load indexing history:', error);
+      throw error;
+    }
+  }
+
+  // Legacy method for getting indexing stats (for backward compatibility)
+  async getIndexingStats(userId: string, days: number = 30): Promise<IndexingStats> {
+    try {
+      console.log('📊 Loading indexing stats for user:', userId);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/stats?days=${days}`);
+
+      if (!response.ok) {
+        throw new Error(`Stats request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Indexing stats loaded:', data);
+      
+      return data.data || data;
+    } catch (error: any) {
+      console.error('❌ Failed to load indexing stats:', error);
+      // Return default stats if API fails
+      return {
+        total_submitted: 0,
+        pending: 0,
+        success: 0,
+        failed: 0,
+        quota_used: 0,
+        quota_remaining: 200,
+        success_rate: 0,
+        totalUrlsSubmitted: 0,
+        totalUrlsIndexed: 0,
+        totalUrlsNotIndexed: 0,
+        totalUrlsPending: 0,
+        totalUrlsError: 0,
+        indexingSuccessRate: 0,
+        averageIndexingTime: 0,
+        quotaUsed: 0,
+        quotaLimit: 200,
+        remainingQuota: 200,
+        lastUpdated: new Date().toISOString(),
+        dailySubmissions: 0,
+        weeklySubmissions: 0,
+        monthlySubmissions: 0,
       };
     }
   }
-};
+
+  async retryFailedSubmissions(): Promise<{ success: boolean; message: string; retriedCount: number }> {
+    try {
+      console.log('🔄 Retrying failed submissions...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/retry-failed`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Retry request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Failed submissions retried:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to retry submissions:', error);
+      throw error;
+    }
+  }
+
+  // Legacy method for deleting entries (for backward compatibility)
+  async deleteEntry(userId: string, entryId: string): Promise<boolean> {
+    try {
+      console.log('🗑️ Deleting entry:', entryId);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/entry/${entryId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Delete request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Entry deleted successfully:', data);
+      
+      return data.success || true;
+    } catch (error: any) {
+      console.error('❌ Failed to delete entry:', error);
+      return false;
+    }
+  }
+
+  // Legacy method for getting Google auth URL (for backward compatibility)
+  async getGoogleAuthUrl(userId: string): Promise<string> {
+    try {
+      console.log('🔗 Getting Google auth URL for user:', userId);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/google/url?user_id=${userId}`);
+
+      if (!response.ok) {
+        throw new Error(`Auth URL request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Google auth URL received:', data);
+      
+      return data.url || data.auth_url || '';
+    } catch (error: any) {
+      console.error('❌ Failed to get Google auth URL:', error);
+      throw error;
+    }
+  }
+
+  // Legacy method for revoking Google access (for backward compatibility)
+  async revokeGoogleAccess(userId: string): Promise<boolean> {
+    try {
+      console.log('🚫 Revoking Google access for user:', userId);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/revoke-access`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Revoke request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Google access revoked successfully:', data);
+      
+      return data.success || true;
+    } catch (error: any) {
+      console.error('❌ Failed to revoke Google access:', error);
+      return false;
+    }
+  }
+
+  // Quota management
+  async getQuotaInfo(): Promise<QuotaInfo> {
+    try {
+      console.log('📊 Loading quota information...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/quota/status`);
+
+      if (!response.ok) {
+        throw new Error(`Quota request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Quota information loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load quota information:', error);
+      throw error;
+    }
+  }
+
+  // Google Search Console integration
+  async getGSCProperties(): Promise<GSCProperty[]> {
+    try {
+      console.log('🔍 Loading Google Search Console properties...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/properties`);
+
+      if (!response.ok) {
+        throw new Error(`GSC properties request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ GSC properties loaded:', data);
+      
+      // Handle both response formats: data.properties and data.data.properties
+      return data.data?.properties || data.properties || [];
+    } catch (error: any) {
+      console.error('❌ Failed to load GSC properties:', error);
+      throw error;
+    }
+  }
+
+  async getIndexStatus(siteUrl: string): Promise<IndexStatus> {
+    try {
+      console.log('📈 Loading index status for:', siteUrl);
+      
+      const response = await fetchWithAuth(
+        `${API_BASE_URL}/api/gsc/index-status?siteUrl=${encodeURIComponent(siteUrl)}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Index status request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Index status loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load index status:', error);
+      throw error;
+    }
+  }
+
+  // Export functionality
+  async exportData(format: 'csv' | 'excel' | 'json', filters?: any): Promise<Blob> {
+    try {
+      console.log('📁 Exporting data in format:', format);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/export/${format}`, {
+        method: 'POST',
+        body: JSON.stringify({ filters }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Export request failed: ${response.status}`);
+      }
+
+      const blob = await response.blob();
+      console.log('✅ Data exported successfully');
+      
+      return blob;
+    } catch (error: any) {
+      console.error('❌ Failed to export data:', error);
+      throw error;
+    }
+  }
+
+  // Monitoring and uptime
+  async getMonitoringData(): Promise<any> {
+    try {
+      console.log('📊 Loading monitoring data...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/monitoring/dashboard`);
+
+      if (!response.ok) {
+        throw new Error(`Monitoring request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Monitoring data loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load monitoring data:', error);
+      throw error;
+    }
+  }
+
+  // SEO Crawler functionality
+  async crawlUrl(url: string, options?: { depth?: number; waitForJs?: boolean }): Promise<any> {
+    try {
+      console.log('🕷️ Crawling URL:', url);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/crawl/start`, {
+        method: 'POST',
+        body: JSON.stringify({ url, ...options }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Crawl request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Crawl started successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to start crawl:', error);
+      throw error;
+    }
+  }
+
+  async getCrawlResults(crawlId: string): Promise<any> {
+    try {
+      console.log('📋 Loading crawl results for:', crawlId);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/crawl/results/${crawlId}`);
+
+      if (!response.ok) {
+        throw new Error(`Crawl results request failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Crawl results loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load crawl results:', error);
+      throw error;
+    }
+  }
+
+  // Keyword analysis
+  async analyzeKeywords(url: string, keywords?: string[]): Promise<any> {
+    try {
+      console.log('🔍 Analyzing keywords for:', url);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/keywords/analyze`, {
+        method: 'POST',
+        body: JSON.stringify({ url, keywords }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Keyword analysis failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Keyword analysis completed:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to analyze keywords:', error);
+      throw error;
+    }
+  }
+
+  // Sitemap functionality
+  async generateSitemap(domain: string, options?: any): Promise<any> {
+    try {
+      console.log('🗺️ Generating sitemap for:', domain);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/sitemap/generate`, {
+        method: 'POST',
+        body: JSON.stringify({ domain, ...options }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Sitemap generation failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Sitemap generated successfully:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to generate sitemap:', error);
+      throw error;
+    }
+  }
+}
+
+// Export singleton instance
+export const indexingApi = new IndexingAPI();
+export default indexingApi;

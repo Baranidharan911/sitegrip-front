@@ -69,19 +69,73 @@ export default function CrawlHistory() {
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
-        const response = await fetch(`${apiUrl}/api/history`);
-        if (!response.ok) throw new Error('Failed to fetch crawl history from the server.');
-        const data: CrawlHistoryEntry[] = await response.json();
-        setCrawls(data);
+        // Get Firebase auth token
+        const { auth } = await import('../../lib/firebase');
+        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
+        
+        if (!token) {
+          throw new Error('Authentication required. Please log in to view crawl history.');
+        }
+        
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        };
+        
+        const response = await fetch(`${apiUrl}/api/crawl/history?limit=50`, {
+          headers
+        });
+        
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Authentication required. Please log in to view crawl history.');
+          }
+          throw new Error(`Failed to fetch crawl history: ${response.status} ${response.statusText}`);
+        }
+        
+        const responseData = await response.json();
+        console.log('📊 Crawl history response:', responseData);
+        
+        // Handle backend response format
+        const crawlHistory = responseData.success ? responseData.data : responseData;
+        
+        if (!Array.isArray(crawlHistory)) {
+          throw new Error('Invalid response format from server');
+        }
+        
+        // Transform the data to match the expected CrawlHistoryEntry format
+        const transformedHistory: CrawlHistoryEntry[] = crawlHistory.map((crawl: any) => ({
+          crawlId: crawl.id,
+          url: crawl.url || crawl.domain,
+          crawledAt: crawl.startedAt || crawl.createdAt,
+          summary: crawl.summary || {
+            totalPages: crawl.pages?.length || 0,
+            missingTitles: 0,
+            lowWordCountPages: 0,
+            brokenLinks: 0,
+            duplicateTitles: 0,
+            duplicateDescriptions: 0,
+            redirectChains: 0,
+            mobileFriendlyPages: 0,
+            nonMobilePages: 0,
+            pagesWithSlowLoad: 0,
+            orphanPages: 0,
+            averageSeoScore: 0
+          },
+          pages: crawl.pages || []
+        }));
+        
+        setCrawls(transformedHistory);
 
         const dateMap: Record<string, string> = {};
-        data.forEach((entry) => {
+        transformedHistory.forEach((entry: CrawlHistoryEntry) => {
           dateMap[entry.crawlId] = format(new Date(entry.crawledAt), 'PPpp');
         });
         setFormattedDates(dateMap);
       } catch (err: any) {
-        setError(err.message || 'Unknown error');
+        console.error('Error fetching crawl history:', err);
+        setError(err.message || 'Failed to fetch crawl history');
       } finally {
         setLoading(false);
       }

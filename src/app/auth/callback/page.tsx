@@ -15,7 +15,7 @@ export default function AuthCallback() {
   const [processed, setProcessed] = useState(false);
   const router = useRouter();
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   useEffect(() => {
     if (processed) return;

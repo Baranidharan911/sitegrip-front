@@ -2,12 +2,28 @@
 
 import { useEffect, useState } from 'react';
 
+interface TrendingKeyword {
+  keyword: string;
+  search_volume: number;
+  growth_rate: number;
+  difficulty: number;
+  opportunity: 'high' | 'medium' | 'low';
+  related_keywords: string[];
+  pages_found: number;
+  domain_relevance: number;
+}
+
 interface TrendingResponse {
   success: boolean;
-  trending_keywords: Record<string, number>;
+  trending_keywords: TrendingKeyword[];
   domain: string | null;
   period_days: number;
   total_keywords: number;
+  metadata: {
+    analyzed_at: string;
+    data_source: string;
+    update_frequency: string;
+  };
 }
 
 export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
@@ -21,7 +37,7 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://sitegrip-backend-pu22v4ao5a-uc.a.run.app';
       const params = new URLSearchParams({
         days: selectedPeriod.toString(),
         ...(domain && { domain })
@@ -109,7 +125,7 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2">
               📊 Trending Summary
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <div className="text-sm text-gray-600 dark:text-gray-400">Total Keywords</div>
                 <div className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -128,11 +144,17 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
                   {trendingData.domain || 'All domains'}
                 </div>
               </div>
+              <div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Data Source</div>
+                <div className="text-lg font-bold text-gray-800 dark:text-white">
+                  {trendingData.metadata?.data_source === 'crawled_content' ? 'Real Content' : 'Analysis'}
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Keywords List */}
-          {Object.keys(trendingData.trending_keywords).length > 0 ? (
+          {trendingData.trending_keywords && trendingData.trending_keywords.length > 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-lg border dark:border-gray-700">
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-white">
@@ -141,12 +163,12 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Object.entries(trendingData.trending_keywords)
-                    .sort(([,a], [,b]) => b - a)
+                  {trendingData.trending_keywords
+                    .sort((a, b) => b.search_volume - a.search_volume)
                     .slice(0, 12)
-                    .map(([keyword, count], index) => (
+                    .map((keyword, index) => (
                       <div 
-                        key={keyword}
+                        key={keyword.keyword}
                         className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-lg p-4 border dark:border-gray-700"
                       >
                         <div className="flex items-center justify-between mb-2">
@@ -158,16 +180,50 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
                           </span>
                         </div>
                         <div className="text-lg font-semibold text-gray-800 dark:text-white mb-1">
-                          {keyword}
+                          {keyword.keyword}
                         </div>
-                        <div className="text-sm text-gray-600 dark:text-gray-400">
-                          {count} mentions
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Search Volume:</span>
+                            <span className="font-medium text-gray-800 dark:text-white">
+                              {keyword.search_volume.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Growth:</span>
+                            <span className={`font-medium ${keyword.growth_rate > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {keyword.growth_rate > 0 ? '+' : ''}{keyword.growth_rate.toFixed(1)}%
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Difficulty:</span>
+                            <span className="font-medium text-gray-800 dark:text-white">
+                              {keyword.difficulty}/100
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-600 dark:text-gray-400">Opportunity:</span>
+                            <span className={`font-medium ${
+                              keyword.opportunity === 'high' ? 'text-green-600' : 
+                              keyword.opportunity === 'medium' ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {keyword.opportunity.charAt(0).toUpperCase() + keyword.opportunity.slice(1)}
+                            </span>
+                          </div>
+                          {keyword.pages_found > 0 && (
+                            <div className="flex justify-between">
+                              <span className="text-gray-600 dark:text-gray-400">Pages Found:</span>
+                              <span className="font-medium text-gray-800 dark:text-white">
+                                {keyword.pages_found}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                        <div className="mt-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                           <div 
                             className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                             style={{ 
-                              width: `${(count / Math.max(...Object.values(trendingData.trending_keywords))) * 100}%` 
+                              width: `${(keyword.search_volume / Math.max(...trendingData.trending_keywords.map(k => k.search_volume))) * 100}%` 
                             }}
                           />
                         </div>
@@ -194,46 +250,39 @@ export default function TrendingKeywordsPanel({ domain }: { domain?: string }) {
           )}
 
           {/* Insights */}
-          {Object.keys(trendingData.trending_keywords).length > 0 && (
+          {trendingData.trending_keywords && trendingData.trending_keywords.length > 0 && (
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border dark:border-gray-700">
               <h4 className="font-medium text-gray-700 dark:text-gray-300 mb-4">💡 Trending Insights</h4>
               <div className="space-y-3 text-sm">
-                <div className="flex items-start space-x-3">
-                  <span className="text-green-500">🎯</span>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong>Top Performer:</strong> "{Object.keys(trendingData.trending_keywords)[0]}" 
-                    is the most mentioned keyword with {Object.values(trendingData.trending_keywords)[0]} mentions
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <span className="text-green-500">📈</span>
+                  <span>
+                    <strong>High Growth:</strong> {trendingData.trending_keywords.filter(k => k.growth_rate > 15).length} keywords showing strong growth
+                  </span>
                 </div>
-                
-                <div className="flex items-start space-x-3">
-                  <span className="text-blue-500">📊</span>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong>Activity Level:</strong> {Object.keys(trendingData.trending_keywords).length} unique keywords 
-                    are trending in the last {selectedPeriod} days
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <span className="text-blue-500">🎯</span>
+                  <span>
+                    <strong>High Opportunity:</strong> {trendingData.trending_keywords.filter(k => k.opportunity === 'high').length} keywords with high ranking potential
+                  </span>
                 </div>
-                
-                <div className="flex items-start space-x-3">
-                  <span className="text-purple-500">🚀</span>
-                  <p className="text-gray-700 dark:text-gray-300">
-                    <strong>Opportunity:</strong> Consider optimizing content for these trending keywords 
-                    to capitalize on current search interest
-                  </p>
+                <div className="flex items-center space-x-2">
+                  <span className="text-purple-500">📊</span>
+                  <span>
+                    <strong>Average Search Volume:</strong> {Math.round(trendingData.trending_keywords.reduce((sum, k) => sum + k.search_volume, 0) / trendingData.trending_keywords.length).toLocaleString()} searches per month
+                  </span>
                 </div>
+                {trendingData.metadata?.data_source === 'crawled_content' && (
+                  <div className="flex items-center space-x-2">
+                    <span className="text-orange-500">🔍</span>
+                    <span>
+                      <strong>Real-time Data:</strong> Keywords extracted from actual crawled content
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && !trendingData && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 text-6xl mb-4">🔥</div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Loading trending keyword data...
-          </p>
         </div>
       )}
     </div>

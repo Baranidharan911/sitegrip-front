@@ -4,6 +4,7 @@ import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import GoogleAuthButton from '../Indexing/GoogleAuthButton';
 
 const GoogleIndexing: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   
@@ -30,7 +31,15 @@ const GoogleIndexing: React.FC = () => {
     },
   ];
 
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only access localStorage after component is mounted
+    if (!mounted) return;
+    
     // Load user from localStorage
     const storedUser = localStorage.getItem('Sitegrip-user');
     if (storedUser) {
@@ -47,7 +56,7 @@ const GoogleIndexing: React.FC = () => {
         console.error('Failed to parse stored user data:', error);
       }
     }
-  }, [refreshAuthStatus]);
+  }, [mounted, refreshAuthStatus]);
 
   const handleConnectGoogle = async () => {
     try {
@@ -75,6 +84,30 @@ const GoogleIndexing: React.FC = () => {
 
   const handleCloseAuthDialog = () => {
     setShowAuthDialog(false);
+  };
+
+  // Don't render auth-dependent content until mounted to prevent hydration mismatch
+  const renderAuthButton = () => {
+    if (!mounted) {
+      return (
+        <div className="mt-8 animate-pulse">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-lg h-12 w-full"></div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="mt-8">
+        <GoogleAuthButton 
+          isAuthenticated={authState?.isAuthenticated || false}
+          properties={authState?.properties || []}
+          onConnect={handleConnectGoogle}
+          onDisconnect={handleDisconnectGoogle}
+          loading={loading}
+          user={authState?.user || currentUser}
+        />
+      </div>
+    );
   };
 
   return (
@@ -140,17 +173,7 @@ const GoogleIndexing: React.FC = () => {
               </div>
             </div>
             
-            {/* Google OAuth Integration */}
-            <div className="mt-8">
-              <GoogleAuthButton 
-                isAuthenticated={authState?.isAuthenticated || false}
-                properties={authState?.properties || []}
-                onConnect={handleConnectGoogle}
-                onDisconnect={handleDisconnectGoogle}
-                loading={loading}
-                user={authState?.user || currentUser}
-              />
-            </div>
+            {renderAuthButton()}
           </div>
         </div>
       </div>

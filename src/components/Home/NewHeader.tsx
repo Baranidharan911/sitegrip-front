@@ -4,11 +4,20 @@ import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
 
 const NewHeader: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Set mounted state after component mounts
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Only access localStorage after component is mounted
+    if (!mounted) return;
+    
     // Check for authenticated user
     const storedUser = localStorage.getItem('Sitegrip-user');
     if (storedUser) {
@@ -20,7 +29,7 @@ const NewHeader: React.FC = () => {
         console.error('Failed to parse stored user data:', error);
       }
     }
-  }, []);
+  }, [mounted]);
 
   const handleSignIn = () => {
     setLoading(true);
@@ -35,6 +44,69 @@ const NewHeader: React.FC = () => {
   const handleSignUp = () => {
     setLoading(true);
     router.push('/signup');
+  };
+
+  // Render auth buttons with loading state until mounted
+  const renderAuthButtons = () => {
+    if (!mounted) {
+      return (
+        <div className="flex items-center space-x-3">
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-10 w-16"></div>
+          <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-lg h-10 w-20"></div>
+        </div>
+      );
+    }
+
+    if (currentUser) {
+      return (
+        /* Authenticated user buttons */
+        <div className="flex items-center space-x-3">
+          <div className="hidden sm:flex items-center space-x-2 text-gray-700 dark:text-gray-300">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+              {currentUser.photoURL ? (
+                <img 
+                  src={currentUser.photoURL} 
+                  alt="Profile" 
+                  className="w-8 h-8 rounded-full"
+                />
+              ) : (
+                <User className="h-4 w-4 text-white" />
+              )}
+            </div>
+            <span className="text-sm font-medium">
+              {currentUser.displayName || currentUser.email || 'User'}
+            </span>
+          </div>
+          <button 
+            onClick={handleProfile}
+            disabled={loading}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Dashboard'}
+          </button>
+        </div>
+      );
+    } else {
+      return (
+        /* Non-authenticated user buttons */
+        <div className="flex items-center space-x-3">
+          <button 
+            onClick={handleSignIn}
+            disabled={loading}
+            className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Sign In'}
+          </button>
+          <button 
+            onClick={handleSignUp}
+            disabled={loading}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
+          >
+            {loading ? 'Loading...' : 'Sign Up'}
+          </button>
+        </div>
+      );
+    }
   };
 
   return (
@@ -65,53 +137,7 @@ const NewHeader: React.FC = () => {
           
           <div className="flex items-center space-x-4">
             <ThemeToggle />
-            
-            {currentUser ? (
-              /* Authenticated user buttons */
-              <div className="flex items-center space-x-3">
-                <div className="hidden sm:flex items-center space-x-2 text-gray-700 dark:text-gray-300">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
-                    {currentUser.photoURL ? (
-                      <img 
-                        src={currentUser.photoURL} 
-                        alt="Profile" 
-                        className="w-8 h-8 rounded-full"
-                      />
-                    ) : (
-                      <User className="h-4 w-4 text-white" />
-                    )}
-                  </div>
-                  <span className="text-sm font-medium">
-                    {currentUser.displayName || currentUser.email || 'User'}
-                  </span>
-                </div>
-                <button 
-                  onClick={handleProfile}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
-                >
-                  {loading ? 'Loading...' : 'Dashboard'}
-                </button>
-              </div>
-            ) : (
-              /* Non-authenticated user buttons */
-              <div className="flex items-center space-x-3">
-                <button 
-                  onClick={handleSignIn}
-                  disabled={loading}
-                  className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50"
-                >
-                  {loading ? 'Loading...' : 'Sign In'}
-                </button>
-                <button 
-                  onClick={handleSignUp}
-                  disabled={loading}
-                  className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
-                >
-                  {loading ? 'Loading...' : 'Sign Up'}
-                </button>
-              </div>
-            )}
+            {renderAuthButtons()}
           </div>
         </div>
       </div>

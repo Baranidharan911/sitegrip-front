@@ -1,12 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface TrackingResponse {
   success: boolean;
-  message: string;
-  tracking_id: string;
-  keywords: string[];
+  data: {
+    trackingId: string;
+    domain: string;
+    keywords: string[];
+    initialRankings: any[];
+    createdAt: string;
+    isActive: boolean;
+  };
 }
 
 export default function KeywordTrackingPanel({ url }: { url: string }) {
@@ -37,16 +43,30 @@ export default function KeywordTrackingPanel({ url }: { url: string }) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      // Get authentication token
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please log in to start tracking.');
+      }
+
+      const token = await user.getIdToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
       const response = await fetch(`${apiUrl}/api/keywords/track`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords: validKeywords, url })
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ 
+          keywords: validKeywords, 
+          domain: new URL(url.startsWith('http') ? url : `https://${url}`).hostname 
+        })
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to start tracking');
+        throw new Error(errorData.message || 'Failed to start tracking');
       }
 
       const result = await response.json();
@@ -130,12 +150,12 @@ export default function KeywordTrackingPanel({ url }: { url: string }) {
           
           <div className="space-y-2 text-sm">
             <p className="text-green-700 dark:text-green-300">
-              <strong>Message:</strong> {trackingResult.message}
+              <strong>Message:</strong> {trackingResult.data.trackingId}
             </p>
             <div className="text-green-700 dark:text-green-300">
               <strong>Keywords being tracked:</strong>
               <div className="flex flex-wrap gap-2 mt-2">
-                {trackingResult.keywords.map((keyword, index) => (
+                {trackingResult.data.keywords.map((keyword, index) => (
                   <span 
                     key={index}
                     className="px-2 py-1 bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-200 rounded-full text-xs"

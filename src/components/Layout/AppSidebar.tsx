@@ -4,16 +4,24 @@ import { sidebarItems } from '@/lib/sidebarConfig';
 import { useSidebar } from '@/context/SidebarContext';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTheme } from 'next-themes';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
 const AppSidebar = () => {
+  const [mounted, setMounted] = useState(false);
   const { isOpen } = useSidebar();
   const pathname = usePathname();
   const [open, setOpen] = useState<string | null>('Indexing');
   const { theme } = useTheme();
-  const isDark = theme === 'dark';
+
+  // Set mounted state after component mounts
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Use default theme during SSR to prevent hydration mismatch
+  const isDark = mounted ? theme === 'dark' : false;
 
   return (
     <aside

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { auth } from '@/lib/firebase';
 
 interface KeywordAnalysis {
   primary_keywords: string[];
@@ -14,13 +15,11 @@ interface KeywordAnalysis {
 interface AnalysisResponse {
   success: boolean;
   keyword_analysis: KeywordAnalysis;
-  stored: boolean;
-  analysis_id: string;
 }
 
 interface KeywordAnalysisPanelProps {
   url: string;
-  bodyText: string;
+  bodyText?: string;
   title?: string;
   metaDescription?: string;
 }
@@ -29,6 +28,8 @@ export default function KeywordAnalysisPanel({ url, bodyText, title, metaDescrip
   const [analysis, setAnalysis] = useState<KeywordAnalysis | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
   const analyzeKeywords = async () => {
     if (!url) {
@@ -40,10 +41,20 @@ export default function KeywordAnalysisPanel({ url, bodyText, title, metaDescrip
     setError(null);
     
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://webwatch-api-pu22v4ao5a-uc.a.run.app';
+      // Get authentication token
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required. Please log in to analyze keywords.');
+      }
+
+      const token = await user.getIdToken();
+      
       const response = await fetch(`${apiUrl}/api/keywords/analyze`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify({
           url,
           body_text: bodyText || '', // Allow empty body_text
@@ -56,7 +67,9 @@ export default function KeywordAnalysisPanel({ url, bodyText, title, metaDescrip
         let errorMessage = 'Failed to analyze keywords';
         try {
           const errorData = await response.json();
-          if (errorData.detail) {
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.detail) {
             // Handle nested error details
             if (typeof errorData.detail === 'string' && errorData.detail.includes('Keyword analysis failed:')) {
               errorMessage = 'Keyword analysis service is currently unavailable. Please try again later.';
