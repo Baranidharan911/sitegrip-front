@@ -111,12 +111,16 @@ export default function SeoCrawlerDashboardPage() {
   };
 
   const handleAnalyze = async () => {
+    if (selectedUrls.length === 0) {
+      setError('Please select at least one URL to analyze.');
+      return;
+    }
+
     setLoading(true);
-    setError(null);
+    setError('');
     setCrawlResult(null);
 
     try {
-      // Get Firebase auth token for authentication
       const { auth } = await import('@/lib/firebase');
       const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
       
@@ -125,6 +129,13 @@ export default function SeoCrawlerDashboardPage() {
       }
 
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      console.log('🚀 Starting crawl request:', {
+        apiUrl,
+        selectedUrls,
+        baseUrl: url,
+        userAuthenticated: !!token
+      });
+
       // Use new selective crawl endpoint
       const res = await fetch(`${apiUrl}/api/crawl/selected`, {
         method: 'POST',
@@ -135,15 +146,42 @@ export default function SeoCrawlerDashboardPage() {
         body: JSON.stringify({ urls: selectedUrls, baseUrl: url }),
       });
 
+      console.log('📡 Crawl response status:', res.status);
+
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || data.message || 'Analysis failed.');
+        const data = await res.json().catch(() => ({ detail: `HTTP ${res.status} error` }));
+        console.error('❌ Crawl request failed:', {
+          status: res.status,
+          statusText: res.statusText,
+          data,
+          url: res.url
+        });
+        
+        // Provide specific error messages for different status codes
+        if (res.status === 401) {
+          throw new Error('Authentication failed. Please log out and log back in.');
+        } else if (res.status === 403) {
+          throw new Error('Access denied. Please check your account permissions.');
+        } else if (res.status === 503) {
+          throw new Error('Service temporarily unavailable. Please try again in a few minutes.');
+        } else if (res.status === 408) {
+          throw new Error('Request timed out. Please try with fewer pages or try again later.');
+        } else {
+          throw new Error(data.detail || data.message || data.error || `Analysis failed with status ${res.status}`);
+        }
       }
 
       const result: CrawlResult = await res.json();
+      console.log('✅ Crawl completed successfully:', {
+        crawlId: result.crawlId,
+        pageCount: result.pages?.length || 0,
+        summaryTotalPages: result.summary?.totalPages || 0
+      });
+
       setCrawlResult(result);
       setActiveTab('summary');
     } catch (err: any) {
+      console.error('❌ Crawl error:', err);
       setError(err.message || 'Analysis failed.');
     } finally {
       setLoading(false);

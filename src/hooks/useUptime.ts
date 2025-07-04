@@ -11,18 +11,17 @@ interface UseUptimeState {
   loading: boolean;
   error: string | null;
   lastRefresh: Date | null;
+  summary: {
+    total_monitors: number;
+    up_monitors: number;
+    down_monitors: number;
+    ssl_issues: number;
+    average_uptime: number;
+  } | null;
 }
 
 interface UseUptimeReturn extends UseUptimeState {
   // Computed values
-  summary: {
-    total: number;
-    up: number;
-    down: number;
-    sslIssues: number;
-    averageUptime: number;
-    averageResponseTime: number;
-  };
   criticalMonitors: Monitor[];
   recentlyDownMonitors: Monitor[];
   expiringSSLMonitors: Monitor[];
@@ -39,6 +38,7 @@ interface UseUptimeReturn extends UseUptimeState {
   triggerCheck: (monitorId: string) => Promise<void>;
   exportMonitorData: (monitorId: string, format: 'csv' | 'json', timeRange?: number) => Promise<Blob>;
   clearError: () => void;
+  getUptimeSummary: () => Promise<void>;
 }
 
 export const useUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseUptimeReturn => {
@@ -51,6 +51,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     loading: false,
     error: null,
     lastRefresh: null,
+    summary: null,
   });
 
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -79,6 +80,23 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     setStateIfMounted(prev => ({ ...prev, error: errorMessage, loading: false }));
   }, [setStateIfMounted]);
 
+  // Get uptime summary
+  const getUptimeSummary = useCallback(async () => {
+    try {
+      console.log('📊 Getting uptime summary...');
+      
+      const summary = await uptimeApi.getUptimeSummary();
+      console.log('✅ Loaded uptime summary', summary);
+      
+      setStateIfMounted(prev => ({
+        ...prev,
+        summary
+      }));
+    } catch (error) {
+      handleError(error, 'getUptimeSummary');
+    }
+  }, [setStateIfMounted, handleError]);
+
   // Refresh all monitors with real-time data
   const refreshMonitors = useCallback(async () => {
     try {
@@ -87,6 +105,9 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
       
       const monitors = await uptimeApi.getAllMonitors();
       console.log(`✅ Loaded ${monitors.length} monitors`);
+      
+      // Also refresh the summary
+      await getUptimeSummary();
       
       setStateIfMounted(prev => ({
         ...prev,
@@ -97,7 +118,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     } catch (error) {
       handleError(error, 'refreshMonitors');
     }
-  }, [setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError, getUptimeSummary]);
 
   // Create new monitor
   const createMonitor = useCallback(async (data: CreateMonitorRequest): Promise<string> => {
@@ -151,11 +172,14 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
         selectedMonitor: prev.selectedMonitor?.id === id ? null : prev.selectedMonitor,
         loading: false,
       }));
+      
+      // Update summary
+      await getUptimeSummary();
     } catch (error) {
       handleError(error, 'deleteMonitor');
       throw error;
     }
-  }, [setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError, getUptimeSummary]);
 
   // Select monitor for detailed view
   const selectMonitor = useCallback((monitor: Monitor | null) => {
@@ -166,11 +190,6 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   const getMonitorHistory = useCallback(async (monitorId: string, timeRange?: number): Promise<UptimeLog[]> => {
     try {
       console.log('📊 Getting monitor history...', monitorId, timeRange ? `for ${timeRange}h` : '');
-      
-      // Check if we already have it cached
-      if (state.monitorHistory[monitorId]) {
-        return state.monitorHistory[monitorId];
-      }
       
       const history = await uptimeApi.getMonitorHistory(monitorId, timeRange);
       console.log(`✅ Loaded ${history.length} history entries`);
@@ -189,20 +208,15 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
       handleError(error, 'getMonitorHistory');
       throw error;
     }
-  }, [state.monitorHistory, setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError]);
 
   // Get monitor statistics
   const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
     try {
       console.log('📈 Getting monitor stats...', monitorId);
       
-      // Check if we already have it cached
-      if (state.monitorStats[monitorId]) {
-        return state.monitorStats[monitorId];
-      }
-      
       const stats = await uptimeApi.getMonitorStats(monitorId);
-      console.log('✅ Loaded monitor stats:', stats);
+      console.log('✅ Loaded monitor stats');
       
       // Cache the result
       setStateIfMounted(prev => ({
@@ -218,20 +232,15 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
       handleError(error, 'getMonitorStats');
       throw error;
     }
-  }, [state.monitorStats, setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError]);
 
-  // Get SSL information
+  // Get SSL certificate information
   const getSSLInfo = useCallback(async (monitorId: string): Promise<SSLInfoResponse> => {
     try {
       console.log('🔒 Getting SSL info...', monitorId);
       
-      // Check if we already have it cached
-      if (state.sslInfo[monitorId]) {
-        return state.sslInfo[monitorId];
-      }
-      
       const sslInfo = await uptimeApi.getSSLInfo(monitorId);
-      console.log('✅ Loaded SSL info:', sslInfo);
+      console.log('✅ Loaded SSL info');
       
       // Cache the result
       setStateIfMounted(prev => ({
@@ -247,12 +256,12 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
       handleError(error, 'getSSLInfo');
       throw error;
     }
-  }, [state.sslInfo, setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError]);
 
-  // Trigger manual check
+  // Trigger a manual check
   const triggerCheck = useCallback(async (monitorId: string): Promise<void> => {
     try {
-      console.log('🔍 Triggering manual check...', monitorId);
+      console.log('🔄 Triggering manual check...', monitorId);
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
       await uptimeApi.triggerCheck(monitorId);
@@ -269,10 +278,10 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   // Export monitor data
   const exportMonitorData = useCallback(async (monitorId: string, format: 'csv' | 'json', timeRange?: number): Promise<Blob> => {
     try {
-      console.log('📁 Exporting monitor data...', { monitorId, format, timeRange });
+      console.log('📥 Exporting monitor data...', { monitorId, format, timeRange });
       
       const blob = await uptimeApi.exportMonitorData(monitorId, format, timeRange);
-      console.log('✅ Monitor data exported');
+      console.log('✅ Exported monitor data');
       
       return blob;
     } catch (error) {
@@ -286,73 +295,51 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     setStateIfMounted(prev => ({ ...prev, error: null }));
   }, [setStateIfMounted]);
 
-  // Computed values
-  const summary = {
-    total: state.monitors.length,
-    up: state.monitors.filter(m => m.last_status === 'up').length,
-    down: state.monitors.filter(m => m.last_status === 'down').length,
-    sslIssues: state.monitors.filter(m => 
-      m.ssl_status === 'expired' || 
-      m.ssl_status === 'expiring_soon' ||
-      m.ssl_status === 'invalid'
-    ).length,
-    averageUptime: state.monitors.length > 0 
-      ? state.monitors.reduce((sum, m) => sum + (m.uptime_stats?.['24h'] || 0), 0) / state.monitors.length
-      : 0,
-    averageResponseTime: state.monitors.length > 0
-      ? state.monitors.reduce((sum, m) => sum + (m.last_response_time || 0), 0) / state.monitors.length
-      : 0,
-  };
-
-  const criticalMonitors = state.monitors.filter(m => 
-    m.last_status === 'down' || m.failures_in_a_row >= 3
-  );
-
-  const recentlyDownMonitors = state.monitors.filter(m => 
-    m.last_status === 'up' && m.failures_in_a_row > 0
-  );
-
-  const expiringSSLMonitors = state.monitors.filter(m => 
-    m.ssl_status === 'expiring_soon' && 
-    m.ssl_cert_days_until_expiry !== null &&
-    m.ssl_cert_days_until_expiry !== undefined &&
-    m.ssl_cert_days_until_expiry <= 30
-  );
-
-  // Real-time auto-refresh setup
+  // Setup auto-refresh
   useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        await refreshMonitors();
+      } catch (error) {
+        console.error('Failed to load initial data:', error);
+      }
+    };
+    
+    loadInitialData();
+    
     if (autoRefresh && refreshInterval > 0) {
       console.log(`🔄 Setting up auto-refresh every ${refreshInterval}ms`);
-      refreshIntervalRef.current = setInterval(() => {
-        refreshMonitors();
-      }, refreshInterval);
-
-      return () => {
-        if (refreshIntervalRef.current) {
-          console.log('🛑 Clearing auto-refresh interval');
-          clearInterval(refreshIntervalRef.current);
-        }
-      };
+      refreshIntervalRef.current = setInterval(refreshMonitors, refreshInterval);
     }
+    
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
   }, [autoRefresh, refreshInterval, refreshMonitors]);
 
-  // Initial load
-  useEffect(() => {
-    console.log('🚀 Initial monitor load...');
-    refreshMonitors();
-  }, [refreshMonitors]);
+  // Compute derived values
+  const criticalMonitors = state.monitors.filter(monitor => 
+    monitor.status === 'down'
+  );
+  
+  const recentlyDownMonitors = state.monitors.filter(monitor => 
+    monitor.status === 'up' && monitor.failedChecks && monitor.failedChecks > 0
+  );
+  
+  const expiringSSLMonitors = state.monitors.filter(monitor => 
+    monitor.sslMonitoringEnabled && 
+    monitor.sslInfo && 
+    monitor.sslInfo.daysUntilExpiry !== undefined && 
+    monitor.sslInfo.daysUntilExpiry < 30
+  );
 
   return {
-    // State
     ...state,
-    
-    // Computed values
-    summary,
     criticalMonitors,
     recentlyDownMonitors,
     expiringSSLMonitors,
-    
-    // Actions
     refreshMonitors,
     createMonitor,
     updateMonitor,
@@ -364,6 +351,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     triggerCheck,
     exportMonitorData,
     clearError,
+    getUptimeSummary
   };
 };
 

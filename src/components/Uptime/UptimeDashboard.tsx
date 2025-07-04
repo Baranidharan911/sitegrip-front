@@ -79,6 +79,7 @@ const UptimeDashboard: React.FC = () => {
     deleteMonitor,
     triggerCheck,
     clearError,
+    getUptimeSummary,
   } = useUptime(true, 30000); // Auto-refresh every 30 seconds
 
   const [activeTab, setActiveTab] = useState<string>('overview');
@@ -94,9 +95,11 @@ const UptimeDashboard: React.FC = () => {
                          monitor.url.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilter = filterStatus === 'all' ||
-                         (filterStatus === 'up' && monitor.last_status === 'up') ||
-                         (filterStatus === 'down' && monitor.last_status === 'down') ||
-                         (filterStatus === 'ssl-issues' && (monitor.ssl_status === 'expired' || monitor.ssl_status === 'expiring_soon'));
+                         (filterStatus === 'up' && monitor.status === 'up') ||
+                         (filterStatus === 'down' && monitor.status === 'down') ||
+                         (filterStatus === 'ssl-issues' && monitor.sslInfo && 
+                           (!monitor.sslInfo.valid || 
+                            (monitor.sslInfo.daysUntilExpiry !== undefined && monitor.sslInfo.daysUntilExpiry < 30)));
     
     return matchesSearch && matchesFilter;
   });
@@ -175,6 +178,12 @@ const UptimeDashboard: React.FC = () => {
     }
   };
 
+  const getUptimeColor = (uptime: number) => {
+    if (uptime >= 99) return 'bg-green-500';
+    if (uptime >= 95) return 'bg-yellow-500';
+    return 'bg-red-500';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -216,33 +225,25 @@ const UptimeDashboard: React.FC = () => {
 
       {/* Error Banner */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mx-4 mt-4 rounded-r-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
               <AlertIcon />
+              <span className="ml-2 text-sm text-red-800 dark:text-red-200">{error}</span>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
-            </div>
-            <div className="ml-auto pl-3">
-              <button
-                onClick={clearError}
-                className="text-red-400 hover:text-red-600 dark:hover:text-red-300"
-              >
-                <span className="sr-only">Dismiss</span>
-                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
+            <button
+              onClick={clearError}
+              className="text-red-800 dark:text-red-200 hover:text-red-600 dark:hover:text-red-400"
+            >
+              ×
+            </button>
           </div>
         </div>
       )}
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <div className="flex items-center">
@@ -253,7 +254,7 @@ const UptimeDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Monitors</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.total}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.total_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -269,7 +270,7 @@ const UptimeDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Online</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.up}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.up_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -285,7 +286,7 @@ const UptimeDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Offline</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.down}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.down_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -301,7 +302,7 @@ const UptimeDashboard: React.FC = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">SSL Issues</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.sslIssues}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.ssl_issues || 0}</p>
                 </div>
               </div>
             </div>
@@ -341,7 +342,7 @@ const UptimeDashboard: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Average Uptime</h3>
                 <div className="text-3xl font-bold text-green-600 dark:text-green-400">
-                  {summary.averageUptime.toFixed(1)}%
+                  {(summary?.average_uptime || 0).toFixed(1)}%
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Last 24 hours</p>
               </div>
@@ -349,7 +350,9 @@ const UptimeDashboard: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Average Response Time</h3>
                 <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
-                  {summary.averageResponseTime.toFixed(0)}ms
+                  {monitors.length > 0 
+                    ? (monitors.reduce((sum, m) => sum + (m.responseTime || 0), 0) / monitors.length).toFixed(0)
+                    : 0}ms
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Last 24 hours</p>
               </div>
@@ -366,13 +369,13 @@ const UptimeDashboard: React.FC = () => {
                   {criticalMonitors.slice(0, 5).map((monitor) => (
                     <div key={monitor.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
                       <div className="flex items-center">
-                        {getStatusIcon(monitor.last_status)}
+                        {getStatusIcon(monitor.status)}
                         <div className="ml-3">
                           <p className="text-sm font-medium text-gray-900 dark:text-white">
                             {monitor.name || monitor.url}
                           </p>
                           <p className="text-xs text-gray-500 dark:text-gray-400">
-                            {monitor.failures_in_a_row} consecutive failures
+                            {monitor.failedChecks || 0} consecutive failures
                           </p>
                         </div>
                       </div>
@@ -445,13 +448,13 @@ const UptimeDashboard: React.FC = () => {
                     <div key={monitor.id} className="p-6">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center flex-1 min-w-0">
-                          {getStatusIcon(monitor.last_status)}
+                          {getStatusIcon(monitor.status)}
                           <div className="ml-4 flex-1 min-w-0">
                             <div className="flex items-center">
                               <h3 className="text-sm font-medium text-gray-900 dark:text-white truncate">
                                 {monitor.name || monitor.url}
                               </h3>
-                              {monitor.ssl_monitoring_enabled && (
+                              {monitor.sslMonitoringEnabled && (
                                 <ShieldIcon />
                               )}
                             </div>
@@ -459,16 +462,16 @@ const UptimeDashboard: React.FC = () => {
                               {monitor.url}
                             </p>
                             <div className="flex items-center mt-1 space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                              <span className={getStatusColor(monitor.last_status)}>
-                                {monitor.last_status?.toUpperCase() || 'UNKNOWN'}
+                              <span className={getStatusColor(monitor.status)}>
+                                {monitor.status?.toUpperCase() || 'UNKNOWN'}
                               </span>
-                              {monitor.last_response_time && (
-                                <span>{monitor.last_response_time}ms</span>
+                              {monitor.responseTime && (
+                                <span>{monitor.responseTime}ms</span>
                               )}
-                              <span>24h: {monitor.uptime_stats['24h']?.toFixed(1) || 0}%</span>
-                              {monitor.last_checked && (
+                              <span>24h: {monitor.uptimeStats['24h']?.toFixed(1) || 0}%</span>
+                              {monitor.lastChecked && (
                                 <span>
-                                  Last checked: {new Date(monitor.last_checked).toLocaleTimeString()}
+                                  Last checked: {new Date(monitor.lastChecked).toLocaleTimeString()}
                                 </span>
                               )}
                             </div>
@@ -513,72 +516,84 @@ const UptimeDashboard: React.FC = () => {
         )}
 
         {activeTab === 'incidents' && (
-          <IncidentList monitors={monitors.filter(m => 
-            m.last_status === 'down' || 
-            m.failures_in_a_row > 0 || 
-            m.ssl_status === 'expired' || 
-            m.ssl_status === 'expiring_soon' ||
-            m.ssl_status === 'invalid'
-          )} />
+          <IncidentList monitors={monitors} />
         )}
 
         {activeTab === 'ssl' && (
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">SSL Certificate Status</h3>
-              {monitors.filter(m => m.ssl_monitoring_enabled).length === 0 ? (
-                <p className="text-gray-500 dark:text-gray-400">No monitors have SSL monitoring enabled.</p>
-              ) : (
-                <div className="space-y-4">
-                  {monitors.filter(m => m.ssl_monitoring_enabled).map((monitor) => (
-                    <div key={monitor.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-md">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">
-                          {monitor.name || monitor.url}
-                        </h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {monitor.ssl_cert_expires_at ? (
-                            <>
-                              Expires: {new Date(monitor.ssl_cert_expires_at).toLocaleDateString()}
-                              {monitor.ssl_cert_days_until_expiry !== undefined && (
-                                <span className={`ml-2 ${
-                                  monitor.ssl_cert_days_until_expiry <= 7 ? 'text-red-600 dark:text-red-400' :
-                                  monitor.ssl_cert_days_until_expiry <= 30 ? 'text-yellow-600 dark:text-yellow-400' :
-                                  'text-green-600 dark:text-green-400'
-                                }`}>
-                                  ({monitor.ssl_cert_days_until_expiry} days)
+          <div className="space-y-6">
+            <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+              <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">SSL Certificate Status</h3>
+              </div>
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {monitors
+                  .filter(monitor => monitor.sslMonitoringEnabled)
+                  .map((monitor) => {
+                    const isExpiring = monitor.sslInfo?.daysUntilExpiry !== undefined && monitor.sslInfo.daysUntilExpiry < 30;
+                    const isValid = monitor.sslInfo?.valid;
+                    
+                    return (
+                      <div key={monitor.id} className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            <h4 className="text-sm font-medium text-gray-900 dark:text-white">
+                              {monitor.name || monitor.url}
+                            </h4>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              {monitor.url}
+                            </p>
+                            <div className="flex items-center mt-2 space-x-4 text-xs">
+                              <span className={`px-2 py-1 rounded-full ${
+                                isValid && !isExpiring 
+                                  ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                  : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                              }`}>
+                                {isValid ? (isExpiring ? 'Expiring Soon' : 'Valid') : 'Invalid'}
+                              </span>
+                              {monitor.sslInfo?.daysUntilExpiry !== undefined && (
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  Expires in {monitor.sslInfo.daysUntilExpiry} days
                                 </span>
                               )}
-                            </>
-                          ) : (
-                            'SSL information not available'
-                          )}
-                        </p>
+                              {monitor.sslInfo?.issuer && (
+                                <span className="text-gray-500 dark:text-gray-400">
+                                  Issued by {monitor.sslInfo.issuer}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
                       </div>
-                      <div className={`px-2 py-1 rounded text-xs font-medium ${
-                        monitor.ssl_status === 'valid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
-                        monitor.ssl_status === 'expiring_soon' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
-                        monitor.ssl_status === 'expired' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
-                        'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400'
-                      }`}>
-                        {monitor.ssl_status?.replace('_', ' ').toUpperCase() || 'UNKNOWN'}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    );
+                  })}
+                {monitors.filter(monitor => monitor.sslMonitoringEnabled).length === 0 && (
+                  <div className="p-8 text-center">
+                    <p className="text-gray-500 dark:text-gray-400">No SSL monitoring enabled on any monitors.</p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* Monitor Form Modal */}
-      <MonitorForm
-        monitor={editingMonitor}
-        isOpen={showAddMonitor || !!editingMonitor}
-        onClose={closeMonitorForm}
-        onSave={handleMonitorSaved}
-      />
+              {/* Monitor Form Modal */}
+        {(showAddMonitor || editingMonitor) && (
+          <MonitorForm
+            monitor={editingMonitor}
+            isOpen={showAddMonitor || !!editingMonitor}
+            onClose={closeMonitorForm}
+            onSave={handleMonitorSaved}
+          />
+        )}
+
+      {/* Monitor History Modal */}
+      {selectedMonitor && (
+        <UptimeHistory
+          monitor={selectedMonitor}
+          onClose={() => selectMonitor(null)}
+        />
+      )}
     </div>
   );
 };

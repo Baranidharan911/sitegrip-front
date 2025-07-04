@@ -54,7 +54,6 @@ class UptimeApi {
 
     try {
       console.log(`📡 Uptime API Request: ${options.method || 'GET'} ${url}`);
-      console.log('📡 Request headers:', authHeaders);
       
       const response = await fetch(url, config);
       
@@ -89,7 +88,7 @@ class UptimeApi {
       const data = await response.json();
       console.log(`✅ Uptime API Response [${endpoint}]:`, data);
       
-      // Extract data from TypeScript backend response format
+      // Extract data from response format
       if (data.success && data.data !== undefined) {
         return data.data;
       }
@@ -111,21 +110,10 @@ class UptimeApi {
   async createMonitor(data: CreateMonitorRequest): Promise<string> {
     const response = await this.request<any>('/monitor', {
       method: 'POST',
-      body: JSON.stringify({
-        url: data.url,
-        name: data.name,
-        frequency: data.frequency,
-        alerts: data.alerts,
-        is_public: data.is_public,
-        ssl_monitoring_enabled: data.ssl_monitoring_enabled,
-        type: 'http',
-        expectedStatus: 200,
-        timeout: 10000,
-        retries: 1
-      }),
+      body: JSON.stringify(data),
     });
     
-    // TypeScript backend returns the monitor ID directly in data field
+    // Return the monitor ID
     return typeof response === 'string' ? response : response.id;
   }
 
@@ -133,35 +121,24 @@ class UptimeApi {
   async updateMonitor(
     monitorId: string, 
     data: UpdateMonitorRequest
-  ): Promise<{ success: boolean }> {
-    await this.request<Monitor>(`/monitor/${monitorId}`, {
+  ): Promise<void> {
+    await this.request<void>(`/monitor/${monitorId}`, {
       method: 'PUT',
       body: JSON.stringify(data),
     });
-    
-    return { success: true };
   }
 
   // ❌ Delete monitor
-  async deleteMonitor(monitorId: string): Promise<{ success: boolean }> {
-    await this.request<any>(`/monitor/${monitorId}`, {
+  async deleteMonitor(monitorId: string): Promise<void> {
+    await this.request<void>(`/monitor/${monitorId}`, {
       method: 'DELETE',
     });
-    
-    return { success: true };
   }
 
   // 📊 Get all monitors status
   async getAllMonitors(): Promise<Monitor[]> {
-    const response = await this.request<any>('/monitor/status');
-    
-    // Handle backend response format: { success: true, data: monitors[], pagination: {...} }
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    // Fallback for direct array or other formats
-    return Array.isArray(response) ? response : response.monitors || [];
+    const response = await this.request<Monitor[]>('/monitor/status');
+    return response;
   }
 
   // 📜 Get monitor history/logs
@@ -169,41 +146,19 @@ class UptimeApi {
     monitorId: string, 
     hours: number = 24
   ): Promise<UptimeLog[]> {
-    const response = await this.request<any>(`/monitor/${monitorId}/history?hours=${hours}`);
-    
-    // Handle backend response format: { success: true, data: logs[], pagination: {...} }
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    // Fallback for direct array or other formats
-    return Array.isArray(response) ? response : response.logs || [];
+    const response = await this.request<UptimeLog[]>(`/monitor/${monitorId}/history?hours=${hours}`);
+    return response;
   }
 
   // 🌐 Get public monitors (for status page)
   async getPublicMonitors(): Promise<Monitor[]> {
-    const response = await this.request<any>('/status/public');
-    
-    return Array.isArray(response) ? response : response.monitors || response.data || [];
+    const response = await this.request<Monitor[]>('/monitor/public');
+    return response;
   }
 
   // 🔍 Get detailed monitor statistics
   async getMonitorStats(monitorId: string): Promise<MonitorStats> {
-    const response = await this.request<any>(`/monitor/${monitorId}/stats`);
-    
-    // Handle backend response format: { success: true, data: { monitor, stats } }
-    if (response.success && response.data) {
-      return response.data;
-    }
-    
-    // TypeScript backend returns { monitor, stats } format
-    if (response.monitor && response.stats) {
-      return {
-        monitor: response.monitor,
-        stats: response.stats
-      };
-    }
-    
+    const response = await this.request<MonitorStats>(`/monitor/${monitorId}/stats`);
     return response;
   }
 
@@ -214,13 +169,12 @@ class UptimeApi {
       
       return {
         ssl_monitoring_enabled: monitor.ssl_monitoring_enabled || false,
-        ssl_info: undefined, // Would need to be populated from backend data
-        last_checked: monitor.last_checked?.toString(),
-        monitor_ssl_status: monitor.ssl_status || 'unknown',
-        ssl_cert_expires_at: monitor.ssl_cert_expires_at,
-        ssl_cert_days_until_expiry: monitor.ssl_cert_days_until_expiry,
-        ssl_cert_issuer: monitor.ssl_cert_issuer,
-        message: monitor.ssl_status ? undefined : 'SSL information not available'
+        ssl_info: monitor.sslInfo,
+        last_checked: monitor.lastChecked?.toString(),
+        monitor_ssl_status: monitor.status,
+        ssl_cert_expires_at: monitor.sslInfo?.validTo?.toString(),
+        ssl_cert_days_until_expiry: monitor.sslInfo?.daysUntilExpiry,
+        ssl_cert_issuer: monitor.sslInfo?.issuer,
       };
     } catch (error) {
       return {
@@ -243,10 +197,9 @@ class UptimeApi {
   async getMonitorsWithIssues(): Promise<Monitor[]> {
     const monitors = await this.getAllMonitors();
     return monitors.filter(monitor => 
-      monitor.last_status === 'down' || 
-      monitor.ssl_status === 'expired' || 
-      monitor.ssl_status === 'expiring_soon' ||
-      (monitor.failures_in_a_row || 0) > 0
+      monitor.status === 'down' || 
+      (monitor.sslInfo && !monitor.sslInfo.valid) ||
+      (monitor.sslInfo && monitor.sslInfo.daysUntilExpiry !== undefined && monitor.sslInfo.daysUntilExpiry < 30)
     );
   }
 
@@ -257,223 +210,73 @@ class UptimeApi {
     down_monitors: number;
     ssl_issues: number;
     average_uptime: number;
-    average_response_time: number;
   }> {
-    const monitors = await this.getAllMonitors();
+    const response = await this.request<{
+      total_monitors: number;
+      up_monitors: number;
+      down_monitors: number;
+      ssl_issues: number;
+      average_uptime: number;
+    }>('/monitor/summary');
     
-    const upMonitors = monitors.filter(m => m.last_status === 'up').length;
-    const downMonitors = monitors.filter(m => m.last_status === 'down').length;
-    const sslIssues = monitors.filter(m => 
-      m.ssl_status === 'expired' || 
-      m.ssl_status === 'expiring_soon' ||
-      m.ssl_status === 'invalid'
-    ).length;
-
-    const totalUptime = monitors.reduce((sum, m) => sum + (m.uptime_stats?.['24h'] || 0), 0);
-    const averageUptime = monitors.length > 0 ? totalUptime / monitors.length : 0;
-
-    const totalResponseTime = monitors.reduce((sum, m) => sum + (m.last_response_time || 0), 0);
-    const averageResponseTime = monitors.length > 0 ? totalResponseTime / monitors.length : 0;
-
-    return {
-      total_monitors: monitors.length,
-      up_monitors: upMonitors,
-      down_monitors: downMonitors,
-      ssl_issues: sslIssues,
-      average_uptime: averageUptime,
-      average_response_time: averageResponseTime,
-    };
+    return response;
   }
 
-  // 🔄 Trigger immediate check
+  // 🔄 Trigger a manual check
   async triggerCheck(monitorId: string): Promise<{
-    success: boolean;
     status: string;
     response_time: number | null;
     http_status: number | null;
-    ssl_status: any | null;
-    timestamp: string;
   }> {
     const response = await this.request<any>(`/monitor/${monitorId}/check`, {
       method: 'POST',
     });
     
-    // Handle backend response format: { success: true, data: {...}, message: '...' }
-    const checkData = response.success && response.data ? response.data : response;
-    
     return {
-      success: checkData.status === 'up',
-      status: checkData.status || 'unknown',
-      response_time: checkData.response_time || null,
-      http_status: checkData.http_status || null,
-      ssl_status: null, // SSL status would need to be added to check response
-      timestamp: checkData.timestamp || new Date().toISOString()
+      status: response.status,
+      response_time: response.responseTime || null,
+      http_status: response.httpStatus || null
     };
   }
 
-  // 🚨 Get monitor incidents
-  async getMonitorIncidents(monitorId: string, limit: number = 10): Promise<{
-    incidents: any[];
-    total: number;
-  }> {
-    const response = await this.request<any>(`/monitor/${monitorId}/incidents?pageSize=${limit}`);
-    
-    // Handle backend response format: { success: true, data: { incidents, total }, pagination: {...} }
-    if (response.success && response.data) {
-      return {
-        incidents: response.data.incidents || [],
-        total: response.data.total || 0
-      };
-    }
-    
-    return {
-      incidents: response.incidents || response.data?.incidents || [],
-      total: response.total || response.data?.total || 0
-    };
+  // 📜 Get monitor incidents
+  async getMonitorIncidents(monitorId: string, limit: number = 10): Promise<any[]> {
+    const response = await this.request<any[]>(`/monitor/${monitorId}/incidents?limit=${limit}`);
+    return response;
   }
 
-  // 🔄 Real-time monitoring helpers
-  async startRealtimeMonitoring(onUpdate: (monitors: Monitor[]) => void): Promise<() => void> {
-    let isActive = true;
-    
-    const poll = async () => {
-      if (!isActive) return;
-      
-      try {
-        const monitors = await this.getAllMonitors();
-        onUpdate(monitors);
-      } catch (error) {
-        console.error('Real-time monitoring error:', error);
-      }
-      
-      if (isActive) {
-        setTimeout(poll, 30000); // Poll every 30 seconds
-      }
-    };
-    
-    // Start polling
-    poll();
-    
-    // Return cleanup function
-    return () => {
-      isActive = false;
-    };
-  }
-
-  // 📋 Export monitor data
+  // 📊 Export monitor data
   async exportMonitorData(
     monitorId: string, 
     format: 'json' | 'csv' = 'json',
-    hours: number = 168 // 7 days
+    timeRange: number = 168 // 7 days
   ): Promise<Blob> {
-    const logs = await this.getMonitorHistory(monitorId, hours);
+    const url = `${API_BASE_URL}/api/monitor/${monitorId}/export?format=${format}&hours=${timeRange}`;
+    const authHeaders = await this.getAuthHeaders();
     
-    if (format === 'csv') {
-      const csvContent = this.convertToCSV(logs);
-      return new Blob([csvContent], { type: 'text/csv' });
-    }
-    
-    return new Blob([JSON.stringify(logs, null, 2)], { type: 'application/json' });
-  }
-
-  private convertToCSV(logs: UptimeLog[]): string {
-    if (logs.length === 0) return '';
-    
-    const headers = ['timestamp', 'status', 'response_time', 'http_status', 'error', 'ssl_valid', 'ssl_expires_at'];
-    const csvRows = [headers.join(',')];
-    
-    logs.forEach(log => {
-      const row = [
-        log.timestamp,
-        log.status,
-        log.response_time?.toString() || '',
-        log.http_status?.toString() || '',
-        log.error ? `"${log.error.replace(/"/g, '""')}"` : '',
-        '', // ssl_valid placeholder
-        '' // ssl_expires_at placeholder
-      ];
-      csvRows.push(row.join(','));
+    const response = await fetch(url, {
+      headers: authHeaders,
+      method: 'GET',
     });
     
-    return csvRows.join('\n');
+    if (!response.ok) {
+      throw new Error(`Failed to export data: ${response.statusText}`);
+    }
+    
+    return await response.blob();
   }
 
-  // 🎯 Validate URL before creating monitor
+  // 🔍 Validate URL
   async validateUrl(url: string): Promise<{ valid: boolean; message?: string }> {
     try {
-      const urlObj = new URL(url);
-      
-      // Basic URL validation
-      if (!['http:', 'https:'].includes(urlObj.protocol)) {
-        return { valid: false, message: 'URL must use HTTP or HTTPS protocol' };
-      }
-      
-      if (!urlObj.hostname) {
-        return { valid: false, message: 'URL must have a valid hostname' };
-      }
-      
-      // Check if URL is reachable (basic check)
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      try {
-        const response = await fetch(url, { 
-          method: 'HEAD',
-          signal: controller.signal,
-          mode: 'no-cors' // Allow cross-origin requests for validation
-        });
-        clearTimeout(timeoutId);
-        return { valid: true };
-      } catch (error) {
-        clearTimeout(timeoutId);
-        // Even if CORS blocks the request, the URL might be valid
-        return { valid: true, message: 'URL appears valid but could not be verified due to CORS policy' };
-      }
+      // Simple URL validation
+      new URL(url);
+      return { valid: true };
     } catch (error) {
       return { valid: false, message: 'Invalid URL format' };
     }
   }
-
-  // 📱 Get mobile-optimized monitor data
-  async getMobileMonitorData(): Promise<{
-    criticalIssues: Monitor[];
-    recentlyDown: Monitor[];
-    expiringSSL: Monitor[];
-    summary: {
-      total: number;
-      up: number;
-      down: number;
-      issues: number;
-    };
-  }> {
-    const monitors = await this.getAllMonitors();
-    
-    const criticalIssues = monitors.filter(m => 
-      m.last_status === 'down' || (m.failures_in_a_row || 0) >= 3
-    );
-    
-    const recentlyDown = monitors.filter(m => 
-      m.last_status === 'up' && (m.failures_in_a_row || 0) > 0
-    );
-    
-    const expiringSSL = monitors.filter(m => 
-      m.ssl_status === 'expiring_soon' && m.ssl_cert_days_until_expiry && m.ssl_cert_days_until_expiry <= 7
-    );
-    
-    return {
-      criticalIssues,
-      recentlyDown,
-      expiringSSL,
-      summary: {
-        total: monitors.length,
-        up: monitors.filter(m => m.last_status === 'up').length,
-        down: monitors.filter(m => m.last_status === 'down').length,
-        issues: criticalIssues.length + expiringSSL.length,
-      }
-    };
-  }
 }
 
-// Export singleton instance
 export const uptimeApi = new UptimeApi();
 export default uptimeApi;

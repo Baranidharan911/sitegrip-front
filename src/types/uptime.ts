@@ -1,19 +1,12 @@
 export interface SSLInfo {
-  is_valid: boolean;
-  expires_at?: string;
-  issued_at?: string;
-  days_until_expiry?: number;
+  valid: boolean;
   issuer?: string;
   subject?: string;
-  serial_number?: string;
-  signature_algorithm?: string;
-  version?: number;
-  san_domains?: string[];
-  is_self_signed: boolean;
-  is_expired: boolean;
-  is_expiring_soon: boolean;
-  chain_valid: boolean;
-  error_message?: string;
+  validFrom?: Date;
+  validTo?: Date;
+  daysUntilExpiry?: number;
+  protocol?: string;
+  cipher?: string;
 }
 
 export interface SSLAlert {
@@ -24,9 +17,19 @@ export interface SSLAlert {
 }
 
 export interface AlertConfig {
-  email?: string;
-  webhook?: string;
-  threshold: number;
+  email?: {
+    enabled: boolean;
+    addresses: string[];
+  };
+  webhook?: {
+    enabled: boolean;
+    url: string;
+    headers?: Record<string, string>;
+  };
+  threshold?: {
+    responseTime: number; // ms
+    uptime: number; // percentage
+  };
   ssl_alerts?: SSLAlert;
 }
 
@@ -34,43 +37,51 @@ export interface Monitor {
   id: string;
   url: string;
   name?: string;
+  userId: string;
   frequency: number;
-  created_at: string;
-  last_checked?: string;
-  last_status?: 'up' | 'down';
-  last_response_time?: number;
-  http_status?: number;
-  failures_in_a_row: number;
-  uptime_stats: {
+  createdAt: Date;
+  updatedAt: Date;
+  lastChecked?: Date;
+  status: 'up' | 'down' | 'unknown';
+  responseTime?: number;
+  httpStatus?: number;
+  failedChecks?: number;
+  uptimeStats: {
     '24h': number;
     '7d': number;
     '30d': number;
   };
   alerts?: AlertConfig;
-  is_public: boolean;
-  ssl_monitoring_enabled: boolean;
-  ssl_cert_expires_at?: string;
-  ssl_cert_issuer?: string;
-  ssl_cert_days_until_expiry?: number;
-  ssl_status?: 'valid' | 'expired' | 'expiring_soon' | 'invalid';
-  ssl_last_checked?: string;
+  isPublic: boolean;
+  sslMonitoringEnabled: boolean;
+  sslInfo?: SSLInfo;
+  type?: 'http' | 'https' | 'tcp' | 'ping';
+  expectedStatus?: number;
+  timeout?: number;
 }
 
 export interface UptimeLog {
-  timestamp: string;
-  status: 'up' | 'down';
-  response_time?: number;
-  http_status?: number;
-  error?: string;
-  ssl_info?: SSLInfo;
+  id: string;
+  monitorId: string;
+  timestamp: Date;
+  status: 'up' | 'down' | 'unknown';
+  responseTime?: number;
+  httpStatus?: number;
+  errorMessage?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Incident {
-  monitor_id: string;
-  started_at: string;
-  ended_at?: string;
-  duration_minutes?: number;
-  reason?: string;
+  id: string;
+  monitorId: string;
+  startTime: Date;
+  endTime?: Date;
+  status: 'active' | 'resolved';
+  errorMessage: string;
+  duration?: number;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface MonitorStats {
@@ -103,14 +114,17 @@ export interface CreateMonitorRequest {
   name?: string;
   frequency: number;
   alerts?: AlertConfig;
-  is_public: boolean;
-  ssl_monitoring_enabled: boolean;
+  isPublic: boolean;
+  sslMonitoringEnabled: boolean;
+  type?: 'http' | 'https' | 'tcp' | 'ping';
+  expectedStatus?: number;
+  timeout?: number;
 }
 
 export interface UpdateMonitorRequest {
   name?: string;
   frequency?: number;
   alerts?: AlertConfig;
-  is_public?: boolean;
-  ssl_monitoring_enabled?: boolean;
+  isPublic?: boolean;
+  sslMonitoringEnabled?: boolean;
 } 

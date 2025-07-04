@@ -130,7 +130,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Monitors</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.total}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.total_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Online</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.up}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.up_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -162,7 +162,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Offline</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.down}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.down_monitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -180,7 +180,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">SSL Issues</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary.sslIssues}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.ssl_issues || 0}</p>
                 </div>
               </div>
             </div>

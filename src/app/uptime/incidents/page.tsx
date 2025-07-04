@@ -37,11 +37,9 @@ export default function IncidentsPage() {
 
   // Get all monitors with issues for the incident list
   const monitorsWithIssues = monitors.filter(monitor => 
-    monitor.last_status === 'down' || 
-    monitor.failures_in_a_row > 0 || 
-    monitor.ssl_status === 'expired' || 
-    monitor.ssl_status === 'expiring_soon' ||
-    monitor.ssl_status === 'invalid'
+    monitor.status === 'down' || 
+    (monitor.sslInfo && !monitor.sslInfo.valid) ||
+    (monitor.sslInfo && monitor.sslInfo.daysUntilExpiry && monitor.sslInfo.daysUntilExpiry < 30)
   );
 
   return (
@@ -140,7 +138,7 @@ export default function IncidentsPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Critical</p>
                   <p className="text-2xl font-semibold text-red-600 dark:text-red-400">
-                    {monitors.filter(m => m.last_status === 'down').length}
+                    {monitors.filter(m => m.status === 'down').length}
                   </p>
                 </div>
               </div>
@@ -161,9 +159,7 @@ export default function IncidentsPage() {
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">SSL Issues</p>
                   <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
                     {monitors.filter(m => 
-                      m.ssl_status === 'expired' || 
-                      m.ssl_status === 'expiring_soon' ||
-                      m.ssl_status === 'invalid'
+                      m.sslInfo && (!m.sslInfo.valid || (m.sslInfo.daysUntilExpiry && m.sslInfo.daysUntilExpiry < 30))
                     ).length}
                   </p>
                 </div>
@@ -184,7 +180,7 @@ export default function IncidentsPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Degraded</p>
                   <p className="text-2xl font-semibold text-orange-600 dark:text-orange-400">
-                    {monitors.filter(m => m.failures_in_a_row > 0 && m.last_status === 'up').length}
+                    {monitors.filter(m => m.status === 'paused' || m.status === 'maintenance').length}
                   </p>
                 </div>
               </div>
