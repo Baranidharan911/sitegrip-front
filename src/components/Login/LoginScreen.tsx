@@ -5,31 +5,19 @@ import Image from 'next/image';
 
 export default function LoginScreen() {
   return (
-    <main className="min-h-screen w-full flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div className="flex flex-col md:flex-row w-full h-full md:h-[90vh] max-w-7xl shadow-2xl rounded-xl overflow-hidden bg-white dark:bg-gray-800">
-        
-        {/* Left Side */}
-        <div className="w-full md:w-1/2 flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-10">
-          <div className="text-center">
-            <Image
-              src="/google-logo.png"
-              alt="Google Logo"
-              width={200}
-              height={200}
-              priority
-              className="mx-auto"
-            />
-            <h2 className="mt-6 text-2xl font-semibold text-gray-800 dark:text-white max-w-xs mx-auto">
-              Sign in with Google for a seamless experience
-            </h2>
-          </div>
+    <main className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Animated background blobs */}
+      <div className="absolute top-[-100px] left-[-100px] w-96 h-96 bg-purple-400 opacity-30 rounded-full blur-3xl animate-pulse z-0" />
+      <div className="absolute bottom-[-120px] right-[-120px] w-[32rem] h-[32rem] bg-pink-400 opacity-20 rounded-full blur-3xl animate-pulse z-0" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[40rem] h-[40rem] bg-blue-300 opacity-10 rounded-full blur-3xl animate-pulse z-0" />
+      {/* Glassy login card */}
+      <div className="relative z-10 w-full max-w-md mx-auto p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/30 bg-white/60 dark:bg-gray-900/70 backdrop-blur-2xl flex flex-col items-center">
+        <div className="mb-6 flex flex-col items-center">
+          <img src="/google-logo.png" alt="SiteGrip Logo" width={80} height={80} className="rounded-full shadow-lg mb-2" />
+          <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg mb-1">Welcome to SiteGrip</h1>
+          <p className="text-gray-600 dark:text-gray-300 text-base text-center max-w-xs">Sign in to manage your website's SEO, uptime, and analytics in style.</p>
         </div>
-
-        {/* Right Side */}
-        <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-12 bg-white dark:bg-gray-800">
-          <LoginCard />
-        </div>
-
+        <LoginCard />
       </div>
     </main>
   );

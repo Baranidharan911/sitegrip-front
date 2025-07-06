@@ -4,10 +4,13 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function LoginCard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const { user, loading, signIn, signInWithGoogle } = useAuth();
@@ -78,14 +81,10 @@ export default function LoginCard() {
   };
 
   return (
-    <div className="p-10 bg-white dark:bg-gray-800 text-center max-w-md w-full mx-auto my-auto min-h-screen flex items-center justify-center">
-      <div className="bg-white dark:bg-gray-800 p-8 sm:p-10 w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
-          Welcome Back to Site Grip
-        </h1>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">
-          Sign in to continue to your account.
-        </p>
+    <div className="w-full max-w-md mx-auto my-auto flex flex-col items-center">
+      <div className="w-full bg-white/80 dark:bg-gray-800/80 rounded-2xl shadow-xl border border-white/30 dark:border-gray-700/40 p-6 sm:p-8 backdrop-blur-xl">
+        <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white text-center">Sign in to your account</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">Access your dashboard and analytics.</p>
 
         {/* Google Sign In Button */}
         <div className="mb-4">
@@ -93,11 +92,9 @@ export default function LoginCard() {
             type="button"
             onClick={handleGoogleLogin}
             disabled={loading}
-            className={`flex items-center justify-center w-full ${
-              loading ? 'bg-gray-100 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 cursor-pointer'
-            } border border-green-600 text-white focus:ring-green-500 font-semibold py-3 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50`}
+            className={`flex items-center justify-center w-full gap-2 py-3 px-4 rounded-xl font-semibold shadow-lg transition-all duration-200 border-2 border-green-500 bg-gradient-to-r from-green-400 to-emerald-500 text-white hover:from-green-500 hover:to-emerald-600 focus:ring-2 focus:ring-green-400 focus:outline-none disabled:opacity-60 disabled:cursor-not-allowed animate-in fade-in ${loading ? 'cursor-not-allowed' : ''}`}
           >
-            <img src="/google-logo.png" alt="Google" className="w-5 h-5 mr-3" />
+            <img src="/google-logo.png" alt="Google" className="w-5 h-5 mr-2" />
             {loading ? (
               <span className="flex items-center">
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -110,70 +107,79 @@ export default function LoginCard() {
               'Sign in with Google'
             )}
           </button>
-          
-          <div className="mt-2 p-2 rounded text-xs bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300">
-            <div className="flex items-center gap-1 mb-1">
-              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-              <span className="font-medium">Google Integration:</span>
-            </div>
-            <ul className="text-xs space-y-1 ml-4">
-              <li>• Real Google Search Console integration</li>
-              <li>• Actual URL indexing via Google APIs</li>
-              <li>• Live domain verification & management</li>
-            </ul>
-          </div>
         </div>
 
         <div className="flex items-center my-4">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-4 text-gray-500">or</span>
-          <div className="flex-grow border-t border-gray-300"></div>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
+          <span className="mx-4 text-gray-500 dark:text-gray-400">or</span>
+          <div className="flex-grow border-t border-gray-300 dark:border-gray-600"></div>
         </div>
 
         {/* Email Login Form */}
-        <form onSubmit={handleEmailLogin} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            required
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="w-full p-3 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            required
-          />
-
-          <div className="flex items-center justify-start">
+        <form onSubmit={handleEmailLogin} className="space-y-5">
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             <input
-              type="checkbox"
-              id="rememberMe"
-              className="h-4 w-4"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
+              type="email"
+              placeholder=" "
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full p-3 pl-10 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-green-400 focus:border-transparent peer bg-white/80 dark:bg-gray-800/80 transition-all"
+              required
             />
-            <label htmlFor="rememberMe" className="ml-2 text-gray-700 dark:text-gray-300 text-sm">
-              Keep me signed in
+            <label className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none transition-all duration-200 peer-focus:-top-3 peer-focus:text-xs peer-focus:text-green-600 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 bg-white/80 dark:bg-gray-800/80 px-1 rounded">
+              Email address
             </label>
           </div>
-
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+            <input
+              type={showPassword ? 'text' : 'password'}
+              placeholder=" "
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="w-full p-3 pl-10 border rounded-lg dark:bg-gray-700 dark:text-white dark:border-gray-600 focus:ring-2 focus:ring-green-400 focus:border-transparent peer bg-white/80 dark:bg-gray-800/80 transition-all"
+              required
+            />
+            <label className="absolute left-10 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 pointer-events-none transition-all duration-200 peer-focus:-top-3 peer-focus:text-xs peer-focus:text-green-600 peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400 bg-white/80 dark:bg-gray-800/80 px-1 rounded">
+              Password
+            </label>
+            <button
+              type="button"
+              tabIndex={-1}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-500 transition-colors"
+              onClick={() => setShowPassword((v) => !v)}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                className="h-4 w-4 rounded border-gray-300 dark:border-gray-600 focus:ring-green-400"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-gray-700 dark:text-gray-300 text-sm">
+                Keep me signed in
+              </label>
+            </div>
+            <a href="#" className="text-sm text-green-600 hover:underline dark:text-green-400">Forgot password?</a>
+          </div>
           {errorMessage && (
-            <p className="text-red-500 text-sm text-left">{errorMessage}</p>
+            <motion.p initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-red-500 text-sm text-left">
+              {errorMessage}
+            </motion.p>
           )}
-
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-6 rounded-lg disabled:opacity-50 transition-colors duration-200"
+            className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg disabled:opacity-50 transition-all duration-200"
           >
             {loading ? (
               <span className="flex items-center justify-center">
@@ -188,19 +194,12 @@ export default function LoginCard() {
             )}
           </button>
         </form>
-
-        <p className="mt-6 text-gray-600 dark:text-gray-300 text-sm">
+        <p className="mt-6 text-gray-600 dark:text-gray-300 text-sm text-center">
           Not a member yet?{' '}
           <a href="/signup" className="text-blue-600 hover:underline dark:text-blue-400">
             Create an account
           </a>
         </p>
-        
-        <div className="mt-4 text-center">
-          <a href="/debug" className="text-xs text-gray-500 hover:text-gray-700">
-            Debug Connection Issues
-          </a>
-        </div>
       </div>
     </div>
   );
