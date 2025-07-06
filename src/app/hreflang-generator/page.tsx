@@ -89,8 +89,8 @@ export default function HreflangGeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-4xl mx-auto space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="max-w-4xl mx-auto space-y-8">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -98,14 +98,14 @@ export default function HreflangGeneratorPage() {
           className="text-center"
         >
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg">
-              <Globe2 className="text-white" size={24} />
+            <div className="p-2 bg-gradient-to-r from-orange-500 to-red-500 rounded-xl shadow-lg">
+              <Globe2 className="text-white" size={28} />
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-lg">
+            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent drop-shadow-lg">
               Hreflang Tag Generator
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
             Generate hreflang tags for international SEO and multilingual websites
           </p>
         </motion.div>
@@ -115,22 +115,22 @@ export default function HreflangGeneratorPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
         >
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">URL & Language Mapping</h3>
               <button
                 onClick={addEntry}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-md"
+                className="flex items-center gap-2 px-6 py-2 text-base bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-200 shadow-xl font-semibold"
               >
-                <Plus size={16} />
+                <Plus size={18} />
                 Add Entry
               </button>
             </div>
           </div>
 
-          <div className="p-4 space-y-3">
+          <div className="p-6 space-y-4">
             <AnimatePresence>
               {entries.map((entry, index) => (
                 <motion.div
@@ -139,7 +139,7 @@ export default function HreflangGeneratorPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ delay: index * 0.05 }}
-                  className="flex gap-3 items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
+                  className="flex gap-4 items-center p-4 bg-white/80 dark:bg-gray-800/80 rounded-xl border border-gray-200 dark:border-gray-600 shadow"
                 >
                   <div className="flex-1">
                     <input
@@ -147,14 +147,14 @@ export default function HreflangGeneratorPage() {
                       value={entry.url}
                       onChange={(e) => updateEntry(entry.id, 'url', e.target.value)}
                       placeholder="https://example.com/page"
-                      className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-5 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base shadow"
                     />
                   </div>
-                  <div className="w-48">
+                  <div className="w-56">
                     <select
                       value={entry.hreflang}
                       onChange={(e) => updateEntry(entry.id, 'hreflang', e.target.value)}
-                      className="w-full px-3 py-2 rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                      className="w-full px-5 py-3 rounded-full border border-gray-300 dark:border-gray-600 bg-white/90 dark:bg-gray-900/90 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent text-base shadow"
                     >
                       {languageCodes.map(lang => (
                         <option key={lang.code} value={lang.code}>
@@ -166,9 +166,9 @@ export default function HreflangGeneratorPage() {
                   <button
                     onClick={() => removeEntry(entry.id)}
                     disabled={entries.length <= 1}
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={18} />
                   </button>
                 </motion.div>
               ))}
@@ -181,25 +181,25 @@ export default function HreflangGeneratorPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+          className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden"
         >
-          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <Code size={20} className="text-orange-500" />
+                <Code size={22} className="text-orange-500" />
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Generated Hreflang Tags</h3>
               </div>
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-2 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                className="flex items-center gap-2 px-6 py-2 text-base bg-white/80 dark:bg-gray-800/80 rounded-full shadow hover:bg-orange-100 dark:hover:bg-orange-900/30 transition font-semibold"
               >
-                {copied ? <Check size={16} className="text-green-500" /> : <Copy size={16} />}
+                {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                 {copied ? 'Copied!' : 'Copy Code'}
               </button>
             </div>
           </div>
-          <div className="p-4">
-            <pre className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 text-xs font-mono overflow-x-auto border border-gray-200 dark:border-gray-700 transition-all duration-200">
+          <div className="p-6">
+            <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-6 text-xs font-mono overflow-x-auto border border-gray-200 dark:border-gray-700 transition-all duration-200 shadow-inner">
               {generateHreflangTags()}
             </pre>
           </div>
@@ -210,10 +210,10 @@ export default function HreflangGeneratorPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4"
+          className="bg-orange-50/80 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-2xl p-6 shadow-xl"
         >
-          <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">How to Use Hreflang Tags:</h4>
-          <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+          <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-2">How to Use Hreflang Tags:</h4>
+          <ul className="text-base text-orange-700 dark:text-orange-300 space-y-1">
             <li>• Add these tags to the &lt;head&gt; section of each page</li>
             <li>• Include all language versions of a page (including the current one)</li>
             <li>• Use "x-default" for the default/fallback version</li>

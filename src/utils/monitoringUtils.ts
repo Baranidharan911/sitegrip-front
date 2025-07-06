@@ -57,12 +57,14 @@ export const formatLastCheck = (date: Date): string => {
 
 // Get status color
 export const getStatusColor = (status: string): string => {
-  return STATUS_COLORS[status.toUpperCase() as keyof typeof STATUS_COLORS] || STATUS_COLORS.UNKNOWN;
+  const statusKey = status.toLowerCase() as keyof typeof STATUS_COLORS;
+  return STATUS_COLORS[statusKey]?.bg || STATUS_COLORS.unknown.bg;
 };
 
 // Get severity color
 export const getSeverityColor = (severity: string): string => {
-  return SEVERITY_COLORS[severity.toUpperCase() as keyof typeof SEVERITY_COLORS] || SEVERITY_COLORS.INFO;
+  const severityKey = severity.toLowerCase() as keyof typeof SEVERITY_COLORS;
+  return SEVERITY_COLORS[severityKey]?.bg || SEVERITY_COLORS.low.bg;
 };
 
 // Validate monitor configuration
@@ -132,13 +134,13 @@ export const calculateHealthScore = (monitor: any): number => {
 // Get health status based on score
 export const getHealthStatus = (score: number): { status: string; color: string; label: string } => {
   if (score >= 90) {
-    return { status: 'excellent', color: STATUS_COLORS.UP, label: 'Excellent' };
+    return { status: 'excellent', color: STATUS_COLORS.up.bg, label: 'Excellent' };
   } else if (score >= 75) {
-    return { status: 'good', color: STATUS_COLORS.UP, label: 'Good' };
+    return { status: 'good', color: STATUS_COLORS.up.bg, label: 'Good' };
   } else if (score >= 50) {
-    return { status: 'fair', color: STATUS_COLORS.WARNING, label: 'Fair' };
+    return { status: 'fair', color: STATUS_COLORS.unknown.bg, label: 'Fair' };
   } else {
-    return { status: 'poor', color: STATUS_COLORS.DOWN, label: 'Poor' };
+    return { status: 'poor', color: STATUS_COLORS.down.bg, label: 'Poor' };
   }
 };
 

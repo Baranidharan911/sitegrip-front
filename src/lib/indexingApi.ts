@@ -690,6 +690,19 @@ class IndexingAPI {
       throw error;
     }
   }
+
+  async checkIndexingStatus(urls: string[]): Promise<any[]> {
+    const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/check-status`, {
+      method: 'POST',
+      body: JSON.stringify({ urls }),
+    });
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Status check failed: ${response.status}`);
+    }
+    const data = await response.json();
+    return data.results;
+  }
 }
 
 // Export singleton instance

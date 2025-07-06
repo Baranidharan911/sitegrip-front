@@ -14,9 +14,10 @@ import {
   MonitorType,
   NotificationType
 } from '../types/uptime';
-import { monitoringApi } from '../lib/uptimeApi';
+import { frontendUptimeApi } from '../lib/frontendUptimeApi';
+import { realtimeMonitoring } from '../lib/realtimeMonitoring';
 
-interface UseUptimeState {
+interface UseFrontendUptimeState {
   monitors: Monitor[];
   selectedMonitor: Monitor | null;
   monitorChecks: Record<string, CheckResult[]>;
@@ -31,7 +32,7 @@ interface UseUptimeState {
   notificationTypes: NotificationType[];
 }
 
-interface UseUptimeReturn extends UseUptimeState {
+interface UseFrontendUptimeReturn extends UseFrontendUptimeState {
   // Computed values
   criticalMonitors: Monitor[];
   recentlyDownMonitors: Monitor[];
@@ -57,10 +58,11 @@ interface UseUptimeReturn extends UseUptimeState {
   getMonitorSummary: () => Promise<void>;
   getMonitorTypes: () => Promise<void>;
   getNotificationTypes: () => Promise<void>;
+  triggerCheck: (monitorId: string) => Promise<void>;
 }
 
-export const useUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseUptimeReturn => {
-  const [state, setState] = useState<UseUptimeState>({
+export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseFrontendUptimeReturn => {
+  const [state, setState] = useState<UseFrontendUptimeState>({
     monitors: [],
     selectedMonitor: null,
     monitorChecks: {},
@@ -89,14 +91,14 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     };
   }, []);
 
-  const setStateIfMounted = useCallback((updater: (prev: UseUptimeState) => UseUptimeState) => {
+  const setStateIfMounted = useCallback((updater: (prev: UseFrontendUptimeState) => UseFrontendUptimeState) => {
     if (mountedRef.current) {
       setState(updater);
     }
   }, []);
 
   const handleError = useCallback((error: any, context: string) => {
-    console.error(`❌ Monitoring API Error [${context}]:`, error);
+    console.error(`❌ Frontend Uptime Error [${context}]:`, error);
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     setStateIfMounted(prev => ({ ...prev, error: errorMessage, loading: false }));
   }, [setStateIfMounted]);
@@ -106,7 +108,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     try {
       console.log('📊 Getting monitor summary...');
       
-      const summary = await monitoringApi.getMonitorSummary();
+      const summary = await frontendUptimeApi.getMonitorSummary();
       console.log('✅ Loaded monitor summary', summary);
       
       setStateIfMounted(prev => ({
@@ -123,7 +125,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     try {
       console.log('📋 Getting monitor types...');
       
-      const monitorTypes = await monitoringApi.getMonitorTypes();
+      const monitorTypes = await frontendUptimeApi.getMonitorTypes();
       console.log('✅ Loaded monitor types', monitorTypes);
       
       setStateIfMounted(prev => ({
@@ -140,7 +142,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     try {
       console.log('🔔 Getting notification types...');
       
-      const notificationTypes = await monitoringApi.getNotificationTypes();
+      const notificationTypes = await frontendUptimeApi.getNotificationTypes();
       console.log('✅ Loaded notification types', notificationTypes);
       
       setStateIfMounted(prev => ({
@@ -158,7 +160,7 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
       console.log('🔄 Refreshing monitors...');
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
-      const monitors = await monitoringApi.getAllMonitors();
+      const monitors = await frontendUptimeApi.getAllMonitors();
       console.log(`✅ Loaded ${monitors.length} monitors`);
       
       // Also refresh the summary
@@ -178,73 +180,82 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   // Create new monitor
   const createMonitor = useCallback(async (data: CreateMonitorRequest): Promise<Monitor> => {
     try {
-      console.log('🚀 useUptime: Creating monitor...', data);
-      console.log('📊 Monitor data type:', typeof data);
-      console.log('🔍 Monitor data keys:', Object.keys(data));
+      console.log('🚀 useFrontendUptime: Creating monitor...', data);
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
-      console.log('📡 Calling monitoringApi.createMonitor...');
-      const monitor = await monitoringApi.createMonitor(data);
-      console.log(`✅ useUptime: Created monitor successfully:`, monitor);
+      const monitor = await frontendUptimeApi.createMonitor(data);
+      console.log(`✅ useFrontendUptime: Created monitor successfully:`, monitor);
+      
+      // Start monitoring service if this is the first monitor
+      const currentMonitors = await frontendUptimeApi.getAllMonitors();
+      if (currentMonitors.length === 1) {
+        console.log('🚀 Starting real-time monitoring service...');
+        await realtimeMonitoring.start();
+      }
+      
+      // Add to real-time monitoring service
+      await realtimeMonitoring.addMonitor(monitor);
       
       // Refresh monitors to get the new one
-      console.log('🔄 Refreshing monitors list...');
       await refreshMonitors();
-      console.log('✅ Monitors refreshed');
       
       return monitor;
     } catch (error) {
-      console.error('❌ useUptime: Error in createMonitor:', error);
+      console.error('❌ useFrontendUptime: Error in createMonitor:', error);
       handleError(error, 'createMonitor');
       throw error;
     }
-  }, [refreshMonitors, setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
   // Update existing monitor
   const updateMonitor = useCallback(async (id: string, data: UpdateMonitorRequest): Promise<Monitor> => {
     try {
-      console.log('✏️ Updating monitor...', { id, data });
+      console.log('🔄 useFrontendUptime: Updating monitor...', { id, data });
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
-      const monitor = await monitoringApi.updateMonitor(id, data);
-      console.log(`✅ Updated monitor: ${id}`);
+      const monitor = await frontendUptimeApi.updateMonitor(id, data);
+      console.log(`✅ useFrontendUptime: Updated monitor successfully:`, monitor);
       
-      // Refresh monitors to get updated data
+      // Refresh monitors to get the updated one
       await refreshMonitors();
       
       return monitor;
     } catch (error) {
+      console.error('❌ useFrontendUptime: Error in updateMonitor:', error);
       handleError(error, 'updateMonitor');
       throw error;
     }
-  }, [refreshMonitors, setStateIfMounted, handleError]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
   // Delete monitor
   const deleteMonitor = useCallback(async (id: string): Promise<void> => {
     try {
-      console.log('🗑️ Deleting monitor...', id);
+      console.log('🗑️ useFrontendUptime: Deleting monitor...', id);
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
       
-      await monitoringApi.deleteMonitor(id);
-      console.log(`✅ Deleted monitor: ${id}`);
+      await frontendUptimeApi.deleteMonitor(id);
+      console.log(`✅ useFrontendUptime: Deleted monitor successfully:`, id);
       
-      // Remove from local state
-      setStateIfMounted(prev => ({
-        ...prev,
-        monitors: prev.monitors.filter(m => m.id !== id),
-        selectedMonitor: prev.selectedMonitor?.id === id ? null : prev.selectedMonitor,
-        loading: false,
-      }));
+      // Remove from real-time monitoring service
+      realtimeMonitoring.removeMonitor(id);
       
-      // Update summary
-      await getMonitorSummary();
+      // Refresh monitors to remove the deleted one
+      await refreshMonitors();
+      
+      // Stop monitoring service if no monitors remain
+      const remainingMonitors = await frontendUptimeApi.getAllMonitors();
+      if (remainingMonitors.length === 0) {
+        console.log('🛑 Stopping real-time monitoring service - no monitors remaining');
+        realtimeMonitoring.stop();
+      }
     } catch (error) {
+      console.error('❌ useFrontendUptime: Error in deleteMonitor:', error);
       handleError(error, 'deleteMonitor');
       throw error;
     }
-  }, [setStateIfMounted, handleError, getMonitorSummary]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
-  // Select monitor for detailed view
+  // Select monitor
   const selectMonitor = useCallback((monitor: Monitor | null) => {
     setStateIfMounted(prev => ({ ...prev, selectedMonitor: monitor }));
   }, [setStateIfMounted]);
@@ -252,68 +263,41 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   // Get monitor checks
   const getMonitorChecks = useCallback(async (monitorId: string, limit: number = 30): Promise<CheckResult[]> => {
     try {
-      console.log('📊 Getting monitor checks...', monitorId, limit ? `limit: ${limit}` : '');
-      
-      const checks = await monitoringApi.getMonitorChecks(monitorId, limit);
-      console.log(`✅ Loaded ${checks.length} check entries`);
-      
-      // Cache the result
+      const checks = await frontendUptimeApi.getMonitorChecks(monitorId, limit);
       setStateIfMounted(prev => ({
         ...prev,
-        monitorChecks: {
-          ...prev.monitorChecks,
-          [monitorId]: checks
-        }
+        monitorChecks: { ...prev.monitorChecks, [monitorId]: checks }
       }));
-      
       return checks;
     } catch (error) {
       handleError(error, 'getMonitorChecks');
-      throw error;
+      return [];
     }
   }, [setStateIfMounted, handleError]);
 
   // Get monitor incidents
   const getMonitorIncidents = useCallback(async (monitorId: string, limit: number = 50): Promise<Incident[]> => {
     try {
-      console.log('⚠️ Getting monitor incidents...', monitorId, limit ? `limit: ${limit}` : '');
-      
-      const incidents = await monitoringApi.getMonitorIncidents(monitorId, limit);
-      console.log(`✅ Loaded ${incidents.length} incident entries`);
-      
-      // Cache the result
+      const incidents = await frontendUptimeApi.getMonitorIncidents(monitorId, limit);
       setStateIfMounted(prev => ({
         ...prev,
-        monitorIncidents: {
-          ...prev.monitorIncidents,
-          [monitorId]: incidents
-        }
+        monitorIncidents: { ...prev.monitorIncidents, [monitorId]: incidents }
       }));
-      
       return incidents;
     } catch (error) {
       handleError(error, 'getMonitorIncidents');
-      throw error;
+      return [];
     }
   }, [setStateIfMounted, handleError]);
 
-  // Get monitor statistics
+  // Get monitor stats
   const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
     try {
-      console.log('📈 Getting monitor stats...', monitorId);
-      
-      const stats = await monitoringApi.getMonitorStats(monitorId);
-      console.log('✅ Loaded monitor stats', stats);
-      
-      // Cache the result
+      const stats = await frontendUptimeApi.getMonitorStats(monitorId);
       setStateIfMounted(prev => ({
         ...prev,
-        monitorStats: {
-          ...prev.monitorStats,
-          [monitorId]: stats
-        }
+        monitorStats: { ...prev.monitorStats, [monitorId]: stats }
       }));
-      
       return stats;
     } catch (error) {
       handleError(error, 'getMonitorStats');
@@ -321,23 +305,14 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     }
   }, [setStateIfMounted, handleError]);
 
-  // Get SSL information
+  // Get SSL info
   const getSSLInfo = useCallback(async (monitorId: string): Promise<SSLInfoResponse> => {
     try {
-      console.log('🔒 Getting SSL info...', monitorId);
-      
-      const sslInfo = await monitoringApi.getSSLInfo(monitorId);
-      console.log('✅ Loaded SSL info', sslInfo);
-      
-      // Cache the result
+      const sslInfo = await frontendUptimeApi.getSSLInfo(monitorId);
       setStateIfMounted(prev => ({
         ...prev,
-        sslInfo: {
-          ...prev.sslInfo,
-          [monitorId]: sslInfo
-        }
+        sslInfo: { ...prev.sslInfo, [monitorId]: sslInfo }
       }));
-      
       return sslInfo;
     } catch (error) {
       handleError(error, 'getSSLInfo');
@@ -345,30 +320,47 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     }
   }, [setStateIfMounted, handleError]);
 
-  // Perform manual monitor check
+  // Perform monitor check
   const performMonitorCheck = useCallback(async (monitorId: string): Promise<CheckResult> => {
     try {
-      console.log('🔍 Performing manual check...', monitorId);
+      const result = await frontendUptimeApi.performMonitorCheck(monitorId);
       
-      const result = await monitoringApi.performMonitorCheck(monitorId);
-      console.log('✅ Manual check completed', result);
+      // Update the monitor in the state
+      setStateIfMounted(prev => {
+        const updatedMonitors = prev.monitors.map(monitor => 
+          monitor.id === monitorId 
+            ? { 
+                ...monitor, 
+                status: result.status === true,
+                lastCheck: result.createdAt,
+                responseTime: result.responseTime,
+                updatedAt: result.createdAt,
+                ...(result.status === true ? { lastUp: result.createdAt } : { lastDown: result.createdAt })
+              }
+            : monitor
+        );
+        
+        return {
+          ...prev,
+          monitors: updatedMonitors,
+          monitorChecks: {
+            ...prev.monitorChecks,
+            [monitorId]: [result, ...(prev.monitorChecks[monitorId] || []).slice(0, 99)]
+          }
+        };
+      });
       
       return result;
     } catch (error) {
       handleError(error, 'performMonitorCheck');
       throw error;
     }
-  }, [handleError]);
+  }, [setStateIfMounted, handleError]);
 
-  // Test monitor URL
+  // Test monitor
   const testMonitor = useCallback(async (url: string, timeout?: number): Promise<TestResult> => {
     try {
-      console.log('🧪 Testing monitor URL...', url);
-      
-      const result = await monitoringApi.testMonitor(url, timeout);
-      console.log('✅ URL test completed', result);
-      
-      return result;
+      return await frontendUptimeApi.testMonitor(url, timeout);
     } catch (error) {
       handleError(error, 'testMonitor');
       throw error;
@@ -378,57 +370,46 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   // Bulk update monitors
   const bulkUpdateMonitors = useCallback(async (data: BulkUpdateRequest): Promise<BulkUpdateResponse> => {
     try {
-      console.log('🔄 Performing bulk update...', data);
-      setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      
-      const result = await monitoringApi.bulkUpdateMonitors(data);
-      console.log('✅ Bulk update completed', result);
-      
-      // Refresh monitors to get updated data
+      const result = await frontendUptimeApi.bulkUpdateMonitors(data);
       await refreshMonitors();
-      
       return result;
     } catch (error) {
       handleError(error, 'bulkUpdateMonitors');
       throw error;
     }
-  }, [refreshMonitors, setStateIfMounted, handleError]);
+  }, [handleError, refreshMonitors]);
 
   // Resolve incident
   const resolveIncident = useCallback(async (incidentId: string): Promise<void> => {
     try {
-      console.log('✅ Resolving incident...', incidentId);
+      await frontendUptimeApi.resolveIncident(incidentId);
       
-      await monitoringApi.resolveIncident(incidentId);
-      console.log('✅ Incident resolved');
-      
-      // Refresh incidents for affected monitors
-      const affectedMonitorId = Object.keys(state.monitorIncidents).find(monitorId =>
-        state.monitorIncidents[monitorId].some(incident => incident.id === incidentId)
-      );
-      
-      if (affectedMonitorId) {
-        await getMonitorIncidents(affectedMonitorId);
-      }
+      // Update incidents in state
+      setStateIfMounted(prev => {
+        const updatedIncidents = { ...prev.monitorIncidents };
+        for (const monitorId in updatedIncidents) {
+          updatedIncidents[monitorId] = updatedIncidents[monitorId].map(incident =>
+            incident.id === incidentId
+              ? { ...incident, status: 'resolved', resolvedAt: new Date().toISOString() }
+              : incident
+          );
+        }
+        return { ...prev, monitorIncidents: updatedIncidents };
+      });
     } catch (error) {
       handleError(error, 'resolveIncident');
       throw error;
     }
-  }, [state.monitorIncidents, getMonitorIncidents, handleError]);
+  }, [setStateIfMounted, handleError]);
 
   // Export monitor data
   const exportMonitorData = useCallback(async (
     monitorId: string, 
-    format: 'csv' | 'json' = 'json',
-    timeRange: number = 168 // 7 days
+    format: 'csv' | 'json' = 'json', 
+    timeRange: number = 168
   ): Promise<Blob> => {
     try {
-      console.log('📤 Exporting monitor data...', { monitorId, format, timeRange });
-      
-      const blob = await monitoringApi.exportMonitorData(monitorId, format, timeRange);
-      console.log('✅ Export completed');
-      
-      return blob;
+      return await frontendUptimeApi.exportMonitorData(monitorId, format, timeRange);
     } catch (error) {
       handleError(error, 'exportMonitorData');
       throw error;
@@ -440,10 +421,29 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     setStateIfMounted(prev => ({ ...prev, error: null }));
   }, [setStateIfMounted]);
 
+  // Trigger manual check
+  const triggerCheck = useCallback(async (monitorId: string): Promise<void> => {
+    try {
+      await realtimeMonitoring.triggerCheck(monitorId);
+      await performMonitorCheck(monitorId);
+    } catch (error) {
+      handleError(error, 'triggerCheck');
+      throw error;
+    }
+  }, [handleError, performMonitorCheck]);
+
   // Computed values
-  const criticalMonitors = state.monitors.filter(m => !m.status);
-  const recentlyDownMonitors = state.monitors.filter(m => !m.status && m.lastCheck);
-  const pausedMonitors = state.monitors.filter(m => !m.status && m.name?.toLowerCase().includes('paused'));
+  const criticalMonitors = state.monitors.filter(monitor => 
+    monitor.status === false
+  );
+
+  const recentlyDownMonitors = state.monitors.filter(monitor => 
+    monitor.lastDown && 
+    new Date(monitor.lastDown).getTime() > Date.now() - 24 * 60 * 60 * 1000
+  );
+
+  const pausedMonitors = state.monitors.filter(monitor => !monitor.isActive);
+
   const expiringSSLMonitors = state.monitors.filter(m =>
     (typeof m.ssl_cert_days_until_expiry === 'number' && m.ssl_cert_days_until_expiry < 30) ||
     m.ssl_status === 'expiring_soon' ||
@@ -453,9 +453,10 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   // Auto-refresh setup
   useEffect(() => {
     if (autoRefresh && refreshInterval > 0) {
-      refreshIntervalRef.current = setInterval(() => {
+      refreshIntervalRef.current = setInterval(async () => {
         if (mountedRef.current) {
-          refreshMonitors();
+          console.log('🔄 Auto-refreshing monitors...');
+          await refreshMonitors();
         }
       }, refreshInterval);
     }
@@ -472,23 +473,105 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        console.log('🚀 Loading initial uptime data...');
         setStateIfMounted(prev => ({ ...prev, loading: true }));
         
-        // Load monitors and summary in parallel
         await Promise.all([
           refreshMonitors(),
           getMonitorTypes(),
-          getNotificationTypes()
+          getNotificationTypes(),
         ]);
         
-        setStateIfMounted(prev => ({ ...prev, loading: false }));
+        console.log('✅ Initial uptime data loaded successfully');
+        
+        // Start monitoring service if there are existing monitors
+        const existingMonitors = await frontendUptimeApi.getAllMonitors();
+        if (existingMonitors.length > 0) {
+          console.log('🚀 Starting real-time monitoring service for existing monitors...');
+          await realtimeMonitoring.start();
+        }
       } catch (error) {
+        console.error('❌ Failed to load initial uptime data:', error);
         handleError(error, 'loadInitialData');
       }
     };
 
     loadInitialData();
-  }, [refreshMonitors, getMonitorTypes, getNotificationTypes, setStateIfMounted, handleError]);
+  }, [refreshMonitors, getMonitorTypes, getNotificationTypes, handleError, setStateIfMounted]);
+
+  // Set up real-time monitoring event listeners
+  useEffect(() => {
+    const handleMonitorStatusChanged = (data: any) => {
+      console.log('🔄 Monitor status changed:', data);
+      setStateIfMounted(prev => {
+        const updatedMonitors = prev.monitors.map(monitor => 
+          monitor.id === data.monitorId 
+            ? { 
+                ...monitor, 
+                status: data.newStatus === true,
+                lastCheck: data.checkResult.createdAt,
+                responseTime: data.checkResult.responseTime,
+                updatedAt: data.checkResult.createdAt,
+                ...(data.newStatus === true ? { lastUp: data.checkResult.createdAt } : { lastDown: data.checkResult.createdAt })
+              }
+            : monitor
+        );
+        
+        return {
+          ...prev,
+          monitors: updatedMonitors,
+          monitorChecks: {
+            ...prev.monitorChecks,
+            [data.monitorId]: [data.checkResult, ...(prev.monitorChecks[data.monitorId] || []).slice(0, 99)]
+          }
+        };
+      });
+    };
+
+    const handleMonitorCheckCompleted = (data: any) => {
+      console.log('✅ Monitor check completed:', data);
+      setStateIfMounted(prev => {
+        const updatedMonitors = prev.monitors.map(monitor => 
+          monitor.id === data.monitorId 
+            ? { 
+                ...monitor, 
+                status: data.checkResult.status === true,
+                lastCheck: data.checkResult.createdAt,
+                responseTime: data.checkResult.responseTime,
+                updatedAt: data.checkResult.createdAt,
+                ...(data.checkResult.status === true ? { lastUp: data.checkResult.createdAt } : { lastDown: data.checkResult.createdAt })
+              }
+            : monitor
+        );
+        
+        return {
+          ...prev,
+          monitors: updatedMonitors,
+          monitorChecks: {
+            ...prev.monitorChecks,
+            [data.monitorId]: [data.checkResult, ...(prev.monitorChecks[data.monitorId] || []).slice(0, 99)]
+          }
+        };
+      });
+    };
+
+    const handleError = (data: any) => {
+      console.error('❌ Real-time monitoring error:', data);
+      setStateIfMounted(prev => ({ ...prev, error: data.error?.message || 'Real-time monitoring error' }));
+    };
+
+    // Register event listeners
+    realtimeMonitoring.on(realtimeMonitoring.EVENTS.MONITOR_STATUS_CHANGED, handleMonitorStatusChanged);
+    realtimeMonitoring.on(realtimeMonitoring.EVENTS.MONITOR_CHECK_COMPLETED, handleMonitorCheckCompleted);
+    realtimeMonitoring.on(realtimeMonitoring.EVENTS.ERROR_OCCURRED, handleError);
+
+    // Cleanup event listeners on unmount
+    return () => {
+      realtimeMonitoring.off(realtimeMonitoring.EVENTS.MONITOR_STATUS_CHANGED, handleMonitorStatusChanged);
+      realtimeMonitoring.off(realtimeMonitoring.EVENTS.MONITOR_CHECK_COMPLETED, handleMonitorCheckCompleted);
+      realtimeMonitoring.off(realtimeMonitoring.EVENTS.ERROR_OCCURRED, handleError);
+    };
+  }, [setStateIfMounted]);
 
   return {
     ...state,
@@ -514,7 +597,6 @@ export const useUptime = (autoRefresh: boolean = true, refreshInterval: number =
     getMonitorSummary,
     getMonitorTypes,
     getNotificationTypes,
+    triggerCheck,
   };
-};
-
-export default useUptime;
+}; 

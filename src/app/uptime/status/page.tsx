@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUptime } from '../../../hooks/useUptime';
+import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
 
 const GlobeIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +46,7 @@ export default function StatusPage() {
     lastRefresh,
     loading,
     refreshMonitors,
-  } = useUptime(true, 60000); // Auto-refresh every minute for status page
+  } = useFrontendUptime(true, 60000); // Auto-refresh every minute for status page
 
   const [showAllMonitors, setShowAllMonitors] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -58,7 +58,7 @@ export default function StatusPage() {
   const getOverallStatus = () => {
     const downMonitors = publicMonitors.filter(m => m.last_status === 'down').length;
     const degradedMonitors = publicMonitors.filter(m => 
-      m.failures_in_a_row > 0 && m.last_status === 'up'
+      (m.failures_in_a_row ?? 0) > 0 && m.last_status === 'up'
     ).length;
     
     if (downMonitors > 0) return 'down';
@@ -205,14 +205,14 @@ export default function StatusPage() {
         </div>
 
         {/* Current Incidents */}
-        {publicMonitors.some(m => m.last_status === 'down' || m.failures_in_a_row > 0) && (
+        {publicMonitors.some(m => m.last_status === 'down' || (m.failures_in_a_row ?? 0) > 0) && (
           <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               🚨 Current Incidents
             </h2>
             <div className="space-y-3">
               {publicMonitors
-                .filter(m => m.last_status === 'down' || m.failures_in_a_row > 0)
+                .filter(m => m.last_status === 'down' || (m.failures_in_a_row ?? 0) > 0)
                 .map((monitor) => {
                   const badge = getMonitorStatusBadge(monitor);
                   return (
@@ -231,9 +231,9 @@ export default function StatusPage() {
                       </div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
                         {monitor.last_status === 'down' ? (
-                          `Down since ${monitor.last_checked ? new Date(monitor.last_checked).toLocaleString() : 'Unknown'}`
+                          `Down since ${monitor.lastCheck ? new Date(monitor.lastCheck).toLocaleString() : 'Unknown'}`
                         ) : (
-                          `${monitor.failures_in_a_row} failed attempts`
+                          `${monitor.failures_in_a_row ?? 0} failed attempts`
                         )}
                       </div>
                     </div>
@@ -290,7 +290,7 @@ export default function StatusPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Degraded</p>
                   <p className="text-2xl font-semibold text-yellow-600 dark:text-yellow-400">
-                    {publicMonitors.filter(m => m.failures_in_a_row > 0 && m.last_status === 'up').length}
+                    {publicMonitors.filter(m => (m.failures_in_a_row ?? 0) > 0 && m.last_status === 'up').length}
                   </p>
                 </div>
               </div>
@@ -395,9 +395,9 @@ export default function StatusPage() {
                           <div className="text-xs text-gray-500 dark:text-gray-400">
                             24h average
                           </div>
-                          {monitor.last_response_time && (
+                          {monitor.lastResponseTime && (
                             <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {monitor.last_response_time}ms last response
+                              {monitor.lastResponseTime}ms last response
                             </div>
                           )}
                         </div>

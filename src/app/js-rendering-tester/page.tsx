@@ -112,8 +112,8 @@ export default function JsRenderingTesterPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -121,14 +121,14 @@ export default function JsRenderingTesterPage() {
           className="text-center"
         >
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg">
-              <Code2 className="text-white" size={24} />
+            <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl shadow-lg">
+              <Code2 className="text-white" size={28} />
             </div>
-            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-lg">
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent drop-shadow-lg">
               JS Rendering Tester
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
             Compare raw HTML with JavaScript-rendered DOM
           </p>
         </motion.div>
@@ -138,7 +138,7 @@ export default function JsRenderingTesterPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700"
+          className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex gap-3">
             <div className="flex-1 relative">
@@ -147,23 +147,23 @@ export default function JsRenderingTesterPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://your-site.com"
-                className="w-full px-3 py-2 pl-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-5 py-3 pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base shadow"
               />
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
             <button
               onClick={handleTest}
               disabled={loading}
-              className="px-6 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+              className="px-8 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl text-base flex items-center gap-2"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={16} />
+                  <Loader2 className="animate-spin" size={20} />
                   Testing...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Zap size={16} />
+                  <Zap size={20} />
                   Test
                 </span>
               )}
@@ -188,42 +188,42 @@ export default function JsRenderingTesterPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="space-y-4"
+            className="space-y-6"
           >
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg p-3 text-white text-center">
-                <FileText size={20} className="mx-auto mb-1" />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-gradient-to-br from-blue-400/80 to-cyan-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
+                <FileText size={28} className="mx-auto mb-2" />
                 <p className="text-xs text-blue-100">Initial</p>
-                <p className="text-lg font-bold">{(result.initialHtml.length / 1024).toFixed(1)}KB</p>
+                <p className="text-2xl font-bold">{(result.initialHtml.length / 1024).toFixed(1)}KB</p>
               </div>
-              <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg p-3 text-white text-center">
-                <Code2 size={20} className="mx-auto mb-1" />
+              <div className="bg-gradient-to-br from-green-400/80 to-emerald-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
+                <Code2 size={28} className="mx-auto mb-2" />
                 <p className="text-xs text-green-100">Rendered</p>
-                <p className="text-lg font-bold">{(result.renderedHtml.length / 1024).toFixed(1)}KB</p>
+                <p className="text-2xl font-bold">{(result.renderedHtml.length / 1024).toFixed(1)}KB</p>
               </div>
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg p-3 text-white text-center">
-                <Zap size={20} className="mx-auto mb-1" />
+              <div className="bg-gradient-to-br from-purple-400/80 to-pink-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
+                <Zap size={28} className="mx-auto mb-2" />
                 <p className="text-xs text-purple-100">Difference</p>
-                <p className="text-lg font-bold">+{(result.differences / 1024).toFixed(1)}KB</p>
+                <p className="text-2xl font-bold">+{(result.differences / 1024).toFixed(1)}KB</p>
               </div>
             </div>
 
             {/* Animated Tabs */}
             <Tab.Group>
-              <Tab.List className="flex space-x-2 bg-gray-100 dark:bg-gray-800 rounded-lg p-1 mb-4">
+              <Tab.List className="flex space-x-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-full p-1 mb-4 shadow-inner">
                 {tabList.map((tab, idx) => (
                   <Tab
                     key={tab.key}
                     className={({ selected }) =>
-                      `flex items-center px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 focus:outline-none ${selected ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'}`
+                      `flex items-center px-6 py-2 rounded-full font-semibold text-base transition-all duration-200 focus:outline-none ${selected ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'}`
                     }
                   >
                     {tab.icon}{tab.label}
                   </Tab>
                 ))}
               </Tab.List>
-              <Tab.Panels className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
+              <Tab.Panels className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
                 {/* Diff Tab */}
                 <Tab.Panel>
                   <div className="prose dark:prose-invert max-w-none">
@@ -233,15 +233,31 @@ export default function JsRenderingTesterPage() {
                     <div className="flex flex-col md:flex-row gap-4">
                       <div className="flex-1">
                         <h4 className="font-semibold mb-1">Initial HTML</h4>
-                        <pre className="bg-gray-100 dark:bg-gray-800 rounded p-2 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700">
-                          {result.initialHtml.slice(0, 500)}{result.initialHtml.length > 500 ? '... (truncated)' : ''}
-                        </pre>
+                        <div className="relative">
+                          <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
+                            {result.initialHtml.slice(0, 500)}{result.initialHtml.length > 500 ? '... (truncated)' : ''}
+                          </pre>
+                          <button
+                            onClick={() => handleCopy(result.initialHtml, 'initialHtml')}
+                            className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
+                          >
+                            {copiedStates['initialHtml'] ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                        </div>
                       </div>
                       <div className="flex-1">
                         <h4 className="font-semibold mb-1">Rendered HTML</h4>
-                        <pre className="bg-gray-100 dark:bg-gray-800 rounded p-2 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700">
-                          {result.renderedHtml.slice(0, 500)}{result.renderedHtml.length > 500 ? '... (truncated)' : ''}
-                        </pre>
+                        <div className="relative">
+                          <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
+                            {result.renderedHtml.slice(0, 500)}{result.renderedHtml.length > 500 ? '... (truncated)' : ''}
+                          </pre>
+                          <button
+                            onClick={() => handleCopy(result.renderedHtml, 'renderedHtml')}
+                            className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-green-100 dark:hover:bg-green-900/30 transition"
+                          >
+                            {copiedStates['renderedHtml'] ? <Check size={14} /> : <Copy size={14} />}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -249,31 +265,29 @@ export default function JsRenderingTesterPage() {
                 {/* Initial HTML Tab */}
                 <Tab.Panel>
                   <div className="relative">
-                    <button
-                      onClick={() => handleCopy(result.initialHtml, 'initial')}
-                      className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1"
-                    >
-                      {copiedStates.initial ? <Check size={12} /> : <Copy size={12} />}
-                      {copiedStates.initial ? 'Copied!' : 'Copy'}
-                    </button>
-                    <pre className="bg-gray-100 dark:bg-gray-800 rounded p-4 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700 mt-6">
+                    <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
                       {result.initialHtml}
                     </pre>
+                    <button
+                      onClick={() => handleCopy(result.initialHtml, 'initialHtmlFull')}
+                      className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
+                    >
+                      {copiedStates['initialHtmlFull'] ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
                   </div>
                 </Tab.Panel>
                 {/* Rendered HTML Tab */}
                 <Tab.Panel>
                   <div className="relative">
-                    <button
-                      onClick={() => handleCopy(result.renderedHtml, 'rendered')}
-                      className="absolute top-2 right-2 px-2 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center gap-1"
-                    >
-                      {copiedStates.rendered ? <Check size={12} /> : <Copy size={12} />}
-                      {copiedStates.rendered ? 'Copied!' : 'Copy'}
-                    </button>
-                    <pre className="bg-gray-100 dark:bg-gray-800 rounded p-4 overflow-x-auto text-xs border border-gray-200 dark:border-gray-700 mt-6">
+                    <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
                       {result.renderedHtml}
                     </pre>
+                    <button
+                      onClick={() => handleCopy(result.renderedHtml, 'renderedHtmlFull')}
+                      className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-green-100 dark:hover:bg-green-900/30 transition"
+                    >
+                      {copiedStates['renderedHtmlFull'] ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
                   </div>
                 </Tab.Panel>
               </Tab.Panels>

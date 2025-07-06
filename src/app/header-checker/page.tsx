@@ -63,8 +63,8 @@ export default function HeaderCheckerPage() {
   const highlightedHeaders = ['content-type', 'x-robots-tag', 'canonical', 'location', 'cache-control', 'set-cookie'];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-      <div className="max-w-6xl mx-auto space-y-4">
+    <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
+      <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
@@ -72,14 +72,14 @@ export default function HeaderCheckerPage() {
           className="text-center"
         >
           <div className="inline-flex items-center gap-2 mb-2">
-            <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg">
-              <Shield className="text-white" size={24} />
+            <div className="p-2 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-xl shadow-lg">
+              <Shield className="text-white" size={28} />
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent drop-shadow-lg">
+            <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent drop-shadow-lg">
               HTTP Header Checker
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg max-w-xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
             Analyze HTTP response headers and status codes
           </p>
         </motion.div>
@@ -89,7 +89,7 @@ export default function HeaderCheckerPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700"
+          className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex gap-3">
             <div className="flex-1 relative">
@@ -98,23 +98,23 @@ export default function HeaderCheckerPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://your-site.com"
-                className="w-full px-3 py-2 pl-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-5 py-3 pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base shadow"
               />
-              <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             </div>
             <button
               onClick={handleCheck}
               disabled={loading}
-              className="px-6 py-2 rounded-lg text-white font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+              className="px-8 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl text-base flex items-center gap-2"
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={16} />
+                  <Loader2 className="animate-spin" size={20} />
                   Checking...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  <Shield size={16} />
+                  <Shield size={20} />
                   Check
                 </span>
               )}
@@ -139,22 +139,20 @@ export default function HeaderCheckerPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="space-y-4"
+            className="space-y-6"
           >
             {/* Status */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-4 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Response Status</h3>
-                <div className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(result.status)} animate-pulse`}>
-                  {result.status} {result.statusText}
-                </div>
+                <div className={`px-4 py-1 rounded-full text-lg font-bold ${getStatusColor(result.status)} animate-pulse shadow-md`}> {result.status} {result.statusText} </div>
               </div>
               <p className="text-sm text-gray-600 dark:text-gray-400">Final URL: {result.url}</p>
             </div>
 
             {/* Headers - Collapsible */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer select-none" onClick={() => setHeadersExpanded((v) => !v)}>
+            <div className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer select-none" onClick={() => setHeadersExpanded((v) => !v)}>
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">HTTP Headers</h3>
                   <span className="text-xs text-blue-500">({Object.keys(result.headers).length})</span>
@@ -174,16 +172,16 @@ export default function HeaderCheckerPage() {
                       return (
                         <div
                           key={key}
-                          className={`flex items-start justify-between gap-2 p-3 last:border-b-0 transition-colors duration-150 ${isHighlighted ? 'bg-blue-50 dark:bg-blue-900/10 border-l-4 border-l-blue-500' : ''}`}
+                          className={`flex items-start justify-between gap-2 p-4 last:border-b-0 transition-colors duration-150 ${isHighlighted ? 'bg-blue-50 dark:bg-blue-900/10 border-l-4 border-l-blue-500' : ''}`}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="font-mono text-sm font-medium text-gray-800 dark:text-gray-200">
+                              <span className="font-mono text-base font-medium text-gray-800 dark:text-gray-200">
                                 {key}
                               </span>
                               {isHighlighted && (
                                 <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300 animate-pulse">
-                                  <CheckCircle size={10} className="mr-1" />
+                                  <CheckCircle size={12} className="mr-1" />
                                   Important
                                 </span>
                               )}
@@ -194,9 +192,9 @@ export default function HeaderCheckerPage() {
                           </div>
                           <button
                             onClick={() => handleCopy(value, key)}
-                            className="ml-2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition flex items-center gap-1"
+                            className="ml-2 p-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition flex items-center gap-1"
                           >
-                            {copiedStates[key] ? <Check size={12} /> : <Copy size={12} />}
+                            {copiedStates[key] ? <Check size={16} /> : <Copy size={16} />}
                           </button>
                         </div>
                       );
@@ -204,12 +202,12 @@ export default function HeaderCheckerPage() {
                   </motion.div>
                 )}
               </AnimatePresence>
-              <div className="p-2 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end">
                 <button
                   onClick={() => handleCopy(JSON.stringify(result.headers, null, 2), 'headers')}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-100 dark:bg-gray-700 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition"
+                  className="flex items-center gap-1 px-4 py-2 text-xs bg-white/80 dark:bg-gray-800/80 rounded shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
                 >
-                  {copiedStates.headers ? <Check size={12} /> : <Copy size={12} />}
+                  {copiedStates.headers ? <Check size={16} /> : <Copy size={16} />}
                   {copiedStates.headers ? 'Copied!' : 'Copy All'}
                 </button>
               </div>

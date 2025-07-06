@@ -8,13 +8,32 @@ import {
   ExternalLink,
   Lightbulb,
   Sparkles,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
+import WebVitalsChart from './WebVitalsChart';
 
 interface AISuggestions {
-  title: string;
-  metaDescription: string;
-  content: string;
+  titleSuggestions?: string[];
+  metaDescriptionSuggestions?: string[];
+  contentStructure?: string[];
+  technicalImprovements?: string[];
+  priorityScore?: number;
+  impact?: 'low' | 'medium' | 'high';
+  specificIssues?: string[];
+  recommendations?: string[];
+  // Legacy support
+  title?: string;
+  metaDescription?: string;
+  content?: string;
+}
+
+interface WebVitalsHistoryEntry {
+  date: string;
+  lcp: number;
+  cls: number;
+  ttfb: number;
 }
 
 interface PageData {
@@ -29,7 +48,8 @@ interface PageData {
   hasSchema?: boolean;
   pageSizeBytes: number;
   hasViewport: boolean;
-  suggestions?: AISuggestions;
+  suggestions?: AISuggestions; // Legacy support
+  aiSuggestions?: AISuggestions; // New field from backend
   seoScore: number;
   lcp: number;
   cls: number;
@@ -38,7 +58,7 @@ interface PageData {
   depth: number;
   mobileScreenshot?: string;
   desktopScreenshot?: string;
-
+  webVitalsHistory?: WebVitalsHistoryEntry[];
 }
 
 interface ResultsTableProps {
@@ -52,34 +72,190 @@ const getColorForCLS = (cls: number) =>
 const getColorForTTFB = (ttfb: number) =>
   ttfb > 0.6 ? 'text-red-600' : ttfb > 0.2 ? 'text-yellow-600' : 'text-green-600';
 
-const AISuggestionsCard = ({ suggestions }: { suggestions: AISuggestions }) => (
-  <div className="mt-6">
-    <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center mb-4">
-      <Sparkles className="h-6 w-6 mr-2 text-purple-500" /> AI-Powered Suggestions
-    </h3>
-    <div className="space-y-4">
-      {['title', 'metaDescription', 'content'].map((key) => {
-        const suggestionText = suggestions[key as keyof AISuggestions];
-        if (!suggestionText) return null;
-        return (
-          <div
-            key={key}
-            className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700"
-          >
-            <h4 className="font-semibold text-gray-700 dark:text-gray-200 capitalize mb-1">
-              {key === 'metaDescription'
-                ? 'Meta Description'
-                : key.charAt(0).toUpperCase() + key.slice(1)}
+const AISuggestionsCard = ({ suggestions }: { suggestions: AISuggestions }) => {
+  const getImpactColor = (impact: string) => {
+    switch (impact) {
+      case 'high': return 'text-red-600 dark:text-red-400';
+      case 'medium': return 'text-yellow-600 dark:text-yellow-400';
+      case 'low': return 'text-green-600 dark:text-green-400';
+      default: return 'text-gray-600 dark:text-gray-400';
+    }
+  };
+
+  const getPriorityColor = (score: number) => {
+    if (score >= 8) return 'text-red-600 dark:text-red-400';
+    if (score >= 6) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
+  };
+
+  return (
+    <div className="mt-6">
+      <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center mb-4">
+        <Sparkles className="h-6 w-6 mr-2 text-purple-500" /> AI-Powered Suggestions
+      </h3>
+      
+      {/* Priority and Impact */}
+      {(suggestions.priorityScore !== undefined || suggestions.impact) && (
+        <div className="mb-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+          <div className="flex items-center gap-4 text-sm">
+            {suggestions.priorityScore !== undefined && (
+              <div>
+                <span className="font-semibold">Priority: </span>
+                <span className={getPriorityColor(suggestions.priorityScore)}>
+                  {suggestions.priorityScore}/10
+                </span>
+              </div>
+            )}
+            {suggestions.impact && (
+              <div>
+                <span className="font-semibold">Impact: </span>
+                <span className={getImpactColor(suggestions.impact)}>
+                  {suggestions.impact.charAt(0).toUpperCase() + suggestions.impact.slice(1)}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {/* Title Suggestions */}
+        {suggestions.titleSuggestions && suggestions.titleSuggestions.length > 0 && (
+          <div className="p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700">
+            <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Title Suggestions
             </h4>
+            <ul className="space-y-2">
+              {suggestions.titleSuggestions.map((suggestion, index) => (
+                <li key={index} className="text-sm text-blue-700 dark:text-blue-300 bg-white dark:bg-blue-800/50 p-2 rounded border">
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Meta Description Suggestions */}
+        {suggestions.metaDescriptionSuggestions && suggestions.metaDescriptionSuggestions.length > 0 && (
+          <div className="p-4 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700">
+            <h4 className="font-semibold text-green-800 dark:text-green-200 mb-2 flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Meta Description Suggestions
+            </h4>
+            <ul className="space-y-2">
+              {suggestions.metaDescriptionSuggestions.map((suggestion, index) => (
+                <li key={index} className="text-sm text-green-700 dark:text-green-300 bg-white dark:bg-green-800/50 p-2 rounded border">
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Content Structure */}
+        {suggestions.contentStructure && suggestions.contentStructure.length > 0 && (
+          <div className="p-4 rounded-lg bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700">
+            <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2 flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" />
+              Content Structure Improvements
+            </h4>
+            <ul className="space-y-1">
+              {suggestions.contentStructure.map((item, index) => (
+                <li key={index} className="text-sm text-yellow-700 dark:text-yellow-300 flex items-start">
+                  <span className="mr-2">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Technical Improvements */}
+        {suggestions.technicalImprovements && suggestions.technicalImprovements.length > 0 && (
+          <div className="p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700">
+            <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2 flex items-center">
+              <Cpu className="h-4 w-4 mr-2" />
+              Technical SEO Improvements
+            </h4>
+            <ul className="space-y-1">
+              {suggestions.technicalImprovements.map((item, index) => (
+                <li key={index} className="text-sm text-red-700 dark:text-red-300 flex items-start">
+                  <span className="mr-2">•</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Specific Issues */}
+        {suggestions.specificIssues && suggestions.specificIssues.length > 0 && (
+          <div className="p-4 rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700">
+            <h4 className="font-semibold text-orange-800 dark:text-orange-200 mb-2 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-2" />
+              Specific Issues Detected
+            </h4>
+            <ul className="space-y-1">
+              {suggestions.specificIssues.map((issue, index) => (
+                <li key={index} className="text-sm text-orange-700 dark:text-orange-300 flex items-start">
+                  <span className="mr-2">⚠</span>
+                  {issue}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Recommendations */}
+        {suggestions.recommendations && suggestions.recommendations.length > 0 && (
+          <div className="p-4 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700">
+            <h4 className="font-semibold text-indigo-800 dark:text-indigo-200 mb-2 flex items-center">
+              <CheckCircle className="h-4 w-4 mr-2" />
+              Actionable Recommendations
+            </h4>
+            <ul className="space-y-1">
+              {suggestions.recommendations.map((rec, index) => (
+                <li key={index} className="text-sm text-indigo-700 dark:text-indigo-300 flex items-start">
+                  <span className="mr-2">→</span>
+                  {rec}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Legacy Support */}
+        {!suggestions.titleSuggestions && suggestions.title && (
+          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Title Suggestion</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
-              {suggestionText}
+              {suggestions.title}
             </p>
           </div>
-        );
-      })}
+        )}
+
+        {!suggestions.metaDescriptionSuggestions && suggestions.metaDescription && (
+          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Meta Description Suggestion</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+              {suggestions.metaDescription}
+            </p>
+          </div>
+        )}
+
+        {!suggestions.contentStructure && suggestions.content && (
+          <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-200 mb-1">Content Suggestion</h4>
+            <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">
+              {suggestions.content}
+            </p>
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => void }) => {
   const formatBytes = (bytes: number) => {
@@ -195,7 +371,26 @@ const PageDetailsModal = ({ page, onClose }: { page: PageData; onClose: () => vo
 
         </div>
 
-        {page.suggestions && <AISuggestionsCard suggestions={page.suggestions} />}
+        {page.aiSuggestions && <AISuggestionsCard suggestions={page.aiSuggestions} />}
+        
+        {/* Web Vitals Trend Chart */}
+        {page.webVitalsHistory && page.webVitalsHistory.length > 1 && (
+          <div className="mt-8">
+            <h4 className="text-md font-semibold mb-2 text-blue-700 dark:text-blue-300">Web Vitals Trend</h4>
+            <ResponsiveContainer width="100%" height={240}>
+              <LineChart data={page.webVitalsHistory} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis />
+                <RechartsTooltip />
+                <Legend />
+                <Line type="monotone" dataKey="lcp" stroke="#3b82f6" name="LCP (s)" dot={false} />
+                <Line type="monotone" dataKey="cls" stroke="#f59e42" name="CLS" dot={false} />
+                <Line type="monotone" dataKey="ttfb" stroke="#10b981" name="TTFB (s)" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
         {/* {(page.mobileScreenshot || page.desktopScreenshot) && (
           <div className="mt-6">
             <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-3">📸 Screenshots</h3>
@@ -255,30 +450,32 @@ export default function ResultsTable({ pages }: ResultsTableProps) {
       {selectedPage && <PageDetailsModal page={selectedPage} onClose={() => setSelectedPage(null)} />}
       <div className="bg-white dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-lg shadow-md overflow-hidden">
         <h2 className="text-2xl font-bold p-6 text-gray-800 dark:text-white">📄 Detailed Page Results</h2>
-{/* Mobile Card View */}
-<div className="sm:hidden space-y-4 p-4">
-  {paginatedPages.map((page) => (
-    <div key={page.url} className="border border-gray-300 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow">
-      <div className="text-blue-600 dark:text-blue-400 font-medium truncate mb-1">
-        <a href={page.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{page.title || page.url}</a>
-      </div>
-      <div className="text-sm text-gray-600 dark:text-gray-300">
-        <div><strong>Status:</strong> <span className={page.statusCode >= 400 ? 'text-red-500' : 'text-green-600'}>{page.statusCode}</span></div>
-        <div><strong>Depth:</strong> {page.depth}</div>
-        <div><strong>LCP:</strong> <span className={getColorForLCP(page.lcp)}>{page.lcp.toFixed(2)}s</span></div>
-        <div><strong>CLS:</strong> <span className={getColorForCLS(page.cls)}>{page.cls.toFixed(2)}</span></div>
-        <div><strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb)}>{page.ttfb.toFixed(2)}s</span></div>
-        <div><strong>SEO Score:</strong> <span className={getScoreClass(page.seoScore)}>{page.seoScore}</span></div>
-        <div className="mt-2 flex justify-between items-center">
-          <span><strong>JS:</strong> {page.consoleErrors?.length ? <XCircle className="inline h-5 w-5 text-red-500" /> : <CheckCircle className="inline h-5 w-5 text-green-500" />}</span>
-          <button onClick={() => setSelectedPage(page)} className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 flex items-center gap-1 text-sm">
-            <Lightbulb className="h-4 w-4" /> Insights
-          </button>
+        {/* Web Vitals Chart Overview */}
+        <WebVitalsChart pages={pages} />
+        {/* Mobile Card View */}
+        <div className="sm:hidden space-y-4 p-4">
+          {paginatedPages.map((page) => (
+            <div key={page.url} className="border border-gray-300 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-gray-800 shadow">
+              <div className="text-blue-600 dark:text-blue-400 font-medium truncate mb-1">
+                <a href={page.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{page.title || page.url}</a>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-300">
+                <div><strong>Status:</strong> <span className={page.statusCode >= 400 ? 'text-red-500' : 'text-green-600'}>{page.statusCode}</span></div>
+                <div><strong>Depth:</strong> {page.depth}</div>
+                <div><strong>LCP:</strong> <span className={getColorForLCP(page.lcp)}>{page.lcp.toFixed(2)}s</span></div>
+                <div><strong>CLS:</strong> <span className={getColorForCLS(page.cls)}>{page.cls.toFixed(2)}</span></div>
+                <div><strong>TTFB:</strong> <span className={getColorForTTFB(page.ttfb)}>{page.ttfb.toFixed(2)}s</span></div>
+                <div><strong>SEO Score:</strong> <span className={getScoreClass(page.seoScore)}>{page.seoScore}</span></div>
+                <div className="mt-2 flex justify-between items-center">
+                  <span><strong>JS:</strong> {page.consoleErrors?.length ? <XCircle className="inline h-5 w-5 text-red-500" /> : <CheckCircle className="inline h-5 w-5 text-green-500" />}</span>
+                  <button onClick={() => setSelectedPage(page)} className="text-purple-600 hover:text-purple-800 dark:text-purple-400 dark:hover:text-purple-300 flex items-center gap-1 text-sm">
+                    <Lightbulb className="h-4 w-4" /> Insights
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
-    </div>
-  ))}
-</div>
 
         <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUptime } from '../../../hooks/useUptime';
+import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
 import { Monitor, SSLInfoResponse } from '../../../types/uptime';
 
 const ShieldIcon = () => (
@@ -44,7 +44,7 @@ export default function SSLPage() {
     refreshMonitors,
     getSSLInfo,
     clearError,
-  } = useUptime(true, 30000); // Auto-refresh every 30 seconds
+  } = useFrontendUptime(true, 30000); // Auto-refresh every 30 seconds
 
   const [sslDetails, setSSLDetails] = useState<Record<string, SSLInfoResponse>>({});
   const [loadingSSL, setLoadingSSL] = useState<Record<string, boolean>>({});
@@ -440,52 +440,26 @@ export default function SSLPage() {
                         </div>
 
                         {/* Additional Details */}
-                        {sslDetails[monitor.id] && (
-                          <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                            <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-3">
-                              Certificate Details
-                            </h5>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Subject:</span>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                  {sslDetails[monitor.id].ssl_info?.subject || 'Unknown'}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Serial Number:</span>
-                                <p className="text-gray-600 dark:text-gray-400 font-mono text-xs">
-                                  {sslDetails[monitor.id].ssl_info?.serial_number || 'Unknown'}
-                                </p>
-                              </div>
-                              <div>
-                                <span className="font-medium text-gray-700 dark:text-gray-300">Algorithm:</span>
-                                <p className="text-gray-600 dark:text-gray-400">
-                                  {sslDetails[monitor.id].ssl_info?.signature_algorithm || 'Unknown'}
-                                </p>
+                        {(() => {
+                          const sanDomains = sslDetails[monitor.id]?.ssl_info?.san_domains;
+                          return Array.isArray(sanDomains) && sanDomains.length > 0 && (
+                            <div className="mt-4">
+                              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Subject Alternative Names:
+                              </span>
+                              <div className="flex flex-wrap gap-2 mt-2">
+                                {sanDomains.map((domain, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+                                  >
+                                    {domain}
+                                  </span>
+                                ))}
                               </div>
                             </div>
-                            
-                            {sslDetails[monitor.id].ssl_info?.san_domains && 
-                             sslDetails[monitor.id].ssl_info!.san_domains!.length > 0 && (
-                              <div className="mt-4">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Subject Alternative Names:
-                                </span>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {sslDetails[monitor.id].ssl_info!.san_domains!.map((domain, index) => (
-                                    <span
-                                      key={index}
-                                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                                    >
-                                      {domain}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                          );
+                        })()}
                       </div>
 
                       {/* Actions */}

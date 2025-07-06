@@ -1,479 +1,492 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Monitor, UptimeLog, SSLInfoResponse } from '../../types/uptime';
-import { useUptime } from '../../hooks/useUptime';
+import { useFrontendUptime } from '../../hooks/useFrontendUptime';
+import { Monitor, CheckResult, Incident } from '../../types/uptime';
 
 interface UptimeHistoryProps {
   monitor: Monitor;
+  isOpen: boolean;
   onClose: () => void;
 }
 
-const CloseIcon = () => (
-  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-  </svg>
-);
-
-const RefreshIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
-
-const UptimeHistory: React.FC<UptimeHistoryProps> = ({ monitor, onClose }) => {
+export default function UptimeHistory({ monitor, isOpen, onClose }: UptimeHistoryProps) {
   const { 
-    getMonitorHistory, 
-    getSSLInfo, 
-    exportMonitorData, 
-    refreshMonitors,
-    deleteMonitor,
-    updateMonitor 
-  } = useUptime(false);
+    getMonitorChecks, 
+    getMonitorIncidents, 
+    getMonitorStats, 
+    performMonitorCheck,
+    exportMonitorData,
+    loading 
+  } = useFrontendUptime();
 
-  const [logs, setLogs] = useState<UptimeLog[]>([]);
-  const [sslInfo, setSSLInfo] = useState<SSLInfoResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState<number>(24);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [showEditForm, setShowEditForm] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState<'overview' | 'checks' | 'incidents' | 'settings'>('overview');
+  const [checks, setChecks] = useState<CheckResult[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [loadingChecks, setLoadingChecks] = useState(false);
+  const [loadingIncidents, setLoadingIncidents] = useState(false);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   useEffect(() => {
-    loadData();
-  }, [monitor.id, timeRange]);
+    if (isOpen && monitor) {
+      loadMonitorData();
+    }
+  }, [isOpen, monitor]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadMonitorData = async () => {
     try {
-      const [historyData, sslData] = await Promise.all([
-        getMonitorHistory(monitor.id, timeRange),
-        monitor.url.startsWith('https://') ? getSSLInfo(monitor.id) : Promise.resolve(null)
+      setLoadingChecks(true);
+      setLoadingIncidents(true);
+      setLoadingStats(true);
+
+      const [checksData, incidentsData, statsData] = await Promise.all([
+        getMonitorChecks(monitor.id, 50),
+        getMonitorIncidents(monitor.id, 20),
+        getMonitorStats(monitor.id)
       ]);
-      
-      setLogs(historyData.reverse()); // Most recent first
-      setSSLInfo(sslData);
+
+      setChecks(checksData);
+      setIncidents(incidentsData);
+      setStats(statsData);
     } catch (error) {
       console.error('Failed to load monitor data:', error);
     } finally {
-      setLoading(false);
+      setLoadingChecks(false);
+      setLoadingIncidents(false);
+      setLoadingStats(false);
     }
   };
 
-  const handleRefresh = async () => {
-    setRefreshing(true);
+  const handleManualCheck = async () => {
     try {
-      await refreshMonitors();
-      await loadData();
+      await performMonitorCheck(monitor.id);
+      // Reload checks after manual check
+      const newChecks = await getMonitorChecks(monitor.id, 50);
+      setChecks(newChecks);
     } catch (error) {
-      console.error('Failed to refresh monitor:', error);
-    } finally {
-      setRefreshing(false);
+      console.error('Failed to perform manual check:', error);
     }
   };
 
   const handleExport = async (format: 'json' | 'csv') => {
     try {
-      await exportMonitorData(monitor.id, format, timeRange);
+      const blob = await exportMonitorData(monitor.id, format);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${monitor.name}-data.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
     } catch (error) {
       console.error('Failed to export data:', error);
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await deleteMonitor(monitor.id);
-      onClose();
-    } catch (error) {
-      console.error('Failed to delete monitor:', error);
-    }
+  const getStatusColor = (status: boolean) => {
+    return status ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
   };
 
-  const calculateUptime = (logs: UptimeLog[]) => {
-    if (logs.length === 0) return 100;
-    const upLogs = logs.filter(log => log.status === 'up').length;
-    return (upLogs / logs.length) * 100;
+  const getStatusIcon = (status: boolean) => {
+    return status ? (
+      <svg className="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+      </svg>
+    ) : (
+      <svg className="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+      </svg>
+    );
   };
 
-  const calculateAverageResponseTime = (logs: UptimeLog[]) => {
-    const responseTimes = logs.filter(log => log.response_time).map(log => log.response_time!);
-    if (responseTimes.length === 0) return 0;
-    return responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'up': return 'bg-green-500';
-      case 'down': return 'bg-red-500';
-      default: return 'bg-gray-400';
-    }
-  };
-
-  const formatDuration = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return `${Math.floor(diffMins / 1440)}d ago`;
-  };
-
-  const uptime = calculateUptime(logs);
-  const averageResponseTime = calculateAverageResponseTime(logs);
+  if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+      <div className="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 shadow-lg rounded-md bg-white dark:bg-gray-800 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {monitor.name || 'Monitor Details'}
-            </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              {monitor.url}
-            </p>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleRefresh}
-              disabled={refreshing}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-50"
-              title="Refresh Monitor"
-            >
-              <RefreshIcon />
-            </button>
-            
-            <div className="relative">
-              <button
-                onClick={() => setShowEditForm(!showEditForm)}
-                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                title="Edit Monitor"
-              >
-                <EditIcon />
-              </button>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-3">
+            {getStatusIcon(monitor.status)}
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{monitor.name}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{monitor.url}</p>
             </div>
-            
-            <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400"
-              title="Delete Monitor"
-            >
-              <TrashIcon />
-            </button>
-            
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-            >
-              <CloseIcon />
-            </button>
           </div>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-2 text-gray-500 dark:text-gray-400">Loading data...</span>
-            </div>
-          ) : (
-            <div className="p-6 space-y-6">
-              {/* Summary Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+        {/* Tabs */}
+        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            {[
+              { id: 'overview', label: 'Overview' },
+              { id: 'checks', label: 'Check History' },
+              { id: 'incidents', label: 'Incidents' },
+              { id: 'settings', label: 'Settings' }
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                  activeTab === tab.id
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Monitor Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full ${getStatusColor(monitor.last_status || 'unknown')} mr-2`}></div>
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">Current Status</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                    {monitor.last_status?.toUpperCase() || 'UNKNOWN'}
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Uptime ({timeRange}h)
-                  </span>
-                  <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-2">
-                    {uptime.toFixed(2)}%
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Avg Response Time
-                  </span>
-                  <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-2">
-                    {averageResponseTime.toFixed(0)}ms
-                  </p>
-                </div>
-
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                  <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                    Total Checks
-                  </span>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white mt-2">
-                    {logs.length}
-                  </p>
-                </div>
-              </div>
-
-              {/* SSL Certificate Info */}
-              {sslInfo && sslInfo.ssl_info && (
-                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                    SSL Certificate Information
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</span>
-                      <p className={`font-semibold ${
-                        sslInfo.ssl_info.is_valid 
-                          ? 'text-green-600 dark:text-green-400' 
-                          : 'text-red-600 dark:text-red-400'
-                      }`}>
-                        {sslInfo.ssl_info.is_valid ? 'Valid' : 'Invalid'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Expires</span>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {sslInfo.ssl_info.expires_at 
-                          ? new Date(sslInfo.ssl_info.expires_at).toLocaleDateString()
-                          : 'Unknown'
-                        }
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Days Until Expiry</span>
-                      <p className={`font-semibold ${
-                        (sslInfo.ssl_info.days_until_expiry || 0) < 30 
-                          ? 'text-yellow-600 dark:text-yellow-400' 
-                          : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {sslInfo.ssl_info.days_until_expiry || 'Unknown'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Issuer</span>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {sslInfo.ssl_info.issuer || 'Unknown'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Subject</span>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {sslInfo.ssl_info.subject || 'Unknown'}
-                      </p>
-                    </div>
-                    <div>
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">Self-Signed</span>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {sslInfo.ssl_info.is_self_signed ? 'Yes' : 'No'}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {sslInfo.ssl_info.san_domains && sslInfo.ssl_info.san_domains.length > 0 && (
-                    <div className="mt-4">
-                      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                        Subject Alternative Names
-                      </span>
-                      <div className="flex flex-wrap gap-2 mt-2">
-                        {sslInfo.ssl_info.san_domains.map((domain, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                          >
-                            {domain}
-                          </span>
-                        ))}
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
                       </div>
                     </div>
-                  )}
-                </div>
-              )}
-
-              {/* Controls */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Time Range:
-                  </label>
-                  <select
-                    value={timeRange}
-                    onChange={(e) => setTimeRange(parseInt(e.target.value))}
-                    className="px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value={1}>Last Hour</option>
-                    <option value={6}>Last 6 Hours</option>
-                    <option value={24}>Last 24 Hours</option>
-                    <option value={168}>Last 7 Days</option>
-                    <option value={720}>Last 30 Days</option>
-                  </select>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Response Time</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {monitor.lastResponseTime ? `${monitor.lastResponseTime}ms` : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => handleExport('csv')}
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                  >
-                    <DownloadIcon />
-                    <span className="ml-1">CSV</span>
-                  </button>
-                  <button
-                    onClick={() => handleExport('json')}
-                    className="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-                  >
-                    <DownloadIcon />
-                    <span className="ml-1">JSON</span>
-                  </button>
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Uptime (24h)</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {stats?.stats?.uptime?.['24h'] ? `${stats.stats.uptime['24h'].toFixed(2)}%` : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Incidents</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {incidents.filter(i => i.status === 'open').length}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-full flex items-center justify-center">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Checks</p>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {stats?.stats?.total_checks || 0}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Uptime Visualization */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                  Uptime History
-                </h3>
-                <div className="flex flex-wrap gap-1">
-                  {logs.slice(-90).map((log, index) => (
-                    <div
-                      key={index}
-                      className={`w-3 h-8 rounded-sm ${getStatusColor(log.status)} tooltip`}
-                      title={`${log.status.toUpperCase()} - ${new Date(log.timestamp).toLocaleString()}${
-                        log.response_time ? ` - ${log.response_time}ms` : ''
-                      }`}
-                    />
-                  ))}
+              {/* Recent Activity */}
+              <div className="bg-white dark:bg-gray-700 shadow rounded-lg">
+                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-600">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Recent Activity</h3>
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
-                  <span>90 days ago</span>
-                  <span>Now</span>
-                </div>
-              </div>
-
-              {/* Recent Logs */}
-              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                    Recent Checks
-                  </h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Time
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Response Time
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          HTTP Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          SSL Status
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Error
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {logs.slice(0, 50).map((log, index) => (
-                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {formatDuration(log.timestamp)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              log.status === 'up'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                            }`}>
-                              {log.status.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {log.response_time ? `${log.response_time}ms` : '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {log.http_status || '-'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {log.ssl_info ? (log.ssl_info.is_valid ? '✅' : '❌') : '-'}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
-                            {log.error || '-'}
-                          </td>
-                        </tr>
+                <div className="p-6">
+                  {loadingChecks ? (
+                    <div className="text-center py-4">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                      <p className="mt-2 text-gray-500 dark:text-gray-400">Loading recent checks...</p>
+                    </div>
+                  ) : checks.length === 0 ? (
+                    <p className="text-gray-500 dark:text-gray-400 text-center py-4">No recent checks found</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {checks.slice(0, 5).map((check) => (
+                        <div key={check.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-600 rounded-lg">
+                          <div className="flex items-center space-x-3">
+                            {getStatusIcon(check.status)}
+                            <div>
+                              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                {check.status ? 'Check Passed' : 'Check Failed'}
+                              </p>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(check.createdAt).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-gray-900 dark:text-white">{check.responseTime}ms</p>
+                            {check.statusCode && (
+                              <p className="text-xs text-gray-500 dark:text-gray-400">HTTP {check.statusCode}</p>
+                            )}
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Delete Confirmation Modal */}
-        {showDeleteConfirm && (
-          <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-                Delete Monitor
-              </h3>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Are you sure you want to delete this monitor? This action cannot be undone and will remove all historical data.
-              </p>
-              <div className="flex items-center justify-end space-x-4">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700"
-                >
-                  Delete
-                </button>
+          {/* Checks Tab */}
+          {activeTab === 'checks' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Check History</h3>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleManualCheck}
+                    disabled={loading}
+                    className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    Manual Check
+                  </button>
+                  <button
+                    onClick={() => handleExport('json')}
+                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                  >
+                    Export JSON
+                  </button>
+                  <button
+                    onClick={() => handleExport('csv')}
+                    className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
+                  >
+                    Export CSV
+                  </button>
+                </div>
+              </div>
+
+              {loadingChecks ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading check history...</p>
+                </div>
+              ) : (
+                <div className="bg-white dark:bg-gray-700 shadow rounded-lg overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
+                      <thead className="bg-gray-50 dark:bg-gray-600">
+                        <tr>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Response Time
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Status Code
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Message
+                          </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                            Time
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
+                        {checks.map((check) => (
+                          <tr key={check.id} className="hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                {getStatusIcon(check.status)}
+                                <span className={`ml-2 text-sm font-medium ${getStatusColor(check.status)}`}>
+                                  {check.status ? 'UP' : 'DOWN'}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {check.responseTime}ms
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {check.statusCode || 'N/A'}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
+                              {check.message}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {new Date(check.createdAt).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Incidents Tab */}
+          {activeTab === 'incidents' && (
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Incidents</h3>
+              
+              {loadingIncidents ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Loading incidents...</p>
+                </div>
+              ) : incidents.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">No incidents found</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {incidents.map((incident) => (
+                    <div key={incident.id} className="bg-white dark:bg-gray-700 shadow rounded-lg p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              incident.status === 'open' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                              incident.status === 'resolved' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                              'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+                            }`}>
+                              {incident.status.toUpperCase()}
+                            </span>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              incident.severity === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                              incident.severity === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                              incident.severity === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                              'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                            }`}>
+                              {incident.severity.toUpperCase()}
+                            </span>
+                          </div>
+                          <h4 className="text-lg font-medium text-gray-900 dark:text-white mb-1">
+                            {incident.title}
+                          </h4>
+                          <p className="text-gray-600 dark:text-gray-300 mb-3">
+                            {incident.description}
+                          </p>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            <p>Started: {new Date(incident.startTime).toLocaleString()}</p>
+                            {incident.endTime && (
+                              <p>Resolved: {new Date(incident.endTime).toLocaleString()}</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-6">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white">Monitor Settings</h3>
+              
+              <div className="bg-white dark:bg-gray-700 shadow rounded-lg p-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Basic Information</h4>
+                    <dl className="space-y-3">
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Monitor Type</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white capitalize">{monitor.type}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Check Interval</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white">{monitor.interval} seconds</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Timeout</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white">{monitor.timeout} seconds</dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Retries</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white">{monitor.retries}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Thresholds</h4>
+                    <dl className="space-y-3">
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Response Time Threshold</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white">
+                          {monitor.threshold?.responseTime || 'Not set'}ms
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Expected Status Code</dt>
+                        <dd className="text-sm text-gray-900 dark:text-white">
+                          {monitor.threshold?.statusCode || 'Not set'}
+                        </dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+                
+                {monitor.tags && monitor.tags.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Tags</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {monitor.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
-};
-
-export default UptimeHistory;
+}

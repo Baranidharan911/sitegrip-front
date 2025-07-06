@@ -1,7 +1,25 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { AlertTriangle, CheckCircle, Clock, XCircle, TrendingUp, Globe, Zap, RefreshCw, Search, Database } from 'lucide-react';
+import { 
+  AlertTriangle, 
+  CheckCircle, 
+  Clock, 
+  XCircle, 
+  TrendingUp, 
+  Globe, 
+  Zap, 
+  RefreshCw, 
+  Search, 
+  Database,
+  BarChart3,
+  Target,
+  Activity,
+  Users,
+  Calendar,
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react';
 import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import { IndexingStats, QuotaInfo } from '@/types/indexing';
 
@@ -43,9 +61,14 @@ const IndexingDashboard: React.FC = () => {
 
   if (loading && !statistics) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600 dark:text-gray-400">Loading dashboard...</span>
+      <div className="p-8">
+        <div className="flex items-center justify-center h-64">
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-blue-400 rounded-full animate-spin" style={{ animationDelay: '0.5s' }}></div>
+          </div>
+          <span className="ml-4 text-gray-600 dark:text-gray-400 font-medium">Loading dashboard...</span>
+        </div>
       </div>
     );
   }
@@ -73,97 +96,240 @@ const IndexingDashboard: React.FC = () => {
   const priorityUsed = safeNumber(quotaInfo?.high_priority_used) + safeNumber(quotaInfo?.critical_priority_used);
   const priorityRemaining = priorityReserve - priorityUsed;
 
+  const quotaPercentage = (quotaUsed / dailyLimit) * 100;
+  const successRatePercentage = indexingSuccessRate;
+
   return (
-    <div className="space-y-6">
+    <div className="p-8 space-y-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+            <BarChart3 className="w-8 h-8 text-blue-600" />
             Indexing Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Monitor your Google indexing progress and quota usage
+          <p className="text-gray-600 dark:text-gray-400 mt-2 flex items-center gap-2">
+            <Activity className="w-4 h-4" />
+            Monitor your Google indexing progress and quota usage in real-time
           </p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={refreshing || loading}
-          className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing || loading ? 'animate-spin' : ''}`} />
           Refresh
         </button>
       </div>
 
+      {/* Welcome Message for New Users */}
       {isNewUser && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Welcome! 🎉</h3>
-          <p className="text-blue-800 dark:text-blue-200">Submit a URL to get started.</p>
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl p-6">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
+              <Globe className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">Welcome to Site Grip! 🎉</h3>
+              <p className="text-blue-800 dark:text-blue-200 mb-3">
+                You're all set up! Start by submitting your first URL for Google indexing. 
+                We'll help you track its progress and optimize your website's search visibility.
+              </p>
+              <div className="flex items-center gap-4 text-sm text-blue-700 dark:text-blue-300">
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-4 h-4" />
+                  Real-time tracking
+                </div>
+                <div className="flex items-center gap-1">
+                  <Zap className="w-4 h-4" />
+                  Instant submissions
+                </div>
+                <div className="flex items-center gap-1">
+                  <Target className="w-4 h-4" />
+                  Priority control
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
+      {/* Main Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-xl shadow-lg p-6">
-          <p className="text-blue-100 text-sm font-medium mb-1">Total Submitted</p>
-          <p className="text-3xl font-bold">{totalSubmitted.toLocaleString()}</p>
+        <div className="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 text-white rounded-2xl shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Database className="w-6 h-6 text-white" />
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-blue-100" />
+            </div>
+            <p className="text-blue-100 text-sm font-medium mb-1">Total Submitted</p>
+            <p className="text-3xl font-bold">{totalSubmitted.toLocaleString()}</p>
+            <p className="text-blue-100 text-xs mt-2">URLs sent to Google</p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl shadow-lg p-6">
-          <p className="text-green-100 text-sm font-medium mb-1">Successfully Indexed</p>
-          <p className="text-3xl font-bold">{totalIndexed.toLocaleString()}</p>
+
+        <div className="bg-gradient-to-br from-emerald-500 via-emerald-600 to-emerald-700 text-white rounded-2xl shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <CheckCircle className="w-6 h-6 text-white" />
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-emerald-100" />
+            </div>
+            <p className="text-emerald-100 text-sm font-medium mb-1">Successfully Indexed</p>
+            <p className="text-3xl font-bold">{totalIndexed.toLocaleString()}</p>
+            <p className="text-emerald-100 text-xs mt-2">Pages in Google index</p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl shadow-lg p-6">
-          <p className="text-amber-100 text-sm font-medium mb-1">Not Indexed</p>
-          <p className="text-3xl font-bold">{totalNotIndexed.toLocaleString()}</p>
+
+        <div className="bg-gradient-to-br from-amber-500 via-amber-600 to-amber-700 text-white rounded-2xl shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <ArrowDownRight className="w-5 h-5 text-amber-100" />
+            </div>
+            <p className="text-amber-100 text-sm font-medium mb-1">Not Indexed</p>
+            <p className="text-3xl font-bold">{totalNotIndexed.toLocaleString()}</p>
+            <p className="text-amber-100 text-xs mt-2">Need attention</p>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6">
-          <p className="text-purple-100 text-sm font-medium mb-1">Pending Check</p>
-          <p className="text-3xl font-bold">{totalPending.toLocaleString()}</p>
+
+        <div className="bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 text-white rounded-2xl shadow-lg p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+              <ArrowUpRight className="w-5 h-5 text-purple-100" />
+            </div>
+            <p className="text-purple-100 text-sm font-medium mb-1">Pending Check</p>
+            <p className="text-3xl font-bold">{totalPending.toLocaleString()}</p>
+            <p className="text-purple-100 text-xs mt-2">Awaiting status</p>
+          </div>
         </div>
       </div>
 
+      {/* Performance Metrics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Indexing Success Rate</h3>
-          <span className="text-4xl font-bold text-gray-900 dark:text-white">{safePercentage(indexingSuccessRate)}%</span>
-          <div className="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-2">
-            <span>Indexed: {totalIndexed}</span>
-            <span>Not Indexed: {totalNotIndexed}</span>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Target className="w-5 h-5 text-blue-600" />
+              Indexing Success Rate
+            </h3>
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">{safePercentage(indexingSuccessRate)}%</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Successfully Indexed</span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{totalIndexed.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Not Indexed</span>
+              <span className="font-semibold text-amber-600 dark:text-amber-400">{totalNotIndexed.toLocaleString()}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Failed</span>
+              <span className="font-semibold text-red-600 dark:text-red-400">{totalFailed.toLocaleString()}</span>
+            </div>
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Daily Quota Usage</h3>
-           <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                {quotaUsed.toLocaleString()} / {dailyLimit.toLocaleString()}
-              </span>
-              <span className="text-sm text-blue-600 font-medium">
-                {quotaRemaining.toLocaleString()} remaining
+
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <Activity className="w-5 h-5 text-purple-600" />
+              Daily Quota Usage
+            </h3>
+            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">{Math.round(quotaPercentage)}%</span>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Used Today</span>
+                <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  {quotaUsed.toLocaleString()} / {dailyLimit.toLocaleString()}
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${Math.min(quotaPercentage, 100)}%` }}
+                ></div>
+              </div>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">Remaining</span>
+              <span className="font-semibold text-purple-600 dark:text-purple-400">
+                {quotaRemaining.toLocaleString()} submissions
               </span>
             </div>
+          </div>
         </div>
       </div>
       
-      <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Priority Quota Reserve</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-500">Low</p>
-            <p className="font-bold text-blue-600">{safeNumber(quotaInfo?.low_priority_used).toLocaleString()}</p>
+      {/* Priority Quota Breakdown */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+          <Users className="w-5 h-5 text-indigo-600" />
+          Priority Quota Breakdown
+        </h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-900/30 rounded-xl border border-blue-200 dark:border-blue-800">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">L</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Low Priority</p>
+            <p className="font-bold text-blue-600 dark:text-blue-400 text-lg">
+              {safeNumber(quotaInfo?.low_priority_used).toLocaleString()}
+            </p>
           </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-500">Medium</p>
-            <p className="font-bold text-green-600">{safeNumber(quotaInfo?.medium_priority_used).toLocaleString()}</p>
+          <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-900/30 rounded-xl border border-green-200 dark:border-green-800">
+            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <span className="text-green-600 dark:text-green-400 font-bold text-sm">M</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Medium Priority</p>
+            <p className="font-bold text-green-600 dark:text-green-400 text-lg">
+              {safeNumber(quotaInfo?.medium_priority_used).toLocaleString()}
+            </p>
           </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-500">High</p>
-            <p className="font-bold text-orange-600">{safeNumber(quotaInfo?.high_priority_used).toLocaleString()}</p>
+          <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-900/30 rounded-xl border border-orange-200 dark:border-orange-800">
+            <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <span className="text-orange-600 dark:text-orange-400 font-bold text-sm">H</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">High Priority</p>
+            <p className="font-bold text-orange-600 dark:text-orange-400 text-lg">
+              {safeNumber(quotaInfo?.high_priority_used).toLocaleString()}
+            </p>
           </div>
-          <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-            <p className="text-sm text-gray-500">Critical</p>
-            <p className="font-bold text-red-600">{safeNumber(quotaInfo?.critical_priority_used).toLocaleString()}</p>
+          <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 dark:from-red-900/20 dark:to-red-900/30 rounded-xl border border-red-200 dark:border-red-800">
+            <div className="w-10 h-10 bg-red-100 dark:bg-red-900/50 rounded-lg flex items-center justify-center mx-auto mb-2">
+              <span className="text-red-600 dark:text-red-400 font-bold text-sm">C</span>
+            </div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">Critical Priority</p>
+            <p className="font-bold text-red-600 dark:text-red-400 text-lg">
+              {safeNumber(quotaInfo?.critical_priority_used).toLocaleString()}
+            </p>
           </div>
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Priority Reserve: {priorityUsed.toLocaleString()} / {priorityReserve.toLocaleString()} used
+        <div className="flex items-center justify-between text-sm p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
+          <span className="text-gray-600 dark:text-gray-400 font-medium">Priority Reserve Usage</span>
+          <span className="font-semibold text-indigo-600 dark:text-indigo-400">
+            {priorityUsed.toLocaleString()} / {priorityReserve.toLocaleString()} used
+          </span>
         </div>
       </div>
     </div>

@@ -1,211 +1,112 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import ResultsTable from './ResultsTable';
-import CrawlSummary from './CrawlSummary';
-import { ChevronDown, Loader2, Smartphone } from 'lucide-react';
-import { format } from 'date-fns';
-
-interface AISuggestions {
-  title: string;
-  metaDescription: string;
-  content: string;
-  keyword_analysis?: {
-    keyword_density: Record<string, number>;
-    missing_keywords?: string[];
-  };
-}
-
-
-interface PageData {
-  url: string;
-  title?: string;
-  statusCode: number;
-  wordCount: number;
-  issues: string[];
-  redirectChain: string[];
-  loadTime: number;
-  pageSizeBytes: number;
-  hasViewport: boolean;
-  suggestions?: AISuggestions;
-  seoScore: number;
-  lcp: number;    // ✅ Add this
-  cls: number;    // ✅ Add this
-  ttfb: number;
-  linkedFrom?: string[];
-  depth: number;
-}
-
-interface CrawlSummaryData {
-  totalPages: number;
-  missingTitles: number;
-  lowWordCountPages: number;
-  brokenLinks: number;
-  duplicateTitles: number;
-  duplicateDescriptions: number;
-  redirectChains: number;
-  mobileFriendlyPages: number;
-  nonMobilePages: number;
-  pagesWithSlowLoad: number;
-  orphanPages: number;
-  averageSeoScore: number;
-}
-
-interface CrawlHistoryEntry {
-  crawlId: string;
-  url: string;
-  crawledAt: string;
-  summary: CrawlSummaryData;
-  pages: PageData[];
-}
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  getDocs,
+} from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { db, auth } from '@/lib/firebase';
+import { Loader2, RefreshCw } from 'lucide-react';
+import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
+import ResultsTable from '@/components/seo-crawler/ResultsTable';
 
 export default function CrawlHistory() {
-  const [crawls, setCrawls] = useState<CrawlHistoryEntry[]>([]);
-  const [formattedDates, setFormattedDates] = useState<Record<string, string>>({});
+  const [crawls, setCrawls] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        // Get Firebase auth token
-        const { auth } = await import('../../lib/firebase');
-        const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-        const userId = auth.currentUser ? auth.currentUser.uid : null;
-        
-        if (!token) {
-          throw new Error('Authentication required. Please log in to view crawl history.');
-        }
-        
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-        const headers: Record<string, string> = {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+  const fetchCrawls = async (userId: string) => {
+    try {
+      const q = query(
+        collection(db, 'crawls'),
+        where('userId', '==', userId),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const results = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          crawlId: doc.id,
+          url: data.url,
+          userId: data.userId,
+          createdAt: data.createdAt?.toDate().toISOString() || null,
+          summary: data.summary || {},
+          pages: data.pages || [],
         };
-        
-        // Use new /api/history endpoint
-        let historyUrl = `${apiUrl}/api/history?limit=50`;
-        if (userId) historyUrl += `&userId=${userId}`;
-        const response = await fetch(historyUrl, {
-          headers
-        });
-        
-        if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Authentication required. Please log in to view crawl history.');
-          }
-          throw new Error(`Failed to fetch crawl history: ${response.status} ${response.statusText}`);
-        }
-        
-        const responseData = await response.json();
-        console.log('📊 Crawl history response:', responseData);
-        
-        // Handle backend response format
-        const crawlHistory = responseData.success ? responseData.data : responseData;
-        
-        if (!Array.isArray(crawlHistory)) {
-          throw new Error('Invalid response format from server');
-        }
-        
-        // Transform the data to match the expected CrawlHistoryEntry format
-        const transformedHistory: CrawlHistoryEntry[] = crawlHistory.map((crawl: any) => ({
-          crawlId: crawl.id,
-          url: crawl.url || crawl.domain,
-          crawledAt: crawl.startedAt || crawl.createdAt,
-          summary: crawl.summary || {
-            totalPages: crawl.pages?.length || 0,
-            missingTitles: 0,
-            lowWordCountPages: 0,
-            brokenLinks: 0,
-            duplicateTitles: 0,
-            duplicateDescriptions: 0,
-            redirectChains: 0,
-            mobileFriendlyPages: 0,
-            nonMobilePages: 0,
-            pagesWithSlowLoad: 0,
-            orphanPages: 0,
-            averageSeoScore: 0
-          },
-          pages: crawl.pages || []
-        }));
-        
-        setCrawls(transformedHistory);
-
-        const dateMap: Record<string, string> = {};
-        transformedHistory.forEach((entry: CrawlHistoryEntry) => {
-          dateMap[entry.crawlId] = format(new Date(entry.crawledAt), 'PPpp');
-        });
-        setFormattedDates(dateMap);
-      } catch (err: any) {
-        console.error('Error fetching crawl history:', err);
-        setError(err.message || 'Failed to fetch crawl history');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchHistory();
-  }, []);
-
-  const toggleExpand = (id: string) => {
-    setExpandedId(expandedId === id ? null : id);
+      });
+      setCrawls(results);
+    } catch (err: any) {
+      setError('Error loading crawl history');
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center p-10">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <p className="ml-4 text-gray-500">Loading crawl history...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        setError('Please log in to see crawl history.');
+        setLoading(false);
+        return;
+      }
+      fetchCrawls(user.uid);
+    });
+  }, []);
 
-  if (error) {
-    return <p className="p-6 text-center text-red-500 font-semibold">{error}</p>;
-  }
+  const handleRefresh = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    setRefreshing(true);
+    await fetchCrawls(user.uid);
+  };
 
   return (
-    <div className="space-y-4">
-      {crawls.length === 0 ? (
-        <p className="text-center text-gray-600 dark:text-gray-400 p-8 bg-white dark:bg-gray-900/50 rounded-lg">
-          No crawl history found. Run a crawl on the dashboard to see results here.
-        </p>
+    <div className="space-y-6">
+      <div className="flex items-center justify-between border-b pb-4">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Crawl History</h2>
+        <button
+          onClick={handleRefresh}
+          disabled={refreshing}
+          className="flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 disabled:opacity-50"
+        >
+          <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+          <span className="ml-2">Refresh</span>
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+          <span className="ml-3 text-gray-500">Loading crawl history...</span>
+        </div>
+      ) : error ? (
+        <p className="text-center text-red-500 font-semibold mt-4">{error}</p>
+      ) : crawls.length === 0 ? (
+        <p className="text-center text-gray-600 dark:text-gray-400 py-10">No crawl data found.</p>
       ) : (
-        crawls.map((crawl) => {
-          const isOpen = crawl.crawlId === expandedId;
-          return (
-            <div key={crawl.crawlId} className="border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm bg-white dark:bg-gray-900/50 transition-all duration-300">
-              <button onClick={() => toggleExpand(crawl.crawlId)} className="w-full text-left p-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 focus:outline-none">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold text-blue-700 dark:text-blue-300">{crawl.url}</h3>
-                  <div className="flex items-center">
-                    <span className="text-sm text-gray-500 dark:text-gray-400 mr-4">
-                      {formattedDates[crawl.crawlId] || '...'}
-                    </span>
-                    <ChevronDown className={`h-5 w-5 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
-                  </div>
+        <div className="space-y-6">
+          {crawls.map((crawl) => (
+            <div key={crawl.crawlId} className="border rounded-lg bg-white dark:bg-gray-900/50 p-6 shadow-sm space-y-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-blue-700 dark:text-blue-300 font-medium text-lg">{crawl.url}</h3>
+                  <p className="text-sm text-gray-500">
+                    {crawl.createdAt ? new Date(crawl.createdAt).toLocaleString() : 'N/A'}
+                  </p>
                 </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400 mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-4 gap-y-1">
-                  <span>📄 Pages: {crawl.summary.totalPages}</span>
-                  <span className={crawl.summary.brokenLinks > 0 ? 'text-red-500 font-semibold' : ''}>🔗 Broken: {crawl.summary.brokenLinks}</span>
-                  <span className={crawl.summary.pagesWithSlowLoad > 0 ? 'text-yellow-600 font-semibold' : ''}>🐢 Slow: {crawl.summary.pagesWithSlowLoad}</span>
-                  <span className={crawl.summary.nonMobilePages > 0 ? 'text-red-500 font-semibold' : ''}>
-                    <Smartphone size={14} className="inline-block mr-1" /> Unfriendly: {crawl.summary.nonMobilePages}
-                  </span>
-                </div>
-              </button>
-              {isOpen && (
-                <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-6 bg-gray-50/50 dark:bg-black/20">
-                  <CrawlSummary
-                    summary={crawl.summary}
-                    pages={crawl.pages}
-                  />
-                  <ResultsTable pages={crawl.pages} />
-                </div>
-              )}
+              </div>
+              <CrawlSummary summary={crawl.summary} pages={crawl.pages} />
+              <ResultsTable pages={crawl.pages} />
             </div>
-          );
-        })
+          ))}
+        </div>
       )}
     </div>
   );

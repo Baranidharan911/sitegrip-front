@@ -1,58 +1,118 @@
-// API Configuration
+// ============================
+// 🔧 API CONFIGURATION
+// ============================
+
 export const API_CONFIG = {
-  BASE_URL: process.env.NEXT_BASE_URL || 'https://sitegrip-backend-pu22v4ao5a-uc.a.run.app/api',
-  TIMEOUT: 30000, // 30 seconds
+  BASE_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  TIMEOUT: 30000,
   RETRY_ATTEMPTS: 3,
+  RETRY_DELAY: 1000,
 };
 
-// Monitoring API Endpoints
-export const MONITORING_ENDPOINTS = {
-  MONITORS: '/monitoring/monitors',
-  INCIDENTS: '/monitoring/incidents',
-  PERFORMANCE: '/monitoring/performance',
-  HEATMAP: '/monitoring/heatmap',
-  STATS: '/monitoring/stats',
-  ALERTS: '/monitoring/alerts',
-  MAINTENANCE: '/monitoring/maintenance',
-  TEAM: '/monitoring/team',
-  STATUS_PAGE: '/monitoring/status-page',
-};
+// ============================
+// 📊 MONITORING CONFIGURATION
+// ============================
 
-// App Configuration
-export const APP_CONFIG = {
-  NAME: process.env.NEXT_PUBLIC_APP_NAME || 'WebWatch',
-  VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '2.0.0',
-  DESCRIPTION: 'Advanced Website Monitoring & Uptime Tracking',
-};
-
-// Monitoring Configuration
 export const MONITORING_CONFIG = {
-  DEFAULT_INTERVAL: 5, // minutes
-  DEFAULT_TIMEOUT: 30, // seconds
+  DEFAULT_INTERVAL: 60, // seconds
+  DEFAULT_TIMEOUT: 10, // seconds
   DEFAULT_RETRIES: 3,
-  MAX_MONITORS: 100,
-  REFRESH_INTERVAL: 30000, // 30 seconds
+  MAX_RESPONSE_TIME: 5000, // ms
+  SSL_WARNING_DAYS: 30,
+  UPTIME_THRESHOLD: 99.9, // percentage
+  MAX_FAILURES_IN_A_ROW: 3,
 };
 
-// Notification Configuration
-export const NOTIFICATION_CONFIG = {
-  TYPES: ['email', 'slack', 'discord', 'telegram', 'webhook'] as const,
-  DEFAULT_CHANNELS: ['email'],
-};
+// ============================
+// 🎨 STATUS COLORS
+// ============================
 
-// Status Colors
 export const STATUS_COLORS = {
-  UP: '#10B981',
-  DOWN: '#EF4444',
-  PAUSED: '#F59E0B',
-  MAINTENANCE: '#3B82F6',
-  UNKNOWN: '#6B7280',
+  up: {
+    bg: 'bg-green-100',
+    text: 'text-green-800',
+    border: 'border-green-200',
+    dark: {
+      bg: 'dark:bg-green-900',
+      text: 'dark:text-green-200',
+      border: 'dark:border-green-700',
+    },
+  },
+  down: {
+    bg: 'bg-red-100',
+    text: 'text-red-800',
+    border: 'border-red-200',
+    dark: {
+      bg: 'dark:bg-red-900',
+      text: 'dark:text-red-200',
+      border: 'dark:border-red-700',
+    },
+  },
+  unknown: {
+    bg: 'bg-gray-100',
+    text: 'text-gray-800',
+    border: 'border-gray-200',
+    dark: {
+      bg: 'dark:bg-gray-900',
+      text: 'dark:text-gray-200',
+      border: 'dark:border-gray-700',
+    },
+  },
+  paused: {
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-800',
+    border: 'border-yellow-200',
+    dark: {
+      bg: 'dark:bg-yellow-900',
+      text: 'dark:text-yellow-200',
+      border: 'dark:border-yellow-700',
+    },
+  },
 };
 
-// Severity Colors
+// ============================
+// ⚠️ SEVERITY COLORS
+// ============================
+
 export const SEVERITY_COLORS = {
-  CRITICAL: '#DC2626',
-  HIGH: '#EA580C',
-  MEDIUM: '#D97706',
-  LOW: '#2563EB',
+  low: {
+    bg: 'bg-blue-100',
+    text: 'text-blue-800',
+    border: 'border-blue-200',
+    dark: {
+      bg: 'dark:bg-blue-900',
+      text: 'dark:text-blue-200',
+      border: 'dark:border-blue-700',
+    },
+  },
+  medium: {
+    bg: 'bg-yellow-100',
+    text: 'text-yellow-800',
+    border: 'border-yellow-200',
+    dark: {
+      bg: 'dark:bg-yellow-900',
+      text: 'dark:text-yellow-200',
+      border: 'dark:border-yellow-700',
+    },
+  },
+  high: {
+    bg: 'bg-orange-100',
+    text: 'text-orange-800',
+    border: 'border-orange-200',
+    dark: {
+      bg: 'dark:bg-orange-900',
+      text: 'dark:text-orange-200',
+      border: 'dark:border-orange-700',
+    },
+  },
+  critical: {
+    bg: 'bg-red-100',
+    text: 'text-red-800',
+    border: 'border-red-200',
+    dark: {
+      bg: 'dark:bg-red-900',
+      text: 'dark:text-red-200',
+      border: 'dark:border-red-700',
+    },
+  },
 }; 

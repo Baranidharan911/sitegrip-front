@@ -90,8 +90,8 @@ export const sidebarItems: SidebarSection[] = [
     subItems: [
       { name: 'PDF Report Generator', path: '/reporting-analytics/pdf-generator', icon: FileText, pro: false },
       { name: 'Custom Dashboard', path: '/reporting-analytics/dashboard', icon: Grid3X3, pro: false },
-      { name: 'SEO ROI Calculator', path: '/reporting-analytics/roi-calculator', icon: Calculator, pro: false },
-      { name: 'Chart Annotations', path: '/reporting-analytics/annotations', icon: MessageSquare, pro: false },
+      { name: 'SEO ROI Calculator', path: '/reporting-analytics/seo-roi-calculator', icon: Calculator, pro: false },
+      { name: 'Chart Annotations', path: '/reporting-analytics/chart-annotations', icon: MessageSquare, pro: false },
     ],
   },
 ];

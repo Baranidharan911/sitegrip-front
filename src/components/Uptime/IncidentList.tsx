@@ -40,9 +40,9 @@ const IncidentList: React.FC<IncidentListProps> = ({ monitors }) => {
     const getSeverity = () => {
       if (monitor.last_status === 'down') return 'critical';
       if (monitor.ssl_status === 'expired') return 'critical';
-      if (monitor.failures_in_a_row >= 3) return 'high';
+      if ((monitor.failures_in_a_row ?? 0) >= 3) return 'high';
       if (monitor.ssl_status === 'expiring_soon') return 'medium';
-      if (monitor.failures_in_a_row > 0) return 'low';
+      if ((monitor.failures_in_a_row ?? 0) > 0) return 'low';
       return 'info';
     };
 
@@ -50,7 +50,7 @@ const IncidentList: React.FC<IncidentListProps> = ({ monitors }) => {
       if (monitor.last_status === 'down') return 'down';
       if (monitor.ssl_status === 'expired' || monitor.ssl_status === 'invalid') return 'ssl';
       if (monitor.ssl_status === 'expiring_soon') return 'ssl';
-      if (monitor.failures_in_a_row > 0) return 'degraded';
+      if ((monitor.failures_in_a_row ?? 0) > 0) return 'degraded';
       return 'info';
     };
 
@@ -67,15 +67,15 @@ const IncidentList: React.FC<IncidentListProps> = ({ monitors }) => {
       if (monitor.ssl_status === 'invalid') {
         return 'SSL certificate is invalid or has hostname mismatch.';
       }
-      if (monitor.failures_in_a_row > 0) {
+      if ((monitor.failures_in_a_row ?? 0) > 0) {
         return `Service experiencing intermittent issues. ${monitor.failures_in_a_row} recent failures.`;
       }
       return 'No current issues detected.';
     };
 
     const getDuration = () => {
-      if (!monitor.last_checked) return 'Unknown';
-      const lastCheck = new Date(monitor.last_checked);
+      if (!monitor.lastCheck) return 'Unknown';
+      const lastCheck = new Date(monitor.lastCheck);
       const now = new Date();
       const diffMs = now.getTime() - lastCheck.getTime();
       const diffMins = Math.floor(diffMs / 60000);
@@ -92,7 +92,7 @@ const IncidentList: React.FC<IncidentListProps> = ({ monitors }) => {
       type: getIncidentType(),
       description: getDescription(),
       duration: getDuration(),
-      isActive: monitor.last_status === 'down' || monitor.failures_in_a_row > 0 || 
+      isActive: monitor.last_status === 'down' || (monitor.failures_in_a_row ?? 0) > 0 || 
                 monitor.ssl_status === 'expired' || monitor.ssl_status === 'expiring_soon'
     };
   }).filter(incident => incident.isActive);
@@ -285,13 +285,13 @@ const IncidentList: React.FC<IncidentListProps> = ({ monitors }) => {
                       <div>
                         <span className="font-medium text-gray-700 dark:text-gray-300">24h Uptime:</span>
                         <span className={`ml-2 ${
-                          incident.monitor.uptime_stats['24h'] >= 99 
+                          (incident.monitor.uptime_stats?.['24h'] ?? 0) >= 99 
                             ? 'text-green-600 dark:text-green-400' 
-                            : incident.monitor.uptime_stats['24h'] >= 95
+                            : (incident.monitor.uptime_stats?.['24h'] ?? 0) >= 95
                             ? 'text-yellow-600 dark:text-yellow-400'
                             : 'text-red-600 dark:text-red-400'
                         }`}>
-                          {incident.monitor.uptime_stats['24h'].toFixed(1)}%
+                          {(incident.monitor.uptime_stats?.['24h'] ?? 0).toFixed(1)}%
                         </span>
                       </div>
                     </div>

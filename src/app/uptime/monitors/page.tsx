@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useUptime } from '../../../hooks/useUptime';
+import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
 import UptimeStatsCard from '../../../components/Uptime/UptimeStatsCard';
 import MonitorForm from '../../../components/Uptime/MonitorForm';
 import UptimeHistory from '../../../components/Uptime/UptimeHistory';
@@ -29,23 +29,28 @@ export default function MonitorsPage() {
     refreshMonitors,
     selectMonitor,
     clearError,
-  } = useUptime(true, 30000); // Auto-refresh every 30 seconds
+    monitorTypes,
+    notificationTypes,
+  } = useFrontendUptime(true, 30000); // Auto-refresh every 30 seconds
 
   const [showAddMonitor, setShowAddMonitor] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'up' | 'down' | 'ssl-issues'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'up' | 'down' | 'paused'>('all');
+  const [filterType, setFilterType] = useState<'all' | 'http' | 'ping' | 'port' | 'ssl' | 'pagespeed' | 'hardware' | 'docker'>('all');
 
-  // Filter monitors based on search and status filter
+  // Filter monitors based on search, status, and type filters
   const filteredMonitors = monitors.filter(monitor => {
     const matchesSearch = monitor.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          monitor.url.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFilter = filterStatus === 'all' ||
-                         (filterStatus === 'up' && monitor.last_status === 'up') ||
-                         (filterStatus === 'down' && monitor.last_status === 'down') ||
-                         (filterStatus === 'ssl-issues' && (monitor.ssl_status === 'expired' || monitor.ssl_status === 'expiring_soon'));
+    const matchesStatusFilter = filterStatus === 'all' ||
+                               (filterStatus === 'up' && monitor.status === true) ||
+                               (filterStatus === 'down' && monitor.status === false) ||
+                               (filterStatus === 'paused' && monitor.status === false && monitor.name?.toLowerCase().includes('paused'));
     
-    return matchesSearch && matchesFilter;
+    const matchesTypeFilter = filterType === 'all' || monitor.type === filterType;
+    
+    return matchesSearch && matchesStatusFilter && matchesTypeFilter;
   });
 
   const handleRefresh = async () => {
@@ -130,7 +135,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Monitors</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.total_monitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.totalMonitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -146,7 +151,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Online</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.up_monitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.upMonitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -162,7 +167,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Offline</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.down_monitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.downMonitors || 0}</p>
                 </div>
               </div>
             </div>
@@ -174,13 +179,13 @@ export default function MonitorsPage() {
                 <div className="flex-shrink-0">
                   <div className="w-8 h-8 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
                 </div>
                 <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">SSL Issues</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.ssl_issues || 0}</p>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Incidents</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.activeIncidents || 0}</p>
                 </div>
               </div>
             </div>
@@ -199,7 +204,8 @@ export default function MonitorsPage() {
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
               />
             </div>
-            <div>
+            
+            <div className="flex gap-2">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
@@ -208,134 +214,137 @@ export default function MonitorsPage() {
                 <option value="all">All Status</option>
                 <option value="up">Online</option>
                 <option value="down">Offline</option>
-                <option value="ssl-issues">SSL Issues</option>
+                <option value="paused">Paused</option>
+              </select>
+              
+              <select
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value as any)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+              >
+                <option value="all">All Types</option>
+                <option value="http">HTTP/HTTPS</option>
+                <option value="ping">Ping</option>
+                <option value="port">Port</option>
+                <option value="ssl">SSL Certificate</option>
+                <option value="pagespeed">Page Speed</option>
+                <option value="hardware">Hardware</option>
+                <option value="docker">Docker</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* Monitors Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredMonitors.map((monitor) => (
-            <div
-              key={monitor.id}
-              className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => selectMonitor(monitor)}
-            >
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                      {monitor.name || 'Unnamed Monitor'}
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                      {monitor.url}
-                    </p>
-                  </div>
-                  <div className={`ml-4 px-2 py-1 rounded-full text-xs font-medium ${
-                    monitor.last_status === 'up' 
-                      ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                      : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-                  }`}>
-                    {monitor.last_status === 'up' ? 'Online' : 'Offline'}
-                  </div>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Response Time:</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {monitor.last_response_time ? `${monitor.last_response_time}ms` : 'N/A'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Uptime (24h):</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {monitor.uptime_stats?.['24h'] ? `${monitor.uptime_stats['24h'].toFixed(2)}%` : 'N/A'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">SSL Status:</span>
-                    <span className={`${
-                      monitor.ssl_status === 'valid' 
-                        ? 'text-green-600 dark:text-green-400'
-                        : monitor.ssl_status === 'expiring_soon'
-                        ? 'text-yellow-600 dark:text-yellow-400'
-                        : 'text-red-600 dark:text-red-400'
-                    }`}>
-                      {monitor.ssl_status || 'N/A'}
-                    </span>
-                  </div>
-                  
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Last Check:</span>
-                    <span className="text-gray-900 dark:text-white">
-                      {monitor.last_checked ? new Date(monitor.last_checked).toLocaleTimeString() : 'Never'}
-                    </span>
-                  </div>
-                </div>
+        {/* Monitors List */}
+        <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+          <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              Monitors ({filteredMonitors.length})
+            </h2>
+          </div>
+          
+          {loading ? (
+            <div className="p-6 text-center">
+              <div className="inline-flex items-center">
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span className="text-gray-600 dark:text-gray-400">Loading monitors...</span>
               </div>
             </div>
-          ))}
+          ) : filteredMonitors.length === 0 ? (
+            <div className="p-6 text-center">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No monitors found</h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {searchTerm || filterStatus !== 'all' || filterType !== 'all' 
+                  ? 'Try adjusting your search or filters.' 
+                  : 'Get started by creating your first monitor.'}
+              </p>
+              {!searchTerm && filterStatus === 'all' && filterType === 'all' && (
+                <div className="mt-6">
+                  <button
+                    onClick={() => setShowAddMonitor(true)}
+                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <PlusIcon />
+                    <span className="ml-2">Add Monitor</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {filteredMonitors.map((monitor) => (
+                <div
+                  key={monitor.id}
+                  className="px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer transition-colors"
+                  onClick={() => selectMonitor(monitor)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-3 h-3 rounded-full ${monitor.status ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <div>
+                        <h3 className="text-sm font-medium text-gray-900 dark:text-white">{monitor.name}</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{monitor.url}</p>
+                        <div className="flex items-center space-x-2 mt-1">
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                            monitor.type === 'http' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                            monitor.type === 'ping' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                            monitor.type === 'port' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                            monitor.type === 'ssl' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                            monitor.type === 'pagespeed' ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200' :
+                            monitor.type === 'hardware' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200' :
+                            'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {monitor.type.toUpperCase()}
+                          </span>
+                          {monitor.lastResponseTime && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {monitor.lastResponseTime}ms
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-right">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {monitor.lastCheck ? new Date(monitor.lastCheck).toLocaleTimeString() : 'Never'}
+                      </p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
+                        Every {monitor.interval}s
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Empty State */}
-        {filteredMonitors.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-              <RefreshIcon />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              No monitors found
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              {searchTerm || filterStatus !== 'all' 
-                ? 'Try adjusting your search or filter criteria.'
-                : 'Get started by adding your first monitor.'
-              }
-            </p>
-            {!searchTerm && filterStatus === 'all' && (
-              <button
-                onClick={() => setShowAddMonitor(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                <PlusIcon />
-                <span className="ml-2">Add Your First Monitor</span>
-              </button>
-            )}
-          </div>
+        {/* Monitor Form Modal */}
+        {showAddMonitor && (
+          <MonitorForm
+            isOpen={showAddMonitor}
+            onClose={() => setShowAddMonitor(false)}
+            monitorTypes={monitorTypes || []}
+            notificationTypes={notificationTypes || []}
+          />
         )}
 
-        {/* Loading State */}
-        {loading && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-2 text-gray-500 dark:text-gray-400">Loading monitors...</p>
-          </div>
+        {/* Monitor Details Modal */}
+        {selectedMonitor && (
+          <UptimeHistory
+            monitor={selectedMonitor}
+            isOpen={!!selectedMonitor}
+            onClose={() => selectMonitor(null)}
+          />
         )}
       </div>
-
-      {/* Add Monitor Modal */}
-      {showAddMonitor && (
-        <MonitorForm
-          isOpen={showAddMonitor}
-          onClose={() => setShowAddMonitor(false)}
-          onSave={(monitor) => {
-            console.log('Monitor saved:', monitor);
-            setShowAddMonitor(false);
-          }}
-        />
-      )}
-
-      {/* Monitor History Modal */}
-      {selectedMonitor && (
-        <UptimeHistory
-          monitor={selectedMonitor}
-          onClose={() => selectMonitor(null)}
-        />
-      )}
     </div>
   );
 } 

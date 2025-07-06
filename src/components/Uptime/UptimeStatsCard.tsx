@@ -111,7 +111,7 @@ const UptimeStatsCard: React.FC<UptimeStatsCardProps> = ({ monitor, onClick }) =
           />
         )}
         
-        {monitor.failures_in_a_row > 0 && (
+        {(monitor.failures_in_a_row ?? 0) > 0 && (
           <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
             {monitor.failures_in_a_row} failures
           </span>
@@ -122,14 +122,14 @@ const UptimeStatsCard: React.FC<UptimeStatsCardProps> = ({ monitor, onClick }) =
       <div className="grid grid-cols-2 gap-4 mb-4">
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">24h Uptime</p>
-          <p className={`text-lg font-semibold ${getUptimeColor(monitor.uptime_stats['24h'])}`}>
-            {monitor.uptime_stats['24h'].toFixed(1)}%
+          <p className={`text-lg font-semibold ${getUptimeColor(monitor.uptime_stats?.['24h'] ?? 0)}`}>
+            {(monitor.uptime_stats?.['24h'] ?? 0).toFixed(1)}%
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Response Time</p>
-          <p className={`text-lg font-semibold ${getResponseTimeColor(monitor.last_response_time)}`}>
-            {monitor.last_response_time ? `${monitor.last_response_time}ms` : 'N/A'}
+          <p className={`text-lg font-semibold ${getResponseTimeColor(monitor.lastResponseTime)}`}>
+            {monitor.lastResponseTime ? `${monitor.lastResponseTime}ms` : 'N/A'}
           </p>
         </div>
       </div>
@@ -138,14 +138,14 @@ const UptimeStatsCard: React.FC<UptimeStatsCardProps> = ({ monitor, onClick }) =
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">7d Uptime</p>
-          <p className={`font-medium ${getUptimeColor(monitor.uptime_stats['7d'])}`}>
-            {monitor.uptime_stats['7d'].toFixed(1)}%
+          <p className={`font-medium ${getUptimeColor(monitor.uptime_stats?.['7d'] ?? 0)}`}>
+            {(monitor.uptime_stats?.['7d'] ?? 0).toFixed(1)}%
           </p>
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">30d Uptime</p>
-          <p className={`font-medium ${getUptimeColor(monitor.uptime_stats['30d'])}`}>
-            {monitor.uptime_stats['30d'].toFixed(1)}%
+          <p className={`font-medium ${getUptimeColor(monitor.uptime_stats?.['30d'] ?? 0)}`}>
+            {(monitor.uptime_stats?.['30d'] ?? 0).toFixed(1)}%
           </p>
         </div>
       </div>
@@ -156,7 +156,7 @@ const UptimeStatsCard: React.FC<UptimeStatsCardProps> = ({ monitor, onClick }) =
           Check every {monitor.frequency}min
         </span>
         <span>
-          {formatLastChecked(monitor.last_checked)}
+          {formatLastChecked(monitor.lastCheck ? monitor.lastCheck.toISOString() : undefined)}
         </span>
       </div>
 

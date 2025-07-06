@@ -6,6 +6,7 @@ import EnhancedIndexingForm from './EnhancedIndexingForm';
 import IndexingDashboard from './IndexingDashboard';
 import EnhancedIndexingTable from './EnhancedIndexingTable';
 import { Toaster } from 'react-hot-toast';
+import { Globe, Zap, TrendingUp, Shield } from 'lucide-react';
 
 export default function EnhancedIndexingPage() {
   const [mounted, setMounted] = useState(false);
@@ -105,10 +106,14 @@ export default function EnhancedIndexingPage() {
   // Don't render anything until component is mounted to prevent hydration mismatch
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
+          </div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Loading Site Grip</h3>
+          <p className="text-gray-600 dark:text-gray-400">Preparing your indexing dashboard...</p>
         </div>
       </div>
     );
@@ -130,45 +135,67 @@ export default function EnhancedIndexingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-7xl mx-auto space-y-8">
           
-          {/* Header */}
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          {/* Hero Header */}
+          <div className="text-center py-8">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl shadow-lg mb-6">
+              <Globe className="w-10 h-10 text-white" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
               Google Indexing API
             </h1>
-            <p className="text-gray-600 dark:text-gray-400">
-              Submit your URLs to Google for indexing using your own Google Search Console account
+            <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto leading-relaxed">
+              Submit your URLs to Google for indexing using your own Google Search Console account. 
+              Track real-time status and optimize your website's search visibility.
             </p>
+            
+            {/* Feature Highlights */}
+            <div className="flex flex-wrap justify-center gap-6 mt-8">
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <Zap className="w-4 h-4 text-blue-600" />
+                Real-time Status Tracking
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                Bulk URL Submission
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                <Shield className="w-4 h-4 text-purple-600" />
+                Secure Google Integration
+              </div>
+            </div>
           </div>
 
           {/* Dashboard */}
-          <IndexingDashboard />
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <IndexingDashboard />
+          </div>
 
           {/* Submission Form */}
-          <EnhancedIndexingForm
-            onSubmitUrls={async (urls, priority) => { await submitUrls(urls, projectId, priority); }}
-            onSubmitWebsite={async (websiteUrl, priority) => { await submitUrlsFromWebsite(websiteUrl, projectId, priority); }}
-            onSubmitFile={async (file, priority) => { await submitUrlsFromFile(file, projectId, priority); }}
-            onDiscoverFromGSC={handleDiscoverFromGSC}
-            loading={loading}
-            quotaInfo={quotaInfo}
-            authState={authState}
-          />
-
-          {/* Recent Entries Table */}
-          <div>
-            <EnhancedIndexingTable
-              entries={indexingEntries}
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
+            <EnhancedIndexingForm
+              onSubmitUrls={async (urls, priority) => { await submitUrls(urls, projectId, priority); }}
+              onSubmitWebsite={async (websiteUrl, priority) => { await submitUrlsFromWebsite(websiteUrl, projectId, priority); }}
+              onSubmitFile={async (file, priority) => { await submitUrlsFromFile(file, projectId, priority); }}
+              onDiscoverFromGSC={handleDiscoverFromGSC}
               loading={loading}
-              onRetry={retryEntry}
-              onDelete={deleteEntry}
-              onRefresh={handleRefresh}
-              onCheckStatus={checkStatus}
+              quotaInfo={quotaInfo}
+              authState={authState}
             />
           </div>
+
+          {/* Recent Entries Table */}
+          <EnhancedIndexingTable
+            entries={indexingEntries}
+            loading={loading}
+            onRetry={retryEntry}
+            onDelete={deleteEntry}
+            onRefresh={handleRefresh}
+            onCheckStatus={checkStatus}
+          />
 
         </div>
       </div>
@@ -180,6 +207,8 @@ export default function EnhancedIndexingPage() {
           style: {
             background: 'var(--toast-bg)',
             color: 'var(--toast-color)',
+            borderRadius: '12px',
+            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
           },
         }}
       />
