@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MonitorSmartphone, Smartphone, Tablet, Laptop, Monitor, XCircle, Loader2, RotateCw, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
+
+export const dynamic = 'force-dynamic';
 
 interface DevicePreset {
   name: string;
@@ -99,9 +101,9 @@ const devicePresets: { category: string; items: DevicePreset[] }[] = [
 const deviceIcons: Record<string, JSX.Element> = {
   'Android smartphones': <Smartphone className="w-6 h-6 text-primary" />, 
   'Apple smartphones': <Smartphone className="w-6 h-6 text-pink-500" />, 
-  'Tablets': <Tablet className="w-6 h-6 text-orange-500" />, 
-  'Laptops': <Laptop className="w-6 h-6 text-blue-500" />, 
-  'Desktops': <Monitor className="w-6 h-6 text-green-500" />
+  'Tablets': <Smartphone className="w-6 h-6 text-orange-500" />, 
+  'Laptops': <Smartphone className="w-6 h-6 text-blue-500" />, 
+  'Desktops': <Smartphone className="w-6 h-6 text-green-500" />
 };
 
 export default function ScreenResponsivenessPage() {
@@ -161,7 +163,7 @@ export default function ScreenResponsivenessPage() {
             onClick={handlePreview}
             className="px-6 py-3 rounded-xl text-white bg-gradient-to-r from-primary to-secondary hover:opacity-90 transition font-semibold shadow-lg flex items-center gap-2"
           >
-            <MonitorSmartphone className="w-5 h-5" />
+            <Smartphone className="w-5 h-5" />
             Preview
           </button>
         </div>
@@ -231,10 +233,10 @@ export default function ScreenResponsivenessPage() {
           </div>
           {/* Preview with device frame, controls, and animated skeleton loader */}
           <div className="w-full flex-1 flex flex-col items-center gap-4 transition-all duration-300">
-            <div className="w-full overflow-x-auto flex justify-center">
-              <div style={{ minWidth: Math.min(deviceWidth * zoom + 32, 360), maxWidth: '100vw' }}>
+            <div className="w-full overflow-x-auto flex justify-center px-2">
+              <div className="flex flex-col items-center w-full max-w-full">
                 {/* Controls */}
-                <div className="flex gap-2 mb-2 justify-center">
+                <div className="flex gap-2 mb-4 justify-center flex-wrap">
                   <button
                     className="p-2 rounded-lg bg-white/70 dark:bg-gray-800/70 shadow border border-gray-200 dark:border-gray-700 hover:bg-primary/10 hover:scale-105 transition"
                     onClick={() => setIsRotated((r) => !r)}
@@ -244,7 +246,7 @@ export default function ScreenResponsivenessPage() {
                   </button>
                   <button
                     className="p-2 rounded-lg bg-white/70 dark:bg-gray-800/70 shadow border border-gray-200 dark:border-gray-700 hover:bg-primary/10 hover:scale-105 transition"
-                    onClick={() => setZoom((z) => Math.max(0.5, z - 0.1))}
+                    onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
                     title="Zoom out"
                   >
                     <ZoomOut className="w-5 h-5" />
@@ -264,6 +266,7 @@ export default function ScreenResponsivenessPage() {
                     {darkFrame ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   </button>
                 </div>
+                
                 {selectedDevice ? (
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -272,32 +275,62 @@ export default function ScreenResponsivenessPage() {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -20 }}
                       transition={{ duration: 0.3 }}
-                      className={`rounded-[2.5rem] border-8 ${darkFrame ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'} shadow-2xl relative flex items-center justify-center transition-all duration-300`}
-                      style={{ width: deviceWidth * zoom + 32, height: deviceHeight * zoom + 32, maxWidth: '90vw', maxHeight: '70vh' }}
+                      className="w-full flex justify-center"
                     >
-                      <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full bg-gray-300/60 dark:bg-gray-700/60 z-20" />
-                      {iframeLoading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 rounded-[2.5rem]">
-                          <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
-                          <span className="text-gray-500 dark:text-gray-300 text-sm">Loading preview...</span>
+                      <div 
+                        className={`relative rounded-[2.5rem] border-8 ${darkFrame ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'} shadow-2xl transition-all duration-300`}
+                        style={{ 
+                          width: `min(${deviceWidth * zoom + 32}px, 95vw)`,
+                          height: `min(${deviceHeight * zoom + 32}px, 80vh)`,
+                          aspectRatio: `${deviceWidth + 32} / ${deviceHeight + 32}`
+                        }}
+                      >
+                        {/* Device notch */}
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 w-24 h-2 rounded-full bg-gray-300/60 dark:bg-gray-700/60 z-20" />
+                        
+                        {/* Loading overlay */}
+                        {iframeLoading && (
+                          <div className="absolute inset-2 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 rounded-[2rem]">
+                            <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
+                            <span className="text-gray-500 dark:text-gray-300 text-sm">Loading preview...</span>
+                          </div>
+                        )}
+                        
+                        {/* Iframe container */}
+                        <div 
+                          className="absolute inset-2 rounded-[2rem] overflow-hidden"
+                          style={{ 
+                            width: `calc(100% - 16px)`,
+                            height: `calc(100% - 16px)`
+                          }}
+                        >
+                          <iframe
+                            src={previewUrl}
+                            title="website preview"
+                            className="w-full h-full border-0 rounded-[2rem]"
+                            style={{ 
+                              background: darkFrame ? '#18181b' : '#fff',
+                              transform: `scale(${Math.min(1, (deviceWidth * zoom) / deviceWidth, (deviceHeight * zoom) / deviceHeight)})`,
+                              transformOrigin: 'top left',
+                              width: `${deviceWidth}px`,
+                              height: `${deviceHeight}px`
+                            }}
+                            onLoad={() => setIframeLoading(false)}
+                            loading="lazy"
+                          />
                         </div>
-                      )}
-                      <iframe
-                        src={previewUrl}
-                        title="website preview"
-                        style={{ width: deviceWidth * zoom, height: deviceHeight * zoom, borderRadius: '2rem', background: darkFrame ? '#18181b' : '#fff' }}
-                        className="border-0"
-                        onLoad={() => setIframeLoading(false)}
-                      />
+                      </div>
                     </motion.div>
                   </AnimatePresence>
                 ) : (
-                  <div className="flex flex-col items-center justify-center h-64 w-full bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-inner border border-dashed border-gray-300 dark:border-gray-700">
+                  <div className="flex flex-col items-center justify-center h-64 w-full max-w-md mx-auto bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-inner border border-dashed border-gray-300 dark:border-gray-700">
                     <span className="text-2xl text-gray-400 dark:text-gray-600 mb-2">📱</span>
-                    <span className="text-gray-500 dark:text-gray-400">Select a device to preview the site</span>
+                    <span className="text-gray-500 dark:text-gray-400 text-center px-4">Select a device to preview the site</span>
                   </div>
                 )}
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-2 justify-center">
+                
+                {/* Device info */}
+                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-4 justify-center flex-wrap">
                   <span>Device: <b>{selectedDevice?.name || '-'}</b></span>
                   <span>Size: <b>{selectedDevice ? `${deviceWidth}×${deviceHeight}` : '-'}</b></span>
                   <span>Zoom: <b>{Math.round(zoom * 100)}%</b></span>

@@ -1,8 +1,10 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Trash2, Copy, Check, Globe2, Code } from 'lucide-react';
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, Globe, FileText, Download, Printer, Share2, CheckCircle, AlertCircle, Check, Star, XCircle, Clock, Zap, Globe2, Plus, Trash2, Code, Copy } from "lucide-react";
+
+export const dynamic = 'force-dynamic';
 
 interface HreflangEntry {
   id: string;

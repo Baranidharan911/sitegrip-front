@@ -486,6 +486,19 @@ class FrontendUptimeApi {
       avgResponseTime: 0, // Would need to calculate from checks
       activeIncidents: 0, // Would need to calculate from incidents
       uptime: `${Math.round(averageUptime * 100) / 100}%`,
+      
+      // Enhanced metrics
+      regionalStats: [],
+      protocolStats: [],
+      slaCompliance: {
+        target: 99.9,
+        actual: averageUptime,
+        compliance: averageUptime / 99.9,
+        violations: 0,
+        penalties: 0
+      },
+      anomalyAlerts: 0,
+      autoRemediations: 0
     };
   }
 
@@ -524,6 +537,18 @@ class FrontendUptimeApi {
         average_response_time: Math.round(avgResponseTime),
         total_checks: totalChecks,
         current_incident: undefined, // Would need to fetch from incidents
+        
+        // Enhanced stats
+        regional_performance: [],
+        protocol_performance: [],
+        anomaly_history: [],
+        sla_metrics: {
+          targetUptime: 99.9,
+          actualUptime: uptime,
+          compliance: uptime / 99.9,
+          violations: 0,
+          lastViolation: undefined
+        }
       },
     };
   }

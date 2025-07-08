@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe } from 'lucide-react';
+import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { Tab } from '@headlessui/react';
+
+export const dynamic = 'force-dynamic';
 
 interface ComparisonResult {
   initialHtml: string;
@@ -17,12 +19,10 @@ export default function JsRenderingTesterPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [activeTab, setActiveTab] = useState<'initial' | 'rendered' | 'diff'>('diff');
-  const [expandedSections, setExpandedSections] = useState<{[key: string]: boolean}>({
-    head: false,
-    body: true,
-    scripts: false
-  });
   const [copiedStates, setCopiedStates] = useState<{[key: string]: boolean}>({});
+  const [showLineNumbers, setShowLineNumbers] = useState(true);
+  const [expandedView, setExpandedView] = useState(false);
+  const [showAllDiff, setShowAllDiff] = useState(false);
 
   const handleTest = async () => {
     setLoading(true);
@@ -68,48 +68,125 @@ export default function JsRenderingTesterPage() {
     }
   };
 
-  const toggleSection = (section: string) => {
-    setExpandedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
-  const extractSection = (html: string, tag: string) => {
-    const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'i');
-    const match = html.match(regex);
-    return match ? match[0] : `<${tag}></${tag}>`;
-  };
-
   const formatHtml = (html: string) => {
-    // First, format the HTML with proper line breaks and indentation
-    let formatted = html
-      .replace(/></g, '>\n<')  // Add line breaks between tags
-      .replace(/^\s+|\s+$/gm, '')  // Remove leading/trailing whitespace from each line
+    // Format HTML with proper indentation and line breaks
+    let depth = 0;
+    const lines = html
+      .replace(/></g, '>\n<')
       .split('\n')
-      .map((line, index) => {
-        // Simple indentation based on tag depth
-        const openTags = (line.match(/</g) || []).length;
-        const closeTags = (line.match(/\//g) || []).length;
-        const indent = Math.max(0, index * 0.5 - closeTags * 0.5);
-        return '  '.repeat(Math.floor(indent)) + line.trim();
-      })
-      .join('\n');
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
 
-    // Then apply syntax highlighting
-    return formatted
+    return lines.map((line, index) => {
+      if (line.startsWith('</')) depth = Math.max(0, depth - 1);
+      const indentedLine = '  '.repeat(depth) + line;
+      if (line.startsWith('<') && !line.startsWith('</') && !line.endsWith('/>')) {
+        depth++;
+      }
+      return { line: indentedLine, number: index + 1 };
+    });
+  };
+
+  const highlightSyntax = (html: string) => {
+    return html
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
-      .replace(/(&lt;\/?[^&gt;]+&gt;)/g, '<span class="text-blue-600 dark:text-blue-400">$1</span>')
-      .replace(/(=")([^"]*?)(")/g, '=$1<span class="text-green-600 dark:text-green-400">$2</span>$3');
+      .replace(/(&lt;\/?)([\w-]+)([^&gt;]*&gt;)/g, '<span class="text-blue-600 dark:text-blue-400">$1</span><span class="text-purple-600 dark:text-purple-400">$2</span><span class="text-blue-600 dark:text-blue-400">$3</span>')
+      .replace(/([\w-]+)(=)("?)([^"&gt;\s]*)\3?/g, '<span class="text-green-600 dark:text-green-400">$1</span><span class="text-gray-500">$2</span><span class="text-orange-600 dark:text-orange-400">$3$4$3</span>');
   };
 
-  // Add tab state for modern tabbed interface
+  const findDifferences = (initial: string, rendered: string) => {
+    const initialLines = formatHtml(initial);
+    const renderedLines = formatHtml(rendered);
+    
+    const changes = [];
+    const maxLength = Math.max(initialLines.length, renderedLines.length);
+    
+    for (let i = 0; i < maxLength; i++) {
+      const initialLine = initialLines[i]?.line || '';
+      const renderedLine = renderedLines[i]?.line || '';
+      
+      if (initialLine !== renderedLine) {
+        changes.push({
+          lineNumber: i + 1,
+          type: !initialLine ? 'added' : !renderedLine ? 'removed' : 'modified',
+          initial: initialLine,
+          rendered: renderedLine
+        });
+      }
+    }
+    
+    return changes.slice(0, 50); // Limit to first 50 changes
+  };
+
   const tabList = [
-    { key: 'diff', label: 'Diff', icon: <Zap className="w-4 h-4 mr-1 text-purple-500" /> },
+    { key: 'diff', label: 'Diff Analysis', icon: <Zap className="w-4 h-4 mr-1 text-purple-500" /> },
     { key: 'initial', label: 'Initial HTML', icon: <FileText className="w-4 h-4 mr-1 text-blue-500" /> },
     { key: 'rendered', label: 'Rendered HTML', icon: <Code2 className="w-4 h-4 mr-1 text-green-500" /> },
   ];
+
+  const CodeBlock = ({ html, title, copyKey }: { html: string; title: string; copyKey: string }) => {
+    const formattedLines = formatHtml(html);
+    
+    return (
+      <div className="relative">
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+            {title}
+            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+              {formattedLines.length} lines
+            </span>
+          </h4>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowLineNumbers(!showLineNumbers)}
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="Toggle line numbers"
+            >
+              {showLineNumbers ? <EyeOff size={14} /> : <Eye size={14} />}
+            </button>
+            <button
+              onClick={() => setExpandedView(!expandedView)}
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="Toggle expanded view"
+            >
+              {expandedView ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+            <button
+              onClick={() => handleCopy(html, copyKey)}
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              title="Copy to clipboard"
+            >
+              {copiedStates[copyKey] ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+            </button>
+          </div>
+        </div>
+        <div className={`relative bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden`}>
+          <div className="overflow-auto max-h-[60vh]">
+            <pre className="text-xs font-mono leading-relaxed">
+              {formattedLines.map((lineData, index) => (
+                <div key={index} className="flex hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                  {showLineNumbers && (
+                    <span className="select-none text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-3 py-1 text-right min-w-[60px] border-r border-gray-200 dark:border-gray-700">
+                      {lineData.number}
+                    </span>
+                  )}
+                  <span 
+                    className="flex-1 px-4 py-1 text-gray-700 dark:text-gray-300"
+                    dangerouslySetInnerHTML={{ __html: highlightSyntax(lineData.line) }}
+                  />
+                </div>
+              ))}
+            </pre>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Memoize diff calculation
+  const diffLines = useMemo(() => result ? findDifferences(result.initialHtml, result.renderedHtml) : [], [result]);
+  const displayedDiffs = showAllDiff ? diffLines : diffLines.slice(0, 100);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
@@ -140,7 +217,7 @@ export default function JsRenderingTesterPage() {
           transition={{ delay: 0.1 }}
           className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
         >
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
               <input
                 type="text"
@@ -154,18 +231,18 @@ export default function JsRenderingTesterPage() {
             <button
               onClick={handleTest}
               disabled={loading}
-              className="px-8 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl text-base flex items-center gap-2"
+              className="px-8 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl text-base flex items-center gap-2 justify-center"
             >
               {loading ? (
-                <span className="flex items-center gap-2">
+                <>
                   <Loader2 className="animate-spin" size={20} />
-                  Testing...
-                </span>
+                  <span className="hidden sm:inline">Testing...</span>
+                </>
               ) : (
-                <span className="flex items-center gap-2">
+                <>
                   <Zap size={20} />
                   Test
-                </span>
+                </>
               )}
             </button>
           </div>
@@ -182,7 +259,7 @@ export default function JsRenderingTesterPage() {
           </motion.div>
         )}
 
-        {/* Results with animated tabs and syntax highlighting */}
+        {/* Results */}
         {result && !loading && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -190,105 +267,299 @@ export default function JsRenderingTesterPage() {
             transition={{ delay: 0.2 }}
             className="space-y-6"
           >
-            {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-blue-400/80 to-cyan-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
-                <FileText size={28} className="mx-auto mb-2" />
-                <p className="text-xs text-blue-100">Initial</p>
-                <p className="text-2xl font-bold">{(result.initialHtml.length / 1024).toFixed(1)}KB</p>
+            {/* Stats - Responsive Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-6">
+              <div className="bg-gradient-to-br from-blue-500/90 to-cyan-500/90 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <FileText size={20} />
+                  </div>
+                  <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium">Initial</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-2xl font-bold">{(result.initialHtml.length / 1024).toFixed(1)}KB</p>
+                  <p className="text-sm text-blue-100">{result.initialHtml.split('\n').length} lines</p>
+                </div>
               </div>
-              <div className="bg-gradient-to-br from-green-400/80 to-emerald-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
-                <Code2 size={28} className="mx-auto mb-2" />
-                <p className="text-xs text-green-100">Rendered</p>
-                <p className="text-2xl font-bold">{(result.renderedHtml.length / 1024).toFixed(1)}KB</p>
+              
+              <div className="bg-gradient-to-br from-green-500/90 to-emerald-500/90 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Code2 size={20} />
+                  </div>
+                  <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium">Rendered</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-2xl font-bold">{(result.renderedHtml.length / 1024).toFixed(1)}KB</p>
+                  <p className="text-sm text-green-100">{result.renderedHtml.split('\n').length} lines</p>
+                </div>
               </div>
-              <div className="bg-gradient-to-br from-purple-400/80 to-pink-400/80 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white text-center">
-                <Zap size={28} className="mx-auto mb-2" />
-                <p className="text-xs text-purple-100">Difference</p>
-                <p className="text-2xl font-bold">+{(result.differences / 1024).toFixed(1)}KB</p>
+            </div>
+            
+            {/* Difference Section - Column Layout */}
+            <div className="bg-gradient-to-br from-purple-500/90 to-pink-500/90 backdrop-blur-md rounded-2xl shadow-xl p-6 text-white">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Zap size={20} />
+                  </div>
+                  <h3 className="text-lg font-semibold">HTML Difference Analysis</h3>
+                </div>
+                <span className="text-xs bg-white/20 px-3 py-1 rounded-full font-medium">Comparison</span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold mb-1">
+                    {result.differences > 0 ? '+' : result.differences < 0 ? '-' : ''}
+                    {(Math.abs(result.differences) / 1024).toFixed(1)}KB
+                  </div>
+                  <div className="text-xs text-purple-100">Size Change</div>
+                </div>
+                
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold mb-1">
+                    {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length > 0 ? '+' : ''}
+                    {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length}
+                  </div>
+                  <div className="text-xs text-purple-100">Line Changes</div>
+                </div>
+                
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold mb-1">
+                    {result.differences > 0 ? '+' : result.differences < 0 ? '-' : ''}
+                    {result.differences.toLocaleString()}
+                  </div>
+                  <div className="text-xs text-purple-100">Characters</div>
+                </div>
+                
+                <div className="bg-white/10 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold mb-1">
+                    {((Math.abs(result.differences) / result.initialHtml.length) * 100).toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-purple-100">Change Ratio</div>
+                </div>
               </div>
             </div>
 
-            {/* Animated Tabs */}
+            {/* Tabbed Interface */}
             <Tab.Group>
-              <Tab.List className="flex space-x-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-full p-1 mb-4 shadow-inner">
-                {tabList.map((tab, idx) => (
+              <Tab.List className="flex flex-wrap gap-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl p-2 shadow-inner">
+                {tabList.map((tab) => (
                   <Tab
                     key={tab.key}
                     className={({ selected }) =>
-                      `flex items-center px-6 py-2 rounded-full font-semibold text-base transition-all duration-200 focus:outline-none ${selected ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'}`
+                      `flex items-center px-6 py-3 rounded-xl font-semibold text-sm transition-all duration-200 focus:outline-none whitespace-nowrap ${
+                        selected 
+                          ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'
+                      }`
                     }
                   >
-                    {tab.icon}{tab.label}
+                    {tab.icon}
+                    <span className="ml-2">{tab.label}</span>
                   </Tab>
                 ))}
               </Tab.List>
+              
               <Tab.Panels className="bg-white/70 dark:bg-gray-900/70 backdrop-blur-md rounded-2xl shadow-xl p-6 border border-gray-200 dark:border-gray-700">
-                {/* Diff Tab */}
+                {/* Diff Analysis Tab */}
                 <Tab.Panel>
-                  <div className="prose dark:prose-invert max-w-none">
-                    <h3 className="font-bold mb-2">HTML Length Difference</h3>
-                    <p className="mb-4">{result.differences} characters difference between initial and rendered HTML.</p>
-                    {/* Animated diff visualization (simple) */}
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1">Initial HTML</h4>
-                        <div className="relative">
-                          <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
-                            {result.initialHtml.slice(0, 500)}{result.initialHtml.length > 500 ? '... (truncated)' : ''}
-                          </pre>
-                          <button
-                            onClick={() => handleCopy(result.initialHtml, 'initialHtml')}
-                            className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
-                          >
-                            {copiedStates['initialHtml'] ? <Check size={14} /> : <Copy size={14} />}
-                          </button>
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">HTML Comparison Analysis</h3>
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          <span>Initial: {(result.initialHtml.length / 1024).toFixed(1)}KB</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                          <span>Rendered: {(result.renderedHtml.length / 1024).toFixed(1)}KB</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                          <span>Difference: {result.differences > 0 ? '+' : result.differences < 0 ? '-' : ''}{(Math.abs(result.differences) / 1024).toFixed(1)}KB</span>
                         </div>
                       </div>
-                      <div className="flex-1">
-                        <h4 className="font-semibold mb-1">Rendered HTML</h4>
-                        <div className="relative">
-                          <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
-                            {result.renderedHtml.slice(0, 500)}{result.renderedHtml.length > 500 ? '... (truncated)' : ''}
-                          </pre>
+                    </div>
+                    
+                    {/* Analysis Summary */}
+                    <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
+                      <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Analysis Summary</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Character Change:</span>
+                          <p className="font-semibold text-gray-800 dark:text-gray-200">
+                            {result.differences > 0 ? '+' : result.differences < 0 ? '-' : ''}
+                            {result.differences.toLocaleString()} chars
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Line Change:</span>
+                          <p className="font-semibold text-gray-800 dark:text-gray-200">
+                            {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length > 0 ? '+' : ''}
+                            {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length} lines
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Initial Lines:</span>
+                          <p className="font-semibold text-gray-800 dark:text-gray-200">
+                            {result.initialHtml.split('\n').length}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-gray-500 dark:text-gray-400">Rendered Lines:</span>
+                          <p className="font-semibold text-gray-800 dark:text-gray-200">
+                            {result.renderedHtml.split('\n').length}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Individual HTML Content Cards */}
+                    <div className="space-y-6">
+                      {/* Initial HTML Card */}
+                      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-blue-500 rounded-lg">
+                              <FileText className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-200">Initial HTML</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">Raw server response • {result.initialHtml.split('\n').length} lines</p>
+                            </div>
+                          </div>
                           <button
-                            onClick={() => handleCopy(result.renderedHtml, 'renderedHtml')}
-                            className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-green-100 dark:hover:bg-green-900/30 transition"
+                            onClick={() => handleCopy(result.initialHtml, 'initialHtmlDiff')}
+                            className="p-2 rounded-lg bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-700/50 transition-colors"
+                            title="Copy initial HTML"
                           >
-                            {copiedStates['renderedHtml'] ? <Check size={14} /> : <Copy size={14} />}
+                            {copiedStates['initialHtmlDiff'] ? <Check size={16} /> : <Copy size={16} />}
                           </button>
                         </div>
+                        <div className="p-4">
+                          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
+                            <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
+                              {result.initialHtml.split('\n').slice(0, 100).map((line, index) => (
+                                <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
+                                  <span className="text-gray-400 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
+                                    {index + 1}
+                                  </span>
+                                  <span dangerouslySetInnerHTML={{ __html: highlightSyntax(line || ' ') }} />
+                                </div>
+                              ))}
+                              {result.initialHtml.split('\n').length > 100 && (
+                                <div className="text-gray-400 dark:text-gray-500 text-center py-2 italic">
+                                  ... {result.initialHtml.split('\n').length - 100} more lines (switch to "Initial HTML" tab to see full content)
+                                </div>
+                              )}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Rendered HTML Card */}
+                      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                        <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 border-b border-gray-200 dark:border-gray-700">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-green-500 rounded-lg">
+                              <Code2 className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-gray-800 dark:text-gray-200">Rendered HTML</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">After JavaScript execution • {result.renderedHtml.split('\n').length} lines</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleCopy(result.renderedHtml, 'renderedHtmlDiff')}
+                            className="p-2 rounded-lg bg-green-100 dark:bg-green-800/50 text-green-600 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-700/50 transition-colors"
+                            title="Copy rendered HTML"
+                          >
+                            {copiedStates['renderedHtmlDiff'] ? <Check size={16} /> : <Copy size={16} />}
+                          </button>
+                        </div>
+                        <div className="p-4">
+                          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
+                            <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
+                              {result.renderedHtml.split('\n').slice(0, 100).map((line, index) => (
+                                <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
+                                  <span className="text-gray-400 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
+                                    {index + 1}
+                                  </span>
+                                  <span dangerouslySetInnerHTML={{ __html: highlightSyntax(line || ' ') }} />
+                                </div>
+                              ))}
+                              {result.renderedHtml.split('\n').length > 100 && (
+                                <div className="text-gray-400 dark:text-gray-500 text-center py-2 italic">
+                                  ... {result.renderedHtml.split('\n').length - 100} more lines (switch to "Rendered HTML" tab to see full content)
+                                </div>
+                              )}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Render diff lines (limit to 100, show more button) */}
+                    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+                      <div className="p-4 max-h-[60vh] overflow-auto">
+                        {displayedDiffs.length === 0 && (
+                          <div className="text-gray-400 text-center py-4">No significant differences found.</div>
+                        )}
+                        {displayedDiffs.map((diff, idx) => (
+                          <div key={idx} className={`flex items-start gap-2 py-1 px-2 rounded transition-colors ${diff.type === 'added' ? 'bg-green-50 dark:bg-green-900/20' : diff.type === 'removed' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
+                            <span className="text-xs text-gray-400 w-10 text-right select-none">{diff.lineNumber}</span>
+                            <span className="flex-1 font-mono text-xs text-gray-700 dark:text-gray-300 break-all">
+                              {diff.type === 'added' && <span className="text-green-600 dark:text-green-400 mr-2">[+]</span>}
+                              {diff.type === 'removed' && <span className="text-red-600 dark:text-red-400 mr-2">[-]</span>}
+                              {diff.type === 'modified' && <span className="text-yellow-600 dark:text-yellow-400 mr-2">[~]</span>}
+                              <span dangerouslySetInnerHTML={{ __html: highlightSyntax(diff.rendered || diff.initial) }} />
+                            </span>
+                          </div>
+                        ))}
+                        {!showAllDiff && diffLines.length > 100 && (
+                          <div className="flex justify-center mt-4">
+                            <button
+                              className="px-4 py-2 rounded bg-gradient-to-r from-purple-500 to-blue-500 text-white font-semibold shadow hover:from-purple-600 hover:to-blue-600 transition-all"
+                              onClick={() => setShowAllDiff(true)}
+                            >
+                              Show More ({diffLines.length - 100} more)
+                            </button>
+                          </div>
+                        )}
+                        {showAllDiff && diffLines.length > 100 && (
+                          <div className="flex justify-center mt-4">
+                            <button
+                              className="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition-all"
+                              onClick={() => setShowAllDiff(false)}
+                            >
+                              Show Less
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
                 </Tab.Panel>
+                
                 {/* Initial HTML Tab */}
                 <Tab.Panel>
-                  <div className="relative">
-                    <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
-                      {result.initialHtml}
-                    </pre>
-                    <button
-                      onClick={() => handleCopy(result.initialHtml, 'initialHtmlFull')}
-                      className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-blue-100 dark:hover:bg-blue-900/30 transition"
-                    >
-                      {copiedStates['initialHtmlFull'] ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
-                  </div>
+                  <CodeBlock 
+                    html={result.initialHtml} 
+                    title="Initial HTML Source" 
+                    copyKey="initialHtmlFull" 
+                  />
                 </Tab.Panel>
+                
                 {/* Rendered HTML Tab */}
                 <Tab.Panel>
-                  <div className="relative">
-                    <pre className="bg-gray-100/80 dark:bg-gray-900/80 rounded-xl p-4 overflow-x-auto text-xs font-mono border border-gray-200 dark:border-gray-700 shadow-inner">
-                      {result.renderedHtml}
-                    </pre>
-                    <button
-                      onClick={() => handleCopy(result.renderedHtml, 'renderedHtmlFull')}
-                      className="absolute top-2 right-2 px-2 py-1 rounded bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-200 text-xs shadow hover:bg-green-100 dark:hover:bg-green-900/30 transition"
-                    >
-                      {copiedStates['renderedHtmlFull'] ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
-                  </div>
+                  <CodeBlock 
+                    html={result.renderedHtml} 
+                    title="JavaScript Rendered HTML" 
+                    copyKey="renderedHtmlFull" 
+                  />
                 </Tab.Panel>
               </Tab.Panels>
             </Tab.Group>

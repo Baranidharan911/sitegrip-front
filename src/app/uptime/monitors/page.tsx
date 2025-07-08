@@ -1,10 +1,15 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
 import UptimeStatsCard from '../../../components/Uptime/UptimeStatsCard';
 import MonitorForm from '../../../components/Uptime/MonitorForm';
 import UptimeHistory from '../../../components/Uptime/UptimeHistory';
+import { db } from '../../../lib/firebase.js';
+import { collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { Monitor, CreateMonitorRequest } from '../../../types/uptime';
+
+export const dynamic = 'force-dynamic';
 
 const PlusIcon = () => (
   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,20 +23,102 @@ const RefreshIcon = () => (
   </svg>
 );
 
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+
 export default function MonitorsPage() {
   const {
-    monitors,
     selectedMonitor,
-    loading,
-    error,
-    summary,
-    lastRefresh,
     refreshMonitors,
     selectMonitor,
     clearError,
     monitorTypes,
     notificationTypes,
   } = useFrontendUptime(true, 30000); // Auto-refresh every 30 seconds
+
+  const [monitors, setMonitors] = useState<Monitor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time Firestore listener
+  useEffect(() => {
+    const q = query(collection(db, 'monitors'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMonitors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Monitor)));
+      setLoading(false);
+    }, (err: any) => {
+      setError('Failed to load monitors: ' + (err?.message || ''));
+      setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-refresh logic
+  useEffect(() => {
+    function runChecksAndSave() {
+      monitors.forEach(async (monitor) => {
+        // Example: HTTP check (replace with your real check logic)
+        try {
+          const res = await fetch(monitor.url, { method: 'HEAD' });
+          const status = res.ok;
+          await updateMonitor(monitor.id, { status });
+          await logMonitorHistory(monitor.id, status ? 'up' : 'down');
+        } catch {
+          await updateMonitor(monitor.id, { status: false });
+          await logMonitorHistory(monitor.id, 'down');
+        }
+      });
+    }
+    // Run immediately on mount
+    runChecksAndSave();
+    // Set interval
+    intervalRef.current = setInterval(runChecksAndSave, AUTO_REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [monitors]);
+
+  // CRUD actions
+  const addMonitor = async (monitor: CreateMonitorRequest) => {
+    try {
+      await addDoc(collection(db, 'monitors'), {
+        ...monitor,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: any) {
+      setError('Failed to add monitor: ' + (err?.message || ''));
+    }
+  };
+  const updateMonitor = async (id: string, updates: Partial<Monitor>) => {
+    try {
+      await updateDoc(doc(db, 'monitors', id), {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err: any) {
+      setError('Failed to update monitor: ' + (err?.message || ''));
+    }
+  };
+  const deleteMonitor = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'monitors', id));
+    } catch (err: any) {
+      setError('Failed to delete monitor: ' + (err?.message || ''));
+    }
+  };
+
+  // Historical tracking (example: add to subcollection on status change)
+  const logMonitorHistory = async (monitorId: string, status: string) => {
+    try {
+      await addDoc(collection(db, 'monitors', monitorId, 'history'), {
+        status,
+        timestamp: serverTimestamp(),
+      });
+    } catch (err) {
+      // Optionally handle error
+    }
+  };
 
   const [showAddMonitor, setShowAddMonitor] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,8 +148,20 @@ export default function MonitorsPage() {
     }
   };
 
+  const handleSaveMonitor = async (data: CreateMonitorRequest, id?: string) => {
+    if (id) {
+      await updateMonitor(id, data);
+    } else {
+      await addMonitor(data);
+    }
+  };
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Frontend-only monitoring warning */}
+      <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+        <strong>Note:</strong> Monitoring runs only while this dashboard is open. For 24/7 monitoring, set up a backend worker.
+      </div>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 rounded-lg mb-6">
@@ -72,11 +171,7 @@ export default function MonitorsPage() {
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   Monitor Management
                 </h1>
-                {lastRefresh && (
-                  <span className="ml-4 text-sm text-gray-500 dark:text-gray-400">
-                    Last updated: {lastRefresh.toLocaleTimeString()}
-                  </span>
-                )}
+                {/* lastRefresh removed as per new_code */}
               </div>
               
               <div className="flex items-center space-x-4">
@@ -135,7 +230,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Monitors</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.totalMonitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{monitors.length || 0}</p>
                 </div>
               </div>
             </div>
@@ -151,7 +246,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Online</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.upMonitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{monitors.filter(m => m.status).length || 0}</p>
                 </div>
               </div>
             </div>
@@ -167,7 +262,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Offline</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.downMonitors || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{monitors.filter(m => !m.status).length || 0}</p>
                 </div>
               </div>
             </div>
@@ -185,7 +280,7 @@ export default function MonitorsPage() {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Incidents</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{summary?.activeIncidents || 0}</p>
+                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{monitors.filter(m => m.status === false).length || 0}</p>
                 </div>
               </div>
             </div>
@@ -326,6 +421,16 @@ export default function MonitorsPage() {
           )}
         </div>
 
+        {/* Manual refresh button */}
+        <div className="mb-4">
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Manual Refresh
+          </button>
+        </div>
+
         {/* Monitor Form Modal */}
         {showAddMonitor && (
           <MonitorForm
@@ -333,6 +438,7 @@ export default function MonitorsPage() {
             onClose={() => setShowAddMonitor(false)}
             monitorTypes={monitorTypes || []}
             notificationTypes={notificationTypes || []}
+            onSave={handleSaveMonitor}
           />
         )}
 

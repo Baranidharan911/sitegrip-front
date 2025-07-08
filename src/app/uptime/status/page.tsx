@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, orderBy, where } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 
 const GlobeIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,6 +41,8 @@ const ExternalLinkIcon = () => (
   </svg>
 );
 
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+
 export default function StatusPage() {
   const {
     monitors,
@@ -50,6 +54,76 @@ export default function StatusPage() {
 
   const [showAllMonitors, setShowAllMonitors] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const [statusUpdates, setStatusUpdates] = useState<any[]>([]);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time Firestore listener for status updates
+  useEffect(() => {
+    const statusUpdatesQuery = query(
+      collection(db, 'status_updates'),
+      orderBy('created_at', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(statusUpdatesQuery, (snapshot) => {
+      const updatesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setStatusUpdates(updatesData);
+    }, (error) => {
+      console.error('Error fetching status updates:', error);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-refresh logic for status checks
+  useEffect(() => {
+    function checkAndUpdateStatus() {
+      monitors.forEach(async (monitor) => {
+        try {
+          // Check monitor status
+          const res = await fetch(monitor.url, { method: 'HEAD' });
+          const status = res.ok ? 'up' : 'down';
+          
+          // Update monitor status in Firebase
+          await updateDoc(doc(db, 'monitors', monitor.id), {
+            last_status: status,
+            last_check: new Date(),
+            response_time: Date.now() - performance.now()
+          });
+
+          // Create status update if status changed
+          if (monitor.last_status !== status) {
+            await addDoc(collection(db, 'status_updates'), {
+              monitor_id: monitor.id,
+              monitor_name: monitor.name,
+              monitor_url: monitor.url,
+              previous_status: monitor.last_status,
+              current_status: status,
+              description: `${monitor.name} is now ${status}`,
+              created_at: new Date()
+            });
+          }
+        } catch (error) {
+          console.error('Error checking monitor status:', error);
+          // Update monitor as down if check fails
+          await updateDoc(doc(db, 'monitors', monitor.id), {
+            last_status: 'down',
+            last_check: new Date()
+          });
+        }
+      });
+    }
+
+    // Run immediately on mount
+    checkAndUpdateStatus();
+    // Set interval
+    intervalRef.current = setInterval(checkAndUpdateStatus, AUTO_REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [monitors]);
 
   // Filter public monitors (you might want to add a public field to monitors)
   const publicMonitors = monitors.filter(monitor => monitor.is_public !== false);
@@ -152,6 +226,11 @@ export default function StatusPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Frontend-only monitoring warning */}
+      <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+        <strong>Note:</strong> Status monitoring runs only while this dashboard is open. For 24/7 monitoring, set up a backend worker.
+      </div>
+
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="text-center mb-12">
@@ -204,63 +283,8 @@ export default function StatusPage() {
           </div>
         </div>
 
-        {/* Current Incidents */}
-        {publicMonitors.some(m => m.last_status === 'down' || (m.failures_in_a_row ?? 0) > 0) && (
-          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              🚨 Current Incidents
-            </h2>
-            <div className="space-y-3">
-              {publicMonitors
-                .filter(m => m.last_status === 'down' || (m.failures_in_a_row ?? 0) > 0)
-                .map((monitor) => {
-                  const badge = getMonitorStatusBadge(monitor);
-                  return (
-                    <div
-                      key={monitor.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                          <span className="mr-1 opacity-75">{badge.icon}</span>
-                          {badge.text}
-                        </span>
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {monitor.name || 'Unnamed Service'}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {monitor.last_status === 'down' ? (
-                          `Down since ${monitor.lastCheck ? new Date(monitor.lastCheck).toLocaleString() : 'Unknown'}`
-                        ) : (
-                          `${monitor.failures_in_a_row ?? 0} failed attempts`
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        )}
-
-        {/* Summary Statistics */}
+        {/* Status Summary */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
-            <div className="p-6">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
-                    <GlobeIcon />
-                  </div>
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Services</p>
-                  <p className="text-2xl font-semibold text-gray-900 dark:text-white">{publicMonitors.length}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <div className="flex items-center">
@@ -272,7 +296,7 @@ export default function StatusPage() {
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Operational</p>
                   <p className="text-2xl font-semibold text-green-600 dark:text-green-400">
-                    {publicMonitors.filter(m => m.last_status === 'up' && m.failures_in_a_row === 0).length}
+                    {publicMonitors.filter(m => m.last_status === 'up' && !m.failures_in_a_row).length}
                   </p>
                 </div>
               </div>
@@ -314,118 +338,118 @@ export default function StatusPage() {
               </div>
             </div>
           </div>
+
+          <div className="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="p-6">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center">
+                    <GlobeIcon />
+                  </div>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total</p>
+                  <p className="text-2xl font-semibold text-blue-600 dark:text-blue-400">
+                    {publicMonitors.length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Services List */}
+        {/* Service Status List */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
           <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                Monitored Services
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Service Status
               </h2>
               <button
                 onClick={() => setShowAllMonitors(!showAllMonitors)}
                 className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
               >
-                {showAllMonitors ? 'Show Less' : 'Show All'}
+                {showAllMonitors ? 'Show Public Only' : 'Show All Services'}
               </button>
             </div>
           </div>
           
-          {loading && publicMonitors.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="mt-2 text-gray-500 dark:text-gray-400">Loading services...</p>
-            </div>
-          ) : publicMonitors.length === 0 ? (
-            <div className="p-12 text-center">
-              <GlobeIcon />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
-                No Services Monitored
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                No public services are currently being monitored.
-              </p>
-            </div>
-          ) : (
-            <div className="p-6">
-              <div className="space-y-4">
-                {(showAllMonitors ? publicMonitors : publicMonitors.slice(0, 5))
-                  .map((monitor) => {
-                    const badge = getMonitorStatusBadge(monitor);
-                    const uptime = monitor.uptime_stats?.['24h'] 
-                      ? `${(monitor.uptime_stats['24h'] * 100).toFixed(2)}%`
-                      : 'N/A';
-                    
-                    return (
-                      <div
-                        key={monitor.id}
-                        className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}>
-                            <span className="mr-1 opacity-75">{badge.icon}</span>
-                            {badge.text}
+          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+            {(showAllMonitors ? monitors : publicMonitors).map((monitor) => {
+              const statusBadge = getMonitorStatusBadge(monitor);
+              return (
+                <div key={monitor.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {(monitor.name || monitor.url).charAt(0).toUpperCase()}
                           </span>
-                          
-                          <div>
-                            <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                              {monitor.name || 'Unnamed Service'}
-                            </h3>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm text-gray-500 dark:text-gray-400">
-                                {monitor.url}
-                              </span>
-                              <a
-                                href={monitor.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                              >
-                                <ExternalLinkIcon />
-                              </a>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-gray-900 dark:text-white">
-                            {uptime} uptime
-                          </div>
-                          <div className="text-xs text-gray-500 dark:text-gray-400">
-                            24h average
-                          </div>
-                          {monitor.lastResponseTime && (
-                            <div className="text-xs text-gray-500 dark:text-gray-400">
-                              {monitor.lastResponseTime}ms last response
-                            </div>
-                          )}
                         </div>
                       </div>
-                    );
-                  })}
-              </div>
-              
-              {!showAllMonitors && publicMonitors.length > 5 && (
-                <div className="mt-4 text-center">
-                  <button
-                    onClick={() => setShowAllMonitors(true)}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm font-medium"
-                  >
-                    Show {publicMonitors.length - 5} more services
-                  </button>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {monitor.name || monitor.url}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {monitor.url}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge.color}`}>
+                        <span className="mr-1">{statusBadge.icon}</span>
+                        {statusBadge.text}
+                      </span>
+                      
+                      <a
+                        href={monitor.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                      >
+                        <ExternalLinkIcon />
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              );
+            })}
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-12 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            Powered by WebWatch Uptime Monitoring • Last updated: {new Date().toLocaleString()}
-          </p>
-        </div>
+        {/* Recent Status Updates */}
+        {statusUpdates.length > 0 && (
+          <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+                Recent Status Updates
+              </h2>
+            </div>
+            
+            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+              {statusUpdates.slice(0, 10).map((update) => (
+                <div key={update.id} className="px-6 py-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {update.monitor_name}
+                      </div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {update.description}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">
+                      {new Date(update.created_at.toDate()).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

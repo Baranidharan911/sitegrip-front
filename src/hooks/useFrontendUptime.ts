@@ -390,7 +390,7 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
         for (const monitorId in updatedIncidents) {
           updatedIncidents[monitorId] = updatedIncidents[monitorId].map(incident =>
             incident.id === incidentId
-              ? { ...incident, status: 'resolved', resolvedAt: new Date().toISOString() }
+              ? { ...incident, status: 'resolved', resolvedAt: new Date() }
               : incident
           );
         }

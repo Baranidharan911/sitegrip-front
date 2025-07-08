@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -21,6 +21,8 @@ import Testimonials from '../components/Home/Testimonials';
 import NewFooter from '../components/Home/NewFooter';
 import CookieBanner from '../components/Common/CookieBanner';
 import { Toaster } from 'react-hot-toast';
+
+export const dynamic = 'force-dynamic';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);

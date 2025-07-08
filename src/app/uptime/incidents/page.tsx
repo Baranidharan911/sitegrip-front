@@ -1,8 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useFrontendUptime } from '../../../hooks/useFrontendUptime';
 import IncidentList from '../../../components/Uptime/IncidentList';
+import { collection, onSnapshot, addDoc, updateDoc, doc, query, orderBy, where } from 'firebase/firestore';
+import { db } from '../../../lib/firebase';
 
 const AlertIcon = () => (
   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -16,6 +18,8 @@ const RefreshIcon = () => (
   </svg>
 );
 
+const AUTO_REFRESH_INTERVAL = 30000; // 30 seconds
+
 export default function IncidentsPage() {
   const {
     monitors,
@@ -26,6 +30,80 @@ export default function IncidentsPage() {
     refreshMonitors,
     clearError,
   } = useFrontendUptime(true, 30000); // Auto-refresh every 30 seconds
+
+  const [incidents, setIncidents] = useState<any[]>([]);
+  const [incidentsLoading, setIncidentsLoading] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time Firestore listener for incidents
+  useEffect(() => {
+    const incidentsQuery = query(
+      collection(db, 'incidents'),
+      orderBy('created_at', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(incidentsQuery, (snapshot) => {
+      const incidentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setIncidents(incidentsData);
+      setIncidentsLoading(false);
+    }, (error) => {
+      console.error('Error fetching incidents:', error);
+      setIncidentsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  // Auto-refresh logic for incident detection
+  useEffect(() => {
+    function checkForNewIncidents() {
+      monitors.forEach(async (monitor) => {
+        // Check for new incidents based on monitor status
+        if (monitor.last_status === 'down' && !(monitor as any).incident_created) {
+          try {
+            await addDoc(collection(db, 'incidents'), {
+              monitor_id: monitor.id,
+              monitor_name: monitor.name,
+              monitor_url: monitor.url,
+              type: 'downtime',
+              status: 'active',
+              severity: 'critical',
+              description: `${monitor.name} is currently down`,
+              created_at: new Date(),
+              updated_at: new Date()
+            });
+            
+            // Mark incident as created for this monitor
+            await updateDoc(doc(db, 'monitors', monitor.id), {
+              incident_created: true
+            });
+          } catch (error) {
+            console.error('Error creating incident:', error);
+          }
+        } else if (monitor.last_status === 'up' && (monitor as any).incident_created) {
+          // Resolve incident when monitor comes back up
+          try {
+            await updateDoc(doc(db, 'monitors', monitor.id), {
+              incident_created: false
+            });
+          } catch (error) {
+            console.error('Error resolving incident:', error);
+          }
+        }
+      });
+    }
+
+    // Run immediately on mount
+    checkForNewIncidents();
+    // Set interval
+    intervalRef.current = setInterval(checkForNewIncidents, AUTO_REFRESH_INTERVAL);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [monitors]);
 
   const handleRefresh = async () => {
     try {
@@ -46,6 +124,11 @@ export default function IncidentsPage() {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      {/* Frontend-only monitoring warning */}
+      <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded">
+        <strong>Note:</strong> Incident detection runs only while this dashboard is open. For 24/7 monitoring, set up a backend worker.
+      </div>
+
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 rounded-lg mb-6">
@@ -214,7 +297,7 @@ export default function IncidentsPage() {
 
         {/* Main Incident List */}
         <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-          {loading ? (
+          {loading || incidentsLoading ? (
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
               <span className="ml-2 text-gray-500 dark:text-gray-400">Loading incidents...</span>

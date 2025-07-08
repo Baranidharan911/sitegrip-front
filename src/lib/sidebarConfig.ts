@@ -19,6 +19,8 @@ import {
   Calculator,
   MessageSquare,
   Grid3X3,
+  Link,
+  Image,
 } from 'lucide-react';
 
 export interface SidebarItem {
@@ -36,6 +38,7 @@ export interface SidebarSection {
 }
 
 export const sidebarItems: SidebarSection[] = [
+  
   {
     name: 'Indexing',
     path: '/indexing',
@@ -54,6 +57,18 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Crawl History', path: '/seo-crawler/history', icon: Server, pro: false },
       { name: 'Site Map', path: '/seo-crawler/sitemap', icon: Server, pro: false },
       { name: 'Keywords Analysis', path: '/seo-crawler/keyword-tools', icon: KeySquare, pro: false }
+    ],
+  },
+
+  {
+    name: 'SEO Tools',
+    path: '/seo-tools',
+    icon: Search,
+    subItems: [
+      { name: 'Meta Tag Analyzer', path: '/meta-tag-analyzer', icon: Search, pro: false },
+      { name: 'Internal Link Checker', path: '/internal-link-checker', icon: Link, pro: false },
+      { name: 'Page Speed Analyzer', path: '/page-speed-analyzer', icon: Radar, pro: false },
+      { name: 'Schema Markup Generator', path: '/schema-markup-generator', icon: Braces, pro: false },
     ],
   },
 
@@ -78,6 +93,8 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Responsive Preview', path: '/screen-responsiveness', icon: MonitorSmartphone, pro: false },
       { name: 'JS Rendering Tester', path: '/js-rendering-tester', icon: Braces, pro: false },
       { name: 'HTTP Header Checker', path: '/header-checker', icon: Shield, pro: false },
+      { name: 'OpenGraph & Twitter Checker', path: '/opengraph-checker', icon: Link, pro: false },
+      { name: 'Broken Image Checker', path: '/broken-image-checker', icon: Image, pro: false },
       { name: 'Core Web Vitals', path: '/web-vitals-checker', icon: Gauge, pro: false },
       { name: 'Hreflang Generator', path: '/hreflang-generator', icon: Globe2, pro: false },
     ],

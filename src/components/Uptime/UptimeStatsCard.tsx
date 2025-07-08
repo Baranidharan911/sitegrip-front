@@ -18,9 +18,9 @@ const StatusIcon = ({ status }: { status?: 'up' | 'down' }) => {
   return <div className="w-3 h-3 bg-gray-400 rounded-full"></div>;
 };
 
-const SSLStatusBadge = ({ sslStatus, daysUntilExpiry }: { 
-  sslStatus?: string; 
-  daysUntilExpiry?: number;
+const SSLStatusBadge = ({ sslStatus, daysUntilExpiry }: {
+  sslStatus?: string;
+  daysUntilExpiry?: number | null;
 }) => {
   if (!sslStatus) return null;
   
@@ -128,7 +128,7 @@ const UptimeStatsCard: React.FC<UptimeStatsCardProps> = ({ monitor, onClick }) =
         </div>
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Response Time</p>
-          <p className={`text-lg font-semibold ${getResponseTimeColor(monitor.lastResponseTime)}`}>
+          <p className={`text-lg font-semibold ${getResponseTimeColor(monitor.lastResponseTime ?? undefined)}`}>
             {monitor.lastResponseTime ? `${monitor.lastResponseTime}ms` : 'N/A'}
           </p>
         </div>

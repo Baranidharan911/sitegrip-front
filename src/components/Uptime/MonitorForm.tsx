@@ -10,6 +10,7 @@ interface MonitorFormProps {
   monitorTypes: MonitorType[];
   notificationTypes: NotificationType[];
   editMonitor?: any; // For editing existing monitors
+  onSave: (data: CreateMonitorRequest, id?: string) => Promise<void>;
 }
 
 export default function MonitorForm({ 
@@ -17,7 +18,8 @@ export default function MonitorForm({
   onClose, 
   monitorTypes, 
   notificationTypes,
-  editMonitor 
+  editMonitor,
+  onSave
 }: MonitorFormProps) {
   const { createMonitor, updateMonitor, testMonitor, loading, error, clearError } = useFrontendUptime();
   
@@ -150,15 +152,7 @@ export default function MonitorForm({
     console.log('✅ Form validation passed');
 
     try {
-      if (editMonitor) {
-        console.log('🔄 Updating existing monitor:', editMonitor.id);
-        await updateMonitor(editMonitor.id, formData);
-        console.log('✅ Monitor updated successfully');
-      } else {
-        console.log('🆕 Creating new monitor');
-        const result = await createMonitor(formData);
-        console.log('✅ Monitor created successfully:', result);
-      }
+      await onSave(formData, editMonitor?.id);
       console.log('🎉 Form submission completed, closing modal');
       onClose();
     } catch (error) {

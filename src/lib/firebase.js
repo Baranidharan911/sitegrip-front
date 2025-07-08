@@ -1,7 +1,7 @@
 // lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, collection, addDoc } from "firebase/firestore";
 
 
 // Firebase config from environment variables
@@ -34,5 +34,10 @@ provider.setCustomParameters({
 
 // Firestore (for saving user data)
 const db = getFirestore(app);
+
+// Save data to a Firestore collection
+export async function saveToFirebase(collectionName, data) {
+  return await addDoc(collection(db, collectionName), data);
+}
 
 export { app, auth, provider, db };
