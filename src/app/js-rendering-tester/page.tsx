@@ -13,6 +13,9 @@ interface ComparisonResult {
   differences: number;
 }
 
+// Replace with your deployed Firebase function endpoint:
+const FIREBASE_JS_RENDERING_ENDPOINT = process.env.NEXT_PUBLIC_JS_RENDERING_ENDPOINT!;
+
 export default function JsRenderingTesterPage() {
   const [url, setUrl] = useState('https://www.sitegrip.com');
   const [loading, setLoading] = useState(false);
@@ -29,7 +32,7 @@ export default function JsRenderingTesterPage() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch('/api/js-rendering', {
+      const res = await fetch(FIREBASE_JS_RENDERING_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
