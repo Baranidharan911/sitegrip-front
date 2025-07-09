@@ -11,11 +11,6 @@
       "use": "@vercel/next"
     }
   ],
-  "functions": {
-    "src/app/api/js-rendering/route.ts": {
-      "maxDuration": 60
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
