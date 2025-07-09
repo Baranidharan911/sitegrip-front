@@ -74,6 +74,17 @@ interface UseFrontendUptimeReturn extends UseFrontendUptimeState {
   triggerCheck: (monitorId: string) => Promise<void>;
 }
 
+// Static monitor types
+const MONITOR_TYPES: MonitorType[] = [
+  { type: 'http', label: 'HTTP', description: 'Monitor HTTP endpoints' },
+  { type: 'ping', label: 'Ping', description: 'Ping a server or device' },
+  { type: 'port', label: 'Port', description: 'Check if a port is open' },
+  { type: 'ssl', label: 'SSL', description: 'Monitor SSL certificate status' },
+  { type: 'pagespeed', label: 'PageSpeed', description: 'Measure web page speed' },
+  { type: 'hardware', label: 'Hardware', description: 'Monitor hardware health' },
+  { type: 'docker', label: 'Docker', description: 'Monitor Docker containers' },
+];
+
 export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseFrontendUptimeReturn => {
   const { user } = useAuth();
   const [state, setState] = useState<UseFrontendUptimeState>({
@@ -87,7 +98,7 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     error: null,
     lastRefresh: null,
     summary: null,
-    monitorTypes: [],
+    monitorTypes: MONITOR_TYPES,
     notificationTypes: [],
   });
 
@@ -228,16 +239,14 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [setStateIfMounted, handleError, user?.uid]);
 
-  // Get monitor stats (implement as needed, placeholder for now)
+  // Get monitor stats (not implemented)
   const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
-    // TODO: Implement Firestore-based stats if needed
-    throw new Error('getMonitorStats not implemented');
+    throw new Error('Monitor stats are not implemented.');
   }, []);
 
-  // Perform monitor check (implement as needed, placeholder for now)
+  // Perform monitor check (not implemented)
   const performMonitorCheck = useCallback(async (monitorId: string): Promise<CheckResult> => {
-    // TODO: Implement Firestore-based check if needed
-    throw new Error('performMonitorCheck not implemented');
+    throw new Error('Manual monitor check is not implemented in the frontend.');
   }, []);
 
   // Bulk update monitors (implement as needed, placeholder for now)
@@ -548,16 +557,25 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     });
   }, []);
 
-  // testMonitor placeholder
+  // testMonitor implementation
   const testMonitor = useCallback(async (url: string, timeout?: number): Promise<TestResult> => {
-    return Promise.reject({
+    const res = await fetch('/api/monitoring/test', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, timeout }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data) {
+      throw new Error(data?.message || 'Test failed');
+    }
+    return {
       id: '',
       monitorId: '',
-      status: false,
-      responseTime: 0,
-      message: 'Monitor test not implemented',
-      createdAt: new Date()
-    });
+      status: data.status,
+      responseTime: data.responseTime,
+      message: data.message,
+      createdAt: new Date(),
+    };
   }, []);
 
   // Return object
