@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BROWSERLESS_API = 'https://production-sfo.browserless.io/content?token=2SeQ6J4Git1ydT83aa61960c18f74b5efd258f6845ca848b3';
+const SCRAPINGBEE_API = 'https://app.scrapingbee.com/api/v1/';
+const SCRAPINGBEE_KEY = '03AO48GG72NL2CDT3T1SRO2KCYBYAHFNMANYTX4KJXK2IOTEZHY7A0Y2IEPL5KVKCQ5UHG2HAUZP6BSO';
 
 export const runtime = 'nodejs';
 export const revalidate = 0;
@@ -12,15 +13,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
     }
 
-    // Get rendered HTML from browserless.io (POST, new endpoint)
-    const renderedRes = await fetch(
-      `${BROWSERLESS_API}&url=${encodeURIComponent(url)}`,
-      { method: 'POST' }
-    );
+    // Get rendered HTML from ScrapingBee
+    const beeUrl = `${SCRAPINGBEE_API}?api_key=${SCRAPINGBEE_KEY}&url=${encodeURIComponent(url)}&render_js=true`;
+    const renderedRes = await fetch(beeUrl, { method: 'GET' });
     if (!renderedRes.ok) {
       const errorText = await renderedRes.text();
-      console.error('browserless.io error:', renderedRes.status, errorText);
-      throw new Error(`Failed to fetch rendered HTML from browserless.io: ${errorText}`);
+      console.error('ScrapingBee error:', renderedRes.status, errorText);
+      throw new Error(`Failed to fetch rendered HTML from ScrapingBee: ${errorText}`);
     }
     const renderedHtml = await renderedRes.text();
 
