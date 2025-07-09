@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const BROWSERLESS_API = 'https://chrome.browserless.io/content?token=2SeQ6J4Git1ydT83aa61960c18f74b5efd258f6845ca848b3';
+const BROWSERLESS_API = 'https://production-sfo.browserless.io/content?token=2SeQ6J4Git1ydT83aa61960c18f74b5efd258f6845ca848b3';
 
 export const runtime = 'nodejs';
 export const revalidate = 0;
