@@ -5,7 +5,6 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "regions": ["iad1"],
-  "ignoreCommand": "echo 'Skipping functions directory'",
   "builds": [
     {
       "src": "package.json",
