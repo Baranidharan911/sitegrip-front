@@ -6,7 +6,7 @@ The Firebase Functions are deployed separately from the Next.js frontend. This i
 - **Frontend**: Deployed to Vercel (Next.js app)
 - **Backend**: Deployed to Firebase (Cloud Functions)
 
-## 📁 Project Structure
+## 📁 Project Structur ok
 
 ```
 webwatch/
