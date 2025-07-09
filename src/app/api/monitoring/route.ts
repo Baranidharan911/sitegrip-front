@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const SCRAPINGBEE_API = 'https://app.scrapingbee.com/api/v1/';
+const SCRAPINGBEE_KEY = '03AO48GG72NL2CDT3T1SRO2KCYBYAHFNMANYTX4KJXK2IOTEZHY7A0Y2IEPL5KVKCQ5UHG2HAUZP6BSO';
+
 // ============================
 // 🌐 MONITORING API ROUTE
 // ============================
@@ -112,15 +115,37 @@ export async function POST(request: NextRequest) {
           isActive: true
         });
 
-      case 'trigger_check':
+      case 'trigger_check': {
+        const url = data?.url;
+        if (!url || typeof url !== 'string') {
+          return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+        }
+        const beeUrl = `${SCRAPINGBEE_API}?api_key=${SCRAPINGBEE_KEY}&url=${encodeURIComponent(url)}&render_js=true`;
+        const start = Date.now();
+        let status = false;
+        let responseTime = null;
+        let error = null;
+        try {
+          const res = await fetch(beeUrl, { method: 'GET' });
+          responseTime = Date.now() - start;
+          status = res.ok;
+          if (!res.ok) {
+            const errorText = await res.text();
+            error = `ScrapingBee error: ${res.status} ${errorText}`;
+          }
+        } catch (err: any) {
+          responseTime = Date.now() - start;
+          error = err.message || 'Unknown error';
+        }
         return NextResponse.json({
           id: Date.now().toString(),
           monitorId: data.monitorId,
-          status: Math.random() > 0.1, // 90% success rate
-          responseTime: Math.floor(Math.random() * 500) + 50,
+          status,
+          responseTime,
           timestamp: new Date().toISOString(),
-          error: null
+          error
         });
+      }
 
       case 'update_monitor':
         return NextResponse.json({

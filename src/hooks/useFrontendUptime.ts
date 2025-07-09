@@ -244,10 +244,36 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     throw new Error('Monitor stats are not implemented.');
   }, []);
 
-  // Perform monitor check (not implemented)
+  // Perform monitor check using the new API
   const performMonitorCheck = useCallback(async (monitorId: string): Promise<CheckResult> => {
-    throw new Error('Manual monitor check is not implemented in the frontend.');
-  }, []);
+    try {
+      const monitor = state.monitors.find(m => m.id === monitorId);
+      if (!monitor) throw new Error('Monitor not found');
+      const res = await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'trigger_check',
+          data: { monitorId, url: monitor.url }
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to check monitor');
+      // Optionally update state with the new check result
+      // (You may want to push to monitorChecks or refreshMonitors)
+      return {
+        id: data.id,
+        monitorId: data.monitorId,
+        status: data.status,
+        responseTime: data.responseTime,
+        timestamp: data.timestamp,
+        error: data.error || null
+      } as CheckResult;
+    } catch (error) {
+      handleError(error, 'performMonitorCheck');
+      throw error;
+    }
+  }, [state.monitors, handleError]);
 
   // Bulk update monitors (implement as needed, placeholder for now)
   const bulkUpdateMonitors = useCallback(async (data: BulkUpdateRequest): Promise<BulkUpdateResponse> => {
@@ -295,7 +321,6 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
   // Trigger manual check
   const triggerCheck = useCallback(async (monitorId: string): Promise<void> => {
     try {
-      // realtimeMonitoring.triggerCheck(monitorId); // This line was removed as per the edit hint
       await performMonitorCheck(monitorId);
     } catch (error) {
       handleError(error, 'triggerCheck');
