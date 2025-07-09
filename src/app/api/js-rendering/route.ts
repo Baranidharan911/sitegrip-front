@@ -12,10 +12,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
     }
 
-    // Get rendered HTML from browserless.io
-    const renderedRes = await fetch(`${BROWSERLESS_API}&url=${encodeURIComponent(url)}`);
+    // Get rendered HTML from browserless.io (POST, new endpoint)
+    const renderedRes = await fetch(
+      `${BROWSERLESS_API}&url=${encodeURIComponent(url)}`,
+      { method: 'POST' }
+    );
     if (!renderedRes.ok) {
-      throw new Error('Failed to fetch rendered HTML from browserless.io');
+      const errorText = await renderedRes.text();
+      console.error('browserless.io error:', renderedRes.status, errorText);
+      throw new Error(`Failed to fetch rendered HTML from browserless.io: ${errorText}`);
     }
     const renderedHtml = await renderedRes.text();
 
