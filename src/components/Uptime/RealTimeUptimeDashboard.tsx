@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useRealTimeUptime } from '../../hooks/useRealTimeUptime';
 import { useFrontendUptime } from '../../hooks/useFrontendUptime';
-import { frontendUptimeApi } from '../../lib/frontendUptimeApi';
 import {
   AlertTriangle,
   Server,
@@ -18,29 +16,22 @@ export const RealTimeUptimeDashboard: React.FC = () => {
     monitors,
     loading,
     error,
-    connectionStatus,
     criticalMonitors,
-    activeIncidents,
     refreshMonitors,
-    clearError
-  } = useRealTimeUptime();
-
-  // For SSL and Status Page summary
-  const {
-    monitors: allMonitors,
-    loading: loadingSSL,
-    error: errorSSL,
+    clearError,
+    getMonitorChecks,
+    getMonitorIncidents
   } = useFrontendUptime();
 
   // SSL summary
-  const httpsMonitors = allMonitors.filter(m => m.url && m.url.startsWith('https://'));
+  const httpsMonitors = monitors.filter(m => m.url && m.url.startsWith('https://'));
   const sslValid = httpsMonitors.filter(m => m.ssl_status === 'valid').length;
   const sslExpiring = httpsMonitors.filter(m => m.ssl_status === 'expiring_soon').length;
   const sslExpired = httpsMonitors.filter(m => m.ssl_status === 'expired').length;
   const sslInvalid = httpsMonitors.filter(m => m.ssl_status === 'invalid').length;
 
   // Status Page summary
-  const publicMonitors = allMonitors.filter(m => m.is_public !== false);
+  const publicMonitors = monitors.filter(m => m.is_public !== false);
   const downMonitors = publicMonitors.filter(m => m.last_status === 'down').length;
   const degradedMonitors = publicMonitors.filter(m => (m.failures_in_a_row ?? 0) > 0 && m.last_status === 'up').length;
   let overallStatus = 'operational';
@@ -52,13 +43,10 @@ export const RealTimeUptimeDashboard: React.FC = () => {
 
   useEffect(() => {
     async function aggregateUptime() {
-      // Use a public method to get all check results, or fallback to empty
       let checksByMonitor: Record<string, any[]> = {};
       try {
-        // Try to use getMonitorChecks for each monitor
-        const allMonitors = await frontendUptimeApi.getAllMonitors();
-        for (const monitor of allMonitors) {
-          const checks = await frontendUptimeApi.getMonitorChecks(monitor.id, 1000);
+        for (const monitor of monitors) {
+          const checks = await getMonitorChecks(monitor.id, 1000);
           checksByMonitor[monitor.id] = checks;
         }
       } catch {
@@ -89,7 +77,7 @@ export const RealTimeUptimeDashboard: React.FC = () => {
       setUptimeTrendData(trend);
     }
     aggregateUptime();
-  }, [monitors]);
+  }, [monitors, getMonitorChecks]);
 
   // Fix: Calculate degraded monitors based on failures_in_a_row or similar logic
   const degradedCount = monitors.filter(m => (m.failures_in_a_row ?? 0) > 0 && m.status).length;
@@ -107,9 +95,8 @@ export const RealTimeUptimeDashboard: React.FC = () => {
     async function aggregateIncidents() {
       let allIncidents: any[] = [];
       try {
-        const allMonitors = await frontendUptimeApi.getAllMonitors();
-        for (const monitor of allMonitors) {
-          const incidents = await frontendUptimeApi.getMonitorIncidents(monitor.id, 1000);
+        for (const monitor of monitors) {
+          const incidents = await getMonitorIncidents(monitor.id, 1000);
           allIncidents = allIncidents.concat(incidents);
         }
       } catch {
@@ -133,7 +120,7 @@ export const RealTimeUptimeDashboard: React.FC = () => {
       setIncidentsOverTimeData(data);
     }
     aggregateIncidents();
-  }, [monitors]);
+  }, [monitors, getMonitorIncidents]);
 
   const sslExpiryData = httpsMonitors.map(m => ({
     name: m.name || m.url,
@@ -154,16 +141,6 @@ export const RealTimeUptimeDashboard: React.FC = () => {
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
               Real-Time Uptime Monitoring
             </h1>
-            <div className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm ${
-              connectionStatus.isConnected
-                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                : 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                connectionStatus.isConnected ? 'bg-green-500' : 'bg-red-500'
-              }`} />
-              {connectionStatus.isConnected ? 'Connected' : 'Disconnected'}
-            </div>
           </div>
         </div>
       </div>
@@ -204,7 +181,7 @@ export const RealTimeUptimeDashboard: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Incidents</p>
-                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{activeIncidents.length}</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{criticalMonitors.length}</p>
                   </div>
                   <div className="p-2 bg-orange-100 dark:bg-orange-900/20 rounded-lg">
                     <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />

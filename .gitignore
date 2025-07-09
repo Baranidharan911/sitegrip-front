@@ -1,46 +1,194 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
+# ============================
+# 🔧 DEPENDENCIES
+# ============================
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+package-lock.json
+yarn.lock
 
-# testing
+# ============================
+# 🧪 TESTING
+# ============================
 /coverage
+*.lcov
+.nyc_output
+.jest/
 
-# next.js
+# ============================
+# ⚡ NEXT.JS
+# ============================
 /.next/
 /out/
+.next/
+next-env.d.ts
 
-# production
+# ============================
+# 🏗️ PRODUCTION BUILDS
+# ============================
 /build
+/dist
+*.tsbuildinfo
 
-# misc
-.DS_Store
-*.pem
+# ============================
+# 🔥 FIREBASE
+# ============================
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+firebase-debug.json
+# Note: firebase.json, .firebaserc, firestore.rules, etc. should be tracked in git
+# Only ignore sensitive files and build artifacts
+firebase-functions/.env
+firebase-functions/.env.local
+firebase-functions/.env.production
+firebase-functions/.env.development
+firebase-functions/lib/
+firebase-functions/node_modules/
+firebase-functions/package-lock.json
+firebase-functions/yarn.lock
 
-# debug
+# ============================
+# 🔐 ENVIRONMENT VARIABLES
+# ============================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+
+# ============================
+# 🐛 DEBUG & LOGS
+# ============================
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# local env files
-.env*.local
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# Additional ignores
-.env
-dist/
-logs/
+lerna-debug.log*
+.pnpm-debug.log*
 *.log
+logs/
+*.log.*
 
-# IDE and editor files
+# ============================
+# 💻 IDE & EDITORS
+# ============================
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ============================
+# 🔒 SECURITY & KEYS
+# ============================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+service-account*.json
+google-services.json
+GoogleService-Info.plist
+firebase-adminsdk-*.json
+
+# ============================
+# 📁 TEMPORARY FILES
+# ============================
+.tmp/
+.temp/
+*.tmp
+*.temp
+.cache/
+.parcel-cache/
+
+# ============================
+# 🚀 DEPLOYMENT
+# ============================
+.vercel
+.netlify
+.now
+.zeit
+
+# ============================
+# 📊 ANALYTICS & MONITORING
+# ============================
+.sentryclirc
+.sentry/
+
+# ============================
+# 🧹 CLEANUP
+# ============================
+*.orig
+*.rej
+*.bak
+*.backup
+*.old
+
+# ============================
+# 🎯 PROJECT SPECIFIC
+# ============================
+# Add any project-specific files here
+public/uploads/
+public/temp/
+uploads/
+temp/
+
+# ============================
+# 🔍 SEARCH INDEXES
+# ============================
+.search-index/
+.algolia/
+
+# ============================
+# 📱 MOBILE & PWA
+# ============================
+public/sw.js
+public/workbox-*.js
+public/worker-*.js
+public/sw.js.map
+public/workbox-*.js.map
+public/worker-*.js.map
+
+# ============================
+# 🎨 STYLE GUIDES
+# ============================
+.stylelintrc
+.eslintcache
+.prettierignore
+
+# ============================
+# 🐳 DOCKER
+# ============================
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# ============================
+# ☁️ CLOUD PLATFORMS
+# ============================
+.aws/
+.gcp/
+.azure/
+cloudbuild.yaml
+app.yaml
+app.yml
+
+# ============================
+# 📦 PACKAGE MANAGERS
+# ============================
+.npm
+.eslintcache
+.yarn-integrity
+.yarnrc
+.npmrc

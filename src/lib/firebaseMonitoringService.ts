@@ -44,11 +44,12 @@ export class FirebaseMonitoringService {
   // 📊 MONITOR MANAGEMENT
   // ============================
 
-  async createMonitor(monitorData: Omit<Monitor, 'id' | 'createdAt' | 'updatedAt'>): Promise<Monitor> {
+  async createMonitor(userId: string, monitorData: Omit<Monitor, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Monitor> {
     const monitorRef = doc(collection(db, 'monitors'));
     const monitor: Monitor = {
       id: monitorRef.id,
       ...monitorData,
+      userId,
       createdAt: serverTimestamp() as any,
       updatedAt: serverTimestamp() as any,
       lastCheck: null,
@@ -58,47 +59,50 @@ export class FirebaseMonitoringService {
       isActive: true,
       status: true
     };
-
     await setDoc(monitorRef, monitor);
     return monitor;
   }
 
-  async getAllMonitors(): Promise<Monitor[]> {
+  async getAllMonitors(userId: string): Promise<Monitor[]> {
     const monitorsRef = collection(db, 'monitors');
-    const q = query(monitorsRef, orderBy('createdAt', 'desc'));
+    const q = query(monitorsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
-    
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     })) as Monitor[];
   }
 
-  async getMonitorById(id: string): Promise<Monitor | null> {
+  async getMonitorById(userId: string, id: string): Promise<Monitor | null> {
     const monitorRef = doc(db, 'monitors', id);
     const snapshot = await getDoc(monitorRef);
-    
-    if (snapshot.exists()) {
+    if (snapshot.exists() && snapshot.data().userId === userId) {
       return { id: snapshot.id, ...snapshot.data() } as Monitor;
     }
     return null;
   }
 
-  async updateMonitor(id: string, updates: Partial<Monitor>): Promise<Monitor> {
+  async updateMonitor(userId: string, id: string, updates: Partial<Monitor>): Promise<Monitor> {
     const monitorRef = doc(db, 'monitors', id);
+    const docSnap = await getDoc(monitorRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Monitor not found or access denied');
+    }
     const updateData = {
       ...updates,
       updatedAt: serverTimestamp()
     };
-    
     await updateDoc(monitorRef, updateData);
-    
     const updatedDoc = await getDoc(monitorRef);
     return { id: updatedDoc.id, ...updatedDoc.data() } as Monitor;
   }
 
-  async deleteMonitor(id: string): Promise<void> {
+  async deleteMonitor(userId: string, id: string): Promise<void> {
     const monitorRef = doc(db, 'monitors', id);
+    const docSnap = await getDoc(monitorRef);
+    if (!docSnap.exists() || docSnap.data().userId !== userId) {
+      throw new Error('Monitor not found or access denied');
+    }
     await deleteDoc(monitorRef);
   }
 
@@ -106,37 +110,38 @@ export class FirebaseMonitoringService {
   // 🔍 CHECK RESULTS
   // ============================
 
-  async saveCheckResult(checkResult: Omit<CheckResult, 'id' | 'timestamp'>): Promise<CheckResult> {
+  async saveCheckResult(userId: string, checkResult: Omit<CheckResult, 'id' | 'timestamp' | 'userId'>): Promise<CheckResult> {
     const checkRef = doc(collection(db, 'checkResults'));
     const check: CheckResult = {
       id: checkRef.id,
       ...checkResult,
+      userId,
       timestamp: serverTimestamp() as any
     };
-
     await setDoc(checkRef, check);
-
     // Update monitor with latest check info
     const monitorRef = doc(db, 'monitors', checkResult.monitorId);
-    await updateDoc(monitorRef, {
-      lastCheck: serverTimestamp(),
-      status: checkResult.status,
-      responseTime: checkResult.responseTime,
-      updatedAt: serverTimestamp()
-    });
-
+    const docSnap = await getDoc(monitorRef);
+    if (docSnap.exists() && docSnap.data().userId === userId) {
+      await updateDoc(monitorRef, {
+        lastCheck: serverTimestamp(),
+        status: checkResult.status,
+        responseTime: checkResult.responseTime,
+        updatedAt: serverTimestamp()
+      });
+    }
     return check;
   }
 
-  async getMonitorChecks(monitorId: string, limitCount: number = 100): Promise<CheckResult[]> {
+  async getMonitorChecks(userId: string, monitorId: string, limitCount: number = 100): Promise<CheckResult[]> {
     const checksRef = collection(db, 'checkResults');
     const q = query(
       checksRef,
+      where('userId', '==', userId),
       where('monitorId', '==', monitorId),
       orderBy('timestamp', 'desc'),
       limit(limitCount)
     );
-    
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
@@ -175,12 +180,16 @@ export class FirebaseMonitoringService {
     return incident;
   }
 
-  async getIncidents(monitorId?: string): Promise<Incident[]> {
+  async getIncidents(monitorId?: string, userId?: string): Promise<Incident[]> {
     const incidentsRef = collection(db, 'incidents');
     let q = query(incidentsRef, orderBy('createdAt', 'desc'));
     
-    if (monitorId) {
+    if (monitorId && userId) {
+      q = query(incidentsRef, where('monitorId', '==', monitorId), where('userId', '==', userId), orderBy('createdAt', 'desc'));
+    } else if (monitorId) {
       q = query(incidentsRef, where('monitorId', '==', monitorId), orderBy('createdAt', 'desc'));
+    } else if (userId) {
+      q = query(incidentsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     }
     
     const snapshot = await getDocs(q);
@@ -231,9 +240,9 @@ export class FirebaseMonitoringService {
   // 📈 MONITOR SUMMARY
   // ============================
 
-  async getMonitorSummary(): Promise<MonitorSummary> {
-    const monitors = await this.getAllMonitors();
-    const incidents = await this.getIncidents();
+  async getMonitorSummary(userId: string): Promise<MonitorSummary> {
+    const monitors = await this.getAllMonitors(userId);
+    const incidents = await this.getIncidents(undefined, userId); // Pass userId here
     
     const totalMonitors = monitors.length;
     const onlineMonitors = monitors.filter(m => m.status).length;
@@ -289,9 +298,9 @@ export class FirebaseMonitoringService {
   // 🔄 REAL-TIME LISTENERS
   // ============================
 
-  subscribeToMonitors(callback: (monitors: Monitor[]) => void): () => void {
+  subscribeToMonitors(userId: string, callback: (monitors: Monitor[]) => void): () => void {
     const monitorsRef = collection(db, 'monitors');
-    const q = query(monitorsRef, orderBy('updatedAt', 'desc'));
+    const q = query(monitorsRef, where('userId', '==', userId), orderBy('updatedAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const monitors = snapshot.docs.map(doc => ({
@@ -305,9 +314,9 @@ export class FirebaseMonitoringService {
     return unsubscribe;
   }
 
-  subscribeToIncidents(callback: (incidents: Incident[]) => void): () => void {
+  subscribeToIncidents(userId: string, callback: (incidents: Incident[]) => void): () => void {
     const incidentsRef = collection(db, 'incidents');
-    const q = query(incidentsRef, where('status', '==', 'open'), orderBy('createdAt', 'desc'));
+    const q = query(incidentsRef, where('userId', '==', userId), where('status', '==', 'open'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const incidents = snapshot.docs.map(doc => ({

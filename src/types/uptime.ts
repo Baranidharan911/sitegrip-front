@@ -237,6 +237,7 @@ export interface CheckResult {
   createdAt: Date;
   error?: string;
   timestamp?: Date;
+  userId?: string;
   
   // Enhanced properties
   regionId?: string;
