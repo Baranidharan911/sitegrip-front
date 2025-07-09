@@ -52,6 +52,12 @@ firebase-functions/package-lock.json
 firebase-functions/yarn.lock
 
 # ============================
+# 🚫 FIREBASE FUNCTIONS (Deploy separately)
+# ============================
+# Firebase Functions should be deployed separately to Firebase, not included in Next.js build
+functions/
+
+# ============================
 # 🔐 ENVIRONMENT VARIABLES
 # ============================
 .env

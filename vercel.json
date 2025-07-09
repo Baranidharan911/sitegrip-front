@@ -7,9 +7,16 @@
   "regions": ["iad1"],
   "functions": {
     "app/api/**/*.ts": {
-      "maxDuration": 30
+      "runtime": "nodejs18.x"
     }
   },
+  "ignoreCommand": "echo 'Skipping functions directory'",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
