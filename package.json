@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "predeploy": "npm run build",
-    "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles"
+    "deploy": "touch out/.nojekyll && gh-pages -d out --dotfiles",
+    "postinstall": "npx playwright install chromium"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -29,6 +30,7 @@
     "next": "14.2.4",
     "next-auth": "^4.24.7",
     "next-themes": "^0.3.0",
+    "playwright": "^1.53.2",
     "puppeteer": "^24.11.1",
     "react": "^18",
     "react-dom": "^18",

@@ -11,8 +11,6 @@ interface ComparisonResult {
   initialHtml: string;
   renderedHtml: string;
   differences: number;
-  fallback?: boolean;
-  note?: string;
 }
 
 export default function JsRenderingTesterPage() {
@@ -30,49 +28,27 @@ export default function JsRenderingTesterPage() {
     setLoading(true);
     setError(null);
     setResult(null);
-    
     try {
-      // Try the main API first
-      let res = await fetch('/api/js-rendering', {
+      const res = await fetch('/api/js-rendering', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-      
-      // If main API fails, try fallback
-      if (!res.ok) {
-        console.log('Main API failed, trying fallback...');
-        res = await fetch('/api/js-rendering-fallback', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url }),
-        });
-      }
-      
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to process URL');
+        throw new Error(data.error || 'Failed');
       }
-      
       const data = await res.json();
       
-      // Calculate differences
+      // Calculate rough differences
       const differences = Math.abs(data.renderedHtml.length - data.initialHtml.length);
       
       setResult({
         initialHtml: data.initialHtml,
         renderedHtml: data.renderedHtml,
-        differences,
-        fallback: data.fallback || false,
-        note: data.note
-      } as ComparisonResult);
+        differences
+      });
       setActiveTab('diff');
-      
-      // Show warning if using fallback
-      if (data.fallback) {
-        setError('⚠️ Using fallback mode: JavaScript rendering analysis is limited. The main service may be temporarily unavailable.');
-      }
-      
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
     } finally {
@@ -407,23 +383,6 @@ export default function JsRenderingTesterPage() {
                         </div>
                       </div>
                     </div>
-                    
-                    {/* Fallback Warning */}
-                    {result.fallback && (
-                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-yellow-500 rounded-lg">
-                            <Zap className="w-5 h-5 text-white" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-yellow-800 dark:text-yellow-200">Fallback Mode Active</h4>
-                            <p className="text-sm text-yellow-600 dark:text-yellow-300">
-                              {result.note || 'JavaScript rendering analysis is limited. The main service may be temporarily unavailable.'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                     
                     {/* Analysis Summary */}
                     <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl p-4 border border-blue-200 dark:border-blue-800">
