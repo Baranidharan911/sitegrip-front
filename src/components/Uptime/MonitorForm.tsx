@@ -173,10 +173,15 @@ export default function MonitorForm({
     try {
       const result = await testMonitor(formData.url, formData.timeout);
       setTestResult(result);
-    } catch (error) {
+    } catch (error: any) {
+      let message = error instanceof Error ? error.message : 'Test failed';
+      // Show a user-friendly message for timeouts
+      if (message.toLowerCase().includes('timed out') || message.toLowerCase().includes('504')) {
+        message = 'Monitor test timed out. The site may be slow or unreachable. Try increasing the timeout or check the site.';
+      }
       setTestResult({
         status: false,
-        message: error instanceof Error ? error.message : 'Test failed',
+        message,
         responseTime: 0
       });
     } finally {

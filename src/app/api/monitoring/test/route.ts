@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   try {
     const start = Date.now();
     const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), timeout || 10000);
+    const id = setTimeout(() => controller.abort(), timeout || 50000); // Increased default timeout to 20s
     const res = await fetch(url, { signal: controller.signal });
     clearTimeout(id);
     const responseTime = Date.now() - start;
@@ -19,6 +19,16 @@ export async function POST(req: NextRequest) {
       statusCode: res.status,
     });
   } catch (error: any) {
+    if (error.name === 'AbortError') {
+      console.error('Monitor test timeout:', error);
+      return NextResponse.json({
+        status: false,
+        responseTime: 0,
+        message: 'Monitor test timed out',
+        statusCode: 0,
+      }, { status: 504 });
+    }
+    console.error('Monitor test error:', error);
     return NextResponse.json({
       status: false,
       responseTime: 0,
