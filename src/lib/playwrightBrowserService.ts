@@ -648,6 +648,67 @@ export class PlaywrightBrowserService {
     }
   }
 
+  /**
+   * Capture multiple screenshots by scrolling the page in increments.
+   * Returns an array of base64 images (one per section).
+   */
+  async captureFullPageScreenshotsInSections({
+    url,
+    viewport = { width: 375, height: 812 },
+    userAgent,
+    sectionHeight = 600,
+    timeout = 30000
+  }: {
+    url: string;
+    viewport?: { width: number; height: number };
+    userAgent?: string;
+    sectionHeight?: number;
+    timeout?: number;
+  }): Promise<string[]> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+    if (!this.browser) {
+      throw new Error('Browser not initialized');
+    }
+    // Create context with userAgent if provided
+    const context = await this.browser.newContext({
+      viewport,
+      userAgent: userAgent || undefined
+    });
+    const page = await context.newPage();
+    try {
+      await page.goto(url, { waitUntil: 'networkidle', timeout });
+      await page.waitForTimeout(1000);
+      // Get total scroll height
+      const totalHeight = await page.evaluate(() => document.body.scrollHeight);
+      const screenshots: string[] = [];
+      let scrollY = 0;
+      let section = 0;
+      while (scrollY < totalHeight) {
+        await page.evaluate((y) => window.scrollTo(0, y), scrollY);
+        await page.waitForTimeout(300); // allow content to settle
+        const screenshot = await page.screenshot({
+          type: 'png',
+          fullPage: false,
+          clip: {
+            x: 0,
+            y: 0,
+            width: viewport.width,
+            height: Math.min(sectionHeight, totalHeight - scrollY)
+          }
+        });
+        screenshots.push(screenshot.toString('base64'));
+        scrollY += sectionHeight;
+        section++;
+      }
+      return screenshots;
+    } finally {
+      await page.close();
+      await context.close();
+    }
+  }
+
   async cleanup(): Promise<void> {
     if (this.browser) {
       await this.browser.close();

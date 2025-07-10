@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic';
 interface PageSpeedMetrics {
   metrics: Record<string, number | null>;
   scores: Record<string, number | null>;
-  opportunities: Array<{ id: string; title: string; description: string; savingsMs: number; score: number }>;
+  opportunities: Array<{ id: string; title: string; description: string; savingsMs: number; score: number; category: string }>;
   diagnostics: Record<string, any> | null;
   resourceSummary: Array<any>;
   passedAudits: Array<{ id: string; title: string }>;
@@ -30,26 +30,72 @@ interface PageSpeedMetrics {
   finalUrl: string;
   userAgent: string;
   timing: Record<string, any>;
+  audits?: any;
+  auditDetails?: Record<string, any[]>;
+  screenshot?: string;
+  screenshots?: string[];
+  consoleErrors?: string[];
+  loadTime?: number;
 }
 
 interface WebVitalsResult {
   mobile: PageSpeedMetrics;
   desktop: PageSpeedMetrics;
   url: string;
+  additionalChecks?: {
+    accessibility: any;
+    seo: any;
+    security: any;
+  };
+  analysisTimestamp?: string;
 }
 
-// Metric metadata for labels, units, and descriptions
-const METRIC_META: Record<string, { label: string; unit?: string; description: string }> = {
-  LCP: { label: 'Largest Contentful Paint', unit: 's', description: 'Measures loading performance. Good <2.5s.' },
-  FCP: { label: 'First Contentful Paint', unit: 's', description: 'Time to first content. Good <1.8s.' },
-  CLS: { label: 'Cumulative Layout Shift', unit: '', description: 'Visual stability. Good <0.1.' },
-  TTI: { label: 'Time to Interactive', unit: 's', description: 'Time to fully interactive. Good <5s.' },
-  TBT: { label: 'Total Blocking Time', unit: 'ms', description: 'Time blocked by scripts. Good <200ms.' },
-  SI: { label: 'Speed Index', unit: 's', description: 'Visual load speed. Good <4.3s.' },
-  TTFB: { label: 'Time to First Byte', unit: 'ms', description: 'Server response time. Good <800ms.' },
-  FID: { label: 'First Input Delay', unit: 'ms', description: 'Input responsiveness. Good <100ms.' },
-  FMP: { label: 'First Meaningful Paint', unit: 's', description: 'First meaningful content. Lower is better.' },
-};
+  // Metric metadata for labels, units, and descriptions
+  const METRIC_META: Record<string, { label: string; unit?: string; description: string }> = {
+    // Core Web Vitals
+    LCP: { label: 'Largest Contentful Paint', unit: 's', description: 'Measures loading performance. Good <2.5s.' },
+    FCP: { label: 'First Contentful Paint', unit: 's', description: 'Time to first content. Good <1.8s.' },
+    CLS: { label: 'Cumulative Layout Shift', unit: '', description: 'Visual stability. Good <0.1.' },
+    TTI: { label: 'Time to Interactive', unit: 's', description: 'Time to fully interactive. Good <5s.' },
+    TBT: { label: 'Total Blocking Time', unit: 'ms', description: 'Time blocked by scripts. Good <200ms.' },
+    SI: { label: 'Speed Index', unit: 's', description: 'Visual load speed. Good <4.3s.' },
+    TTFB: { label: 'Time to First Byte', unit: 'ms', description: 'Server response time. Good <800ms.' },
+    FID: { label: 'First Input Delay', unit: 'ms', description: 'Input responsiveness. Good <100ms.' },
+    FMP: { label: 'First Meaningful Paint', unit: 's', description: 'First meaningful content. Lower is better.' },
+    
+    // Additional Performance Metrics
+    FCI: { label: 'First CPU Idle', unit: 's', description: 'Time when page becomes minimally interactive.' },
+    EIL: { label: 'Estimated Input Latency', unit: 'ms', description: 'Estimated time for next input to be processed.' },
+    MPU: { label: 'Max Potential FID', unit: 'ms', description: 'Worst-case First Input Delay.' },
+    
+    // Resource Metrics
+    totalResources: { label: 'Total Resources', unit: '', description: 'Number of HTTP requests made.' },
+    totalSize: { label: 'Total Size', unit: 'bytes', description: 'Total transfer size of all resources.' },
+    domSize: { label: 'DOM Size', unit: 'nodes', description: 'Number of DOM nodes.' },
+    criticalRequestChains: { label: 'Critical Chains', unit: '', description: 'Number of critical request chains.' },
+    
+    // Image Optimization
+    usesOptimizedImages: { label: 'Optimized Images', unit: '', description: 'Score for image optimization.' },
+    usesWebpImages: { label: 'WebP Images', unit: '', description: 'Score for WebP image usage.' },
+    usesResponsiveImages: { label: 'Responsive Images', unit: '', description: 'Score for responsive image usage.' },
+    usesEfficientImageFormats: { label: 'Efficient Formats', unit: '', description: 'Score for efficient image formats.' },
+    
+    // Compression
+    usesTextCompression: { label: 'Text Compression', unit: '', description: 'Score for text compression usage.' },
+    
+    // Accessibility
+    colorContrast: { label: 'Color Contrast', unit: '', description: 'Score for color contrast compliance.' },
+    documentTitle: { label: 'Document Title', unit: '', description: 'Score for document title presence.' },
+    linkName: { label: 'Link Names', unit: '', description: 'Score for link accessibility.' },
+    imageAlt: { label: 'Image Alt Text', unit: '', description: 'Score for image alt text presence.' },
+    
+    // SEO
+    metaDescription: { label: 'Meta Description', unit: '', description: 'Score for meta description presence.' },
+    hreflang: { label: 'Hreflang', unit: '', description: 'Score for hreflang implementation.' },
+    canonical: { label: 'Canonical URL', unit: '', description: 'Score for canonical URL presence.' },
+    robotsTxt: { label: 'Robots.txt', unit: '', description: 'Score for robots.txt presence.' },
+    structuredData: { label: 'Structured Data', unit: '', description: 'Score for structured data implementation.' },
+  };
 
 export default function WebVitalsCheckerPage() {
   const [url, setUrl] = useState('https://www.sitegrip.com');
@@ -72,6 +118,7 @@ export default function WebVitalsCheckerPage() {
     return () => unsub();
   }, []);
   const loadReports = async (uid: string) => {
+    if (!db) return;
     const q = query(collection(db, 'webVitalsReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -81,6 +128,7 @@ export default function WebVitalsCheckerPage() {
   useEffect(() => {
     if (result && url) {
       const save = async () => {
+        if (!db) return;
         await addDoc(collection(db, 'webVitalsReports'), {
           uid: user?.uid || null,
           url,
@@ -174,46 +222,112 @@ export default function WebVitalsCheckerPage() {
   };
 
   // Enhanced MetricCard with responsive design
-  const MetricCard = ({ label, value }: { label: string; value: number | null | undefined }) => {
+  const MetricCard = ({ label, value }: { label: string; value: string | number | null | undefined }) => {
     const meta = METRIC_META[label] || { label, unit: '', description: '' };
-    let displayValue = 'N/A';
+    let displayValue = value === null || value === undefined ? 'N/A' : value;
     let color = 'text-gray-400';
+    let bgGradient = 'from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700';
+    
     if (typeof value === 'number' && value > 0) {
       if (meta.unit === 's') displayValue = (value / 1000).toFixed(2) + 's';
       else if (meta.unit === 'ms') displayValue = value.toFixed(0) + 'ms';
       else displayValue = value.toString();
-      // Color cues for health (example for LCP, CLS, TTI, TBT, FCP, SI, TTFB, FID)
-      if (label === 'LCP') color = value < 2500 ? 'text-green-600' : value < 4000 ? 'text-yellow-600' : 'text-red-600';
-      if (label === 'CLS') color = value < 0.1 ? 'text-green-600' : value < 0.25 ? 'text-yellow-600' : 'text-red-600';
-      if (label === 'TTI' || label === 'FCP' || label === 'SI' || label === 'FMP') color = value < 5000 ? 'text-green-600' : value < 8000 ? 'text-yellow-600' : 'text-red-600';
-      if (label === 'TBT' || label === 'FID' || label === 'TTFB') color = value < 200 ? 'text-green-600' : value < 600 ? 'text-yellow-600' : 'text-red-600';
+      
+      // Color cues for health
+      if (label === 'LCP') {
+        color = value < 2500 ? 'text-green-600' : value < 4000 ? 'text-yellow-600' : 'text-red-600';
+        bgGradient = value < 2500 ? 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : 
+                    value < 4000 ? 'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20' : 
+                    'from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20';
+      }
+      if (label === 'CLS') {
+        color = value < 0.1 ? 'text-green-600' : value < 0.25 ? 'text-yellow-600' : 'text-red-600';
+        bgGradient = value < 0.1 ? 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : 
+                    value < 0.25 ? 'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20' : 
+                    'from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20';
+      }
+      if (label === 'TTI' || label === 'FCP' || label === 'SI' || label === 'FMP') {
+        color = value < 5000 ? 'text-green-600' : value < 8000 ? 'text-yellow-600' : 'text-red-600';
+        bgGradient = value < 5000 ? 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : 
+                    value < 8000 ? 'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20' : 
+                    'from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20';
+      }
+      if (label === 'TBT' || label === 'FID' || label === 'TTFB') {
+        color = value < 200 ? 'text-green-600' : value < 600 ? 'text-yellow-600' : 'text-red-600';
+        bgGradient = value < 200 ? 'from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20' : 
+                    value < 600 ? 'from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20' : 
+                    'from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20';
+      }
     }
+    
     return (
-      <div className="rounded-xl p-3 sm:p-4 shadow bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 flex flex-col justify-between min-h-[80px] sm:min-h-[90px] group transition hover:shadow-lg"> 
-        <div className="flex items-start justify-between w-full mb-2">
-          <span className="text-xs text-gray-500 dark:text-gray-400 leading-tight pr-1">{meta.label}</span>
+      <div className={`rounded-2xl p-4 sm:p-5 shadow-lg bg-gradient-to-br ${bgGradient} backdrop-blur-sm border border-white/20 dark:border-gray-700/50 flex flex-col justify-between min-h-[100px] sm:min-h-[110px] group transition-all duration-300 hover:shadow-xl hover:scale-105`}> 
+        <div className="flex items-start justify-between w-full mb-3">
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-300 leading-tight pr-2">{meta.label}</span>
           <span className="cursor-pointer flex-shrink-0" data-tooltip-id={`tt-${label}`}> 
-            <Info className="w-3 h-3 text-blue-400 group-hover:text-blue-600" /> 
+            <Info className="w-4 h-4 text-blue-500 group-hover:text-blue-600 transition-colors" /> 
           </span>
           <Tooltip id={`tt-${label}`}>{meta.description}</Tooltip>
         </div>
-        <span className={`text-lg sm:text-xl lg:text-2xl font-bold leading-tight ${color}`}>{displayValue}</span>
+        <span className={`text-xl sm:text-2xl lg:text-3xl font-bold leading-tight ${color} transition-colors`}>{displayValue}</span>
       </div>
     );
   };
 
-  // Helper: Color-coded badge for category scores with responsive design
-  const ScoreBadge = ({ label, score }: { label: string; score: number | null | undefined }) => {
-    let color = 'bg-gray-200 text-gray-700';
+  // Replace ScoreBadge with ScoreRing for category scores
+  const ScoreRing = ({ label, score }: { label: string; score: number | null | undefined }) => {
+    let color = 'text-gray-400';
+    let ring = 'stroke-gray-200';
+    let bgGradient = 'from-gray-100 to-gray-200';
+    
     if (score !== null && score !== undefined) {
-      if (score >= 90) color = 'bg-green-100 text-green-700';
-      else if (score >= 50) color = 'bg-yellow-100 text-yellow-700';
-      else color = 'bg-red-100 text-red-700';
+      if (score >= 90) {
+        color = 'text-green-600';
+        ring = 'stroke-green-500';
+        bgGradient = 'from-green-50 to-emerald-50';
+      } else if (score >= 50) {
+        color = 'text-yellow-600';
+        ring = 'stroke-yellow-500';
+        bgGradient = 'from-yellow-50 to-orange-50';
+      } else {
+        color = 'text-red-600';
+        ring = 'stroke-red-500';
+        bgGradient = 'from-red-50 to-pink-50';
+      }
     }
+    
+    const radius = 40;
+    const circumference = 2 * Math.PI * radius;
+    const progress = score ? (score / 100) * circumference : 0;
+    
     return (
-      <span className={`px-2 sm:px-3 py-1 rounded-full font-semibold text-xs sm:text-sm ${color}`}>
-        {label}: {score !== null && score !== undefined ? score : '--'}
-      </span>
+      <div className={`flex flex-col items-center p-6 rounded-2xl bg-gradient-to-br ${bgGradient} backdrop-blur-sm border border-white/20 shadow-lg transition-all duration-300 hover:scale-105`}>
+        <div className="relative">
+          <svg width="100" height="100" className="mb-3">
+            <circle 
+              cx="50" cy="50" r={radius} 
+              strokeWidth="10" 
+              fill="none" 
+              className="stroke-gray-200 dark:stroke-gray-700" 
+            />
+            <circle
+              cx="50" cy="50" r={radius} 
+              strokeWidth="10" 
+              fill="none"
+              className={`${ring} transition-all duration-1000`}
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference - progress}
+              strokeLinecap="round"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className={`text-2xl font-bold ${color}`}>
+              {score !== null && score !== undefined ? score : '--'}
+            </span>
+          </div>
+        </div>
+        <span className="text-sm font-semibold text-gray-700 dark:text-gray-300 text-center">{label}</span>
+      </div>
     );
   };
 
@@ -317,6 +431,192 @@ export default function WebVitalsCheckerPage() {
     </div>
   );
 
+  // Helper: Screenshot display component for multiple images (horizontal filmstrip)
+  const ScreenshotPanel = ({ screenshots, currentView }: {
+    screenshots: string[];
+    currentView: 'mobile' | 'desktop';
+  }) => {
+    const deviceConfig = {
+      mobile: {
+        name: 'Mobile',
+        icon: Smartphone,
+        iconColor: 'text-purple-500',
+        dimensions: '375×812',
+      },
+      desktop: {
+        name: 'Desktop',
+        icon: Monitor,
+        iconColor: 'text-blue-500',
+        dimensions: '1920×1080',
+      }
+    };
+    const config = deviceConfig[currentView];
+    const IconComponent = config.icon;
+    if (!screenshots || screenshots.length === 0) return null;
+    return (
+      <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <FileText className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">📸 Screenshots</h2>
+            <p className="text-gray-600 dark:text-gray-300">
+              Visual representation of how your site appears on {config.name.toLowerCase()} devices
+            </p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <div className="flex flex-row gap-6 min-w-fit pb-2">
+            {screenshots.map((img, i) => (
+              <div key={i} className="flex flex-col items-center min-w-[180px] max-w-[220px]">
+                <div className="flex items-center gap-2 mb-2">
+                  <IconComponent className={`w-5 h-5 ${config.iconColor}`} />
+                  <span className="text-base font-semibold text-gray-700 dark:text-gray-300">
+                    {config.name} {i + 1}/{screenshots.length}
+                  </span>
+                </div>
+                <div className="overflow-hidden rounded-2xl bg-white border-2 border-gray-200 shadow-lg w-full">
+                  <img
+                    src={`data:image/png;base64,${img}`}
+                    alt={`${config.name} Screenshot Section ${i + 1}`}
+                    className="w-full h-auto"
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper: Console Errors Panel
+  const ConsoleErrorsPanel = ({ consoleErrors }: { consoleErrors?: string[] }) => {
+    if (!consoleErrors || consoleErrors.length === 0) return null;
+    
+    return (
+      <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="text-white text-xl">⚠️</span>
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Console Errors</h2>
+            <p className="text-gray-600 dark:text-gray-300">JavaScript errors detected during page load</p>
+          </div>
+        </div>
+        <div className="backdrop-blur-sm bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-red-200/50 shadow-lg">
+          <ul className="space-y-3">
+            {consoleErrors.map((error, index) => (
+              <li key={index} className="text-sm text-red-700 dark:text-red-300 font-mono bg-white/50 dark:bg-gray-800/50 rounded-lg p-3 border border-red-200/50">
+                {error}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  };
+
+  // Helper: Additional Checks Panel
+  const AdditionalChecksPanel = ({ additionalChecks }: { additionalChecks?: any }) => {
+    if (!additionalChecks) return null;
+    
+    return (
+      <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg">
+            <Gauge className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800 dark:text-white">🔍 Additional Checks</h2>
+            <p className="text-gray-600 dark:text-gray-300">Comprehensive analysis of accessibility, SEO, and security</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Accessibility */}
+          <div className="backdrop-blur-sm bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-2xl p-6 border border-white/20 shadow-lg transition-all duration-300 hover:scale-105">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center">
+                <span className="text-white text-lg">♿</span>
+              </div>
+              <h3 className="font-bold text-gray-800 dark:text-white">Accessibility</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Score:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.accessibility?.score || 0}/100</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Issues:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.accessibility?.issues?.length || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Status:</span>
+                <span className={`font-bold ${additionalChecks.accessibility?.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {additionalChecks.accessibility?.success ? '✅ Pass' : '❌ Fail'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* SEO */}
+          <div className="backdrop-blur-sm bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-white/20 shadow-lg transition-all duration-300 hover:scale-105">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                <span className="text-white text-lg">🔍</span>
+              </div>
+              <h3 className="font-bold text-gray-800 dark:text-white">SEO</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Score:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.seo?.score || 0}/100</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Issues:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.seo?.issues?.length || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Status:</span>
+                <span className={`font-bold ${additionalChecks.seo?.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {additionalChecks.seo?.success ? '✅ Pass' : '❌ Fail'}
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Security */}
+          <div className="backdrop-blur-sm bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-white/20 shadow-lg transition-all duration-300 hover:scale-105">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-gradient-to-r from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
+                <span className="text-white text-lg">🔒</span>
+              </div>
+              <h3 className="font-bold text-gray-800 dark:text-white">Security</h3>
+            </div>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Score:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.security?.score || 0}/100</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Issues:</span>
+                <span className="font-bold text-gray-800 dark:text-white">{additionalChecks.security?.issues?.length || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-300">Status:</span>
+                <span className={`font-bold ${additionalChecks.security?.success ? 'text-green-600' : 'text-red-600'}`}>
+                  {additionalChecks.security?.success ? '✅ Pass' : '❌ Fail'}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Helper: Environment info with responsive layout
   const EnvironmentPanel = ({ env, warnings, fetchTime, finalUrl, userAgent, timing }: { env: any, warnings: string[], fetchTime: string, finalUrl: string, userAgent: string, timing: any }) => (
     <div className="rounded-xl p-3 sm:p-4 shadow bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-700 mt-4 w-full overflow-hidden">
@@ -373,6 +673,35 @@ export default function WebVitalsCheckerPage() {
     </div>
   );
 
+  // Add a dedicated Accessibility Issues panel after DiagnosticsPanel
+  const AccessibilityIssuesPanel = ({ audits }: { audits: any }) => {
+    // audits is an object, not array
+    const issues = audits
+      ? Object.values(audits).filter((a: any) =>
+          a.id === 'color-contrast' ||
+          a.id === 'document-title' ||
+          a.id === 'link-name'
+        )
+      : [];
+    if (!issues || issues.length === 0) return null;
+    return (
+      <div className="rounded-xl p-3 sm:p-4 shadow bg-white/80 dark:bg-gray-900/80 border border-red-200 dark:border-red-700 mt-4 w-full overflow-hidden">
+        <h3 className="font-semibold text-base sm:text-lg mb-2 text-red-700 dark:text-red-300 flex items-center gap-2">
+          <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
+          Accessibility Issues
+        </h3>
+        <ul className="space-y-2">
+          {issues.map((issue: any) => (
+            <li key={issue.id} className="text-sm text-red-700 dark:text-red-300 font-medium">
+              {issue.title}
+              {issue.description && <span className="block text-xs text-gray-500 dark:text-gray-400">{issue.description}</span>}
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   // 5. Export/share/report buttons
   const handleExportPDF = () => exportComponentToPDF('web-vitals-dashboard', 'web-vitals-report.pdf');
   const handleExportCSV = () => {/* implement CSV export */};
@@ -391,225 +720,363 @@ export default function WebVitalsCheckerPage() {
     alert('Shareable link copied!');
   };
 
-  // 6. Add export/share/report buttons to the dashboard UI (above results)
-  // 7. Add logo/branding placeholder at the top
-  // 8. Add section to view recent saved reports (if user is logged in)
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0b1e] p-3 sm:p-4 lg:p-6">
-      <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 lg:space-y-8">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center px-4"
-        >
-          <div className="inline-flex items-center gap-2 mb-2">
-            <div className="p-2 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg">
-              <Gauge className="text-white w-6 h-6 sm:w-7 sm:h-7" />
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-purple-500 to-purple-600 bg-clip-text text-transparent drop-shadow-lg">
-              Core Web Vitals Checker
-            </h1>
-          </div>
-          <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 max-w-xl mx-auto px-4">
-            Analyze your website's Core Web Vitals performance metrics
-          </p>
-        </motion.div>
+  // Helper: Core Web Vitals Assessment
+  const getAssessment = (fieldData: any) => {
+    // Google logic: LCP <2.5s, INP <200ms, CLS <0.1 (all green = pass)
+    if (!fieldData) return { pass: false, reason: 'No field data' };
+    const lcp = fieldData['LARGEST_CONTENTFUL_PAINT_MS']?.percentile;
+    const inp = fieldData['INTERACTION_TO_NEXT_PAINT']?.percentile;
+    const cls = fieldData['CUMULATIVE_LAYOUT_SHIFT_SCORE']?.percentile;
+    const lcpPass = lcp !== undefined && lcp <= 2500;
+    const inpPass = inp !== undefined && inp <= 200;
+    const clsPass = cls !== undefined && cls <= 0.1;
+    const pass = lcpPass && inpPass && clsPass;
+    let reason = '';
+    if (!lcpPass) reason += 'LCP too high. ';
+    if (!inpPass) reason += 'INP too high. ';
+    if (!clsPass) reason += 'CLS too high. ';
+    if (pass) reason = 'All Core Web Vitals are good!';
+    return { pass, reason: reason.trim() };
+  };
 
-        {/* URL Input */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/80 dark:bg-gray-900/20 backdrop-blur-md rounded-2xl shadow-2xl p-4 sm:p-6 border border-gray-200 dark:border-gray-700 mx-4"
-        >
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://your-site.com"
-                className="w-full px-4 sm:px-5 py-3 pl-10 sm:pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base shadow"
-              />
-              <Globe className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
+  // Helper: Field Data Bar
+  const FieldBar = ({ label, value, unit, thresholds }: { label: string, value: number, unit: string, thresholds: [number, number] }) => {
+    let color = 'bg-green-500';
+    if (value > thresholds[1]) color = 'bg-red-500';
+    else if (value > thresholds[0]) color = 'bg-yellow-500';
+    return (
+      <div className="flex flex-col items-start mb-2 w-full">
+        <div className="flex justify-between w-full">
+          <span className="text-xs font-semibold text-gray-700">{label}</span>
+          <span className="text-xs font-bold text-gray-900">{value}{unit}</span>
+        </div>
+        <div className="w-full h-2 rounded bg-gray-200 mt-1">
+          <div className={`${color} h-2 rounded`} style={{ width: `${Math.min((value / (thresholds[1] * 1.5)) * 100, 100)}%` }} />
+        </div>
+        <div className="flex justify-between w-full text-[10px] text-gray-400 mt-1">
+          <span>Good</span><span>Needs Improvement</span><span>Poor</span>
+        </div>
+      </div>
+    );
+  };
+
+  // FULL REDESIGN STARTS HERE
+  // Replace the entire return of WebVitalsCheckerPage with a new, modern, PageSpeed Insights-inspired layout
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex flex-col items-center py-8 px-4">
+      {/* Header and URL Input */}
+      <div className="w-full max-w-4xl mb-8">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent mb-4">
+            Web Vitals Analyzer
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            Comprehensive performance analysis with screenshots, accessibility checks, and detailed metrics
+          </p>
+        </div>
+        
+        <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+          <div className="flex flex-col lg:flex-row items-center gap-6">
+            <div className="flex-1 w-full">
+              <div className="relative">
+                <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="Enter a URL (e.g. https://example.com)"
+                  className="w-full pl-12 pr-4 py-4 rounded-2xl border-2 border-gray-200 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-lg shadow-lg transition-all duration-300"
+                />
+              </div>
             </div>
             <button
               onClick={handleCheck}
               disabled={loading}
-              className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-full text-white font-semibold bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xl text-sm sm:text-base flex items-center justify-center gap-2"
+              className="px-8 py-4 rounded-2xl text-white font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:scale-105 text-lg flex items-center gap-3 min-w-[160px] justify-center"
             >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="animate-spin w-4 h-4 sm:w-5 sm:h-5" />
-                  Analyzing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Gauge className="w-4 h-4 sm:w-5 sm:h-5" />
-                  Analyze
-                </span>
-              )}
+              {loading ? <Loader2 className="animate-spin w-6 h-6" /> : <Gauge className="w-6 h-6" />}
+              {loading ? 'Analyzing...' : 'Analyze'}
             </button>
           </div>
-        </motion.div>
-
-        {/* Error */}
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 mx-4"
-          >
-            <p className="text-red-600 dark:text-red-400 text-sm text-center">{error}</p>
-          </motion.div>
-        )}
-
-        {/* Results */}
-        {result && !loading && (
-          <div id="web-vitals-dashboard" className="px-2 sm:px-4">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-4 sm:space-y-6 lg:space-y-8"
-            >
-              {/* Error/Warning banners */}
-              {result && result[view].warnings && result[view].warnings.length > 0 && (
-                <Banner type="warning" message={result[view].warnings.join(', ')} />
-              )}
-              
-              {/* Toggle for Mobile/Desktop */}
-              <div className="flex justify-center gap-1 sm:gap-2 lg:gap-4 mb-4 px-2">
-                <button
-                  className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow ${view === 'mobile' ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'}`}
-                  onClick={() => setView('mobile')}
-                >
-                  <Smartphone className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Mobile</span>
-                  <span className="sm:hidden">M</span>
-                </button>
-                <button
-                  className={`flex items-center gap-1 sm:gap-2 px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow ${view === 'desktop' ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg' : 'text-gray-700 dark:text-gray-300 bg-white/70 dark:bg-gray-800/70 hover:bg-gray-200/60 dark:hover:bg-gray-700/60'}`}
-                  onClick={() => setView('desktop')}
-                >
-                  <Monitor className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Desktop</span>
-                  <span className="sm:hidden">D</span>
-                </button>
-              </div>
-
-              {/* Export/share/report buttons */}
-              <div className="flex flex-wrap justify-center gap-1 sm:gap-2 lg:gap-4 mt-4 sm:mt-6 px-2">
-                <button
-                  onClick={handleExportPDF}
-                  className="px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow bg-purple-500 text-white hover:bg-purple-600 flex items-center gap-1 sm:gap-2"
-                >
-                  <FileText className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Export PDF</span>
-                  <span className="sm:hidden">PDF</span>
-                </button>
-                <button
-                  onClick={handleExportCSV}
-                  className="px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow bg-purple-500 text-white hover:bg-purple-600 flex items-center gap-1 sm:gap-2"
-                >
-                  <Download className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Export CSV</span>
-                  <span className="sm:hidden">CSV</span>
-                </button>
-                <button
-                  onClick={handleExportJSON}
-                  className="px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow bg-purple-500 text-white hover:bg-purple-600 flex items-center gap-1 sm:gap-2"
-                >
-                  <Download className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Export JSON</span>
-                  <span className="sm:hidden">JSON</span>
-                </button>
-                <button
-                  onClick={handlePrint}
-                  className="px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow bg-purple-500 text-white hover:bg-purple-600 flex items-center gap-1 sm:gap-2"
-                >
-                  <Printer className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Print Report</span>
-                  <span className="sm:hidden">Print</span>
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="px-3 sm:px-4 lg:px-6 py-2 rounded-full font-semibold text-xs sm:text-sm lg:text-base transition-all duration-200 focus:outline-none shadow bg-purple-500 text-white hover:bg-purple-600 flex items-center gap-1 sm:gap-2"
-                >
-                  <Share2 className="w-3 h-3 sm:w-4 sm:h-4 lg:w-5 lg:h-5" /> 
-                  <span className="hidden sm:inline">Share Link</span>
-                  <span className="sm:hidden">Share</span>
-                </button>
-              </div>
-
-              {/* Category Scores */}
-              {result && result[view].scores && (
-                <div className="flex flex-wrap gap-1 sm:gap-2 lg:gap-3 justify-center mb-4 px-2">
-                  {Object.entries(result[view].scores).map(([label, score]) => (
-                    <ScoreBadge key={label} label={label} score={score} />
-                  ))}
-                </div>
-              )}
-              
-              {/* Lab Metrics */}
-              {result && result[view].metrics && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-                  {Object.entries(result[view].metrics).map(([label, value]) => (
-                    <MetricCard key={label} label={label} value={typeof value === 'number' ? value : null} />
-                  ))}
-                </div>
-              )}
-              
-              {/* Opportunities */}
-              {result && result[view].opportunities && (
-                <OpportunitiesPanel opportunities={result[view].opportunities} />
-              )}
-              
-              {/* Resource Summary */}
-              {result && result[view].resourceSummary && (
-                <ResourceSummaryChart resourceSummary={result[view].resourceSummary} />
-              )}
-              
-              {/* Diagnostics */}
-              {result && result[view].diagnostics && (
-                <DiagnosticsPanel diagnostics={result[view].diagnostics} />
-              )}
-              
-              {/* Audits */}
-              {result && result[view].passedAudits && (
-                <AuditsPanel audits={result[view].passedAudits} label="Passed Audits" color="text-green-700 dark:text-green-400" />
-              )}
-              {result && result[view].manualAudits && (
-                <AuditsPanel audits={result[view].manualAudits} label="Manual Audits" color="text-blue-700 dark:text-blue-400" />
-              )}
-              {result && result[view].notApplicableAudits && (
-                <AuditsPanel audits={result[view].notApplicableAudits} label="Not Applicable Audits" color="text-gray-700 dark:text-gray-400" />
-              )}
-              
-              {/* Field Data (CrUX) */}
-              {result && result[view].fieldData && (
-                <FieldDataPanel fieldData={result[view].fieldData} label="Field Data" />
-              )}
-              {result && result[view].originFieldData && (
-                <FieldDataPanel fieldData={result[view].originFieldData} label="Origin Field Data" />
-              )}
-              
-              {/* Environment & Details */}
-              {result && (
-                <EnvironmentPanel
-                  env={result[view].environment}
-                  warnings={result[view].warnings}
-                  fetchTime={result[view].fetchTime}
-                  finalUrl={result[view].finalUrl}
-                  userAgent={result[view].userAgent}
-                  timing={result[view].timing}
-                />
-              )}
-            </motion.div>
-          </div>
-        )}
+        </div>
       </div>
+      {/* Device Toggle */}
+      {result && result[view] && !loading && (
+        <div className="w-full max-w-4xl flex justify-center mb-8">
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-2">
+            <div className="flex">
+              <button
+                className={`px-8 py-3 font-semibold text-base transition-all duration-300 focus:outline-none rounded-xl flex items-center gap-2 ${
+                  view === 'mobile' 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                }`}
+                onClick={() => setView('mobile')}
+              >
+                <Smartphone className="w-5 h-5" />
+                Mobile
+              </button>
+              <button
+                className={`px-8 py-3 font-semibold text-base transition-all duration-300 focus:outline-none rounded-xl flex items-center gap-2 ${
+                  view === 'desktop' 
+                    ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white'
+                }`}
+                onClick={() => setView('desktop')}
+              >
+                <Monitor className="w-5 h-5" />
+                Desktop
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Results Section */}
+      {result && result[view] && !loading && (
+        <div className="w-full max-w-6xl space-y-8">
+          {/* Analysis Timestamp */}
+          {result.analysisTimestamp && (
+            <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6">
+              <div className="flex items-center justify-center gap-3">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                  Analysis completed on: {new Date(result.analysisTimestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
+          {/* Core Web Vitals Assessment Card */}
+          {result[view].fieldData && (
+            <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 mb-6">
+                <div className={`inline-flex items-center px-6 py-3 rounded-2xl font-bold text-lg shadow-lg ${
+                  getAssessment(result[view].fieldData).pass 
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                    : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
+                }`}>
+                  {getAssessment(result[view].fieldData).pass ? '✅ Passed' : '❌ Failed'}
+                  <span className="ml-2 text-base font-medium">
+                    Core Web Vitals
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
+                    {getAssessment(result[view].fieldData).reason}
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-2">
+                {result[view].fieldData['LARGEST_CONTENTFUL_PAINT_MS'] && (
+                  <FieldBar label="LCP" value={+(result[view].fieldData['LARGEST_CONTENTFUL_PAINT_MS'].percentile / 1000).toFixed(2)} unit="s" thresholds={[2.5, 4]} />
+                )}
+                {result[view].fieldData['INTERACTION_TO_NEXT_PAINT'] && (
+                  <FieldBar label="INP" value={Math.round(result[view].fieldData['INTERACTION_TO_NEXT_PAINT'].percentile)} unit="ms" thresholds={[200, 500]} />
+                )}
+                {result[view].fieldData['CUMULATIVE_LAYOUT_SHIFT_SCORE'] && (
+                  <FieldBar label="CLS" value={+(result[view].fieldData['CUMULATIVE_LAYOUT_SHIFT_SCORE'].percentile).toFixed(3)} unit="" thresholds={[0.1, 0.25]} />
+                )}
+              </div>
+              <div className="mt-4">
+                <h4 className="font-semibold text-gray-700 mb-2 text-base">Other Notable Metrics</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+                  {result[view].fieldData['FIRST_CONTENTFUL_PAINT_MS'] && (
+                    <FieldBar label="FCP" value={+(result[view].fieldData['FIRST_CONTENTFUL_PAINT_MS'].percentile / 1000).toFixed(2)} unit="s" thresholds={[1.8, 3]} />
+                  )}
+                  {result[view].fieldData['EXPERIMENTAL_TIME_TO_FIRST_BYTE'] && (
+                    <FieldBar label="TTFB" value={+(result[view].fieldData['EXPERIMENTAL_TIME_TO_FIRST_BYTE'].percentile / 1000).toFixed(2)} unit="s" thresholds={[0.8, 1.8]} />
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          {/* Lab Data Section */}
+          <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg">
+                <Gauge className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Lab Data (Simulated)</h2>
+                <p className="text-gray-600 dark:text-gray-300">Performance metrics from controlled testing environment</p>
+              </div>
+            </div>
+            {/* Category Scores */}
+            {result[view].scores && (
+              <div className="flex flex-wrap gap-6 justify-center mb-8">
+                {Object.entries(result[view].scores).map(([label, score]) => (
+                  <ScoreRing key={label} label={label} score={score} />
+                ))}
+              </div>
+            )}
+            {/* Lab Metrics */}
+            {result[view].metrics && (
+              <>
+                {/* Core Web Vitals */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Core Web Vitals</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['lcp', 'fcp', 'cls', 'tti', 'tbt', 'fid'].includes(label))
+                      .map(([label, value]) => {
+                        let displayValue: string | number = 'N/A';
+                        if (typeof value === 'number' && value > 0) {
+                          if (["lcp", "fcp", "tti"].includes(label)) displayValue = (value / 1000).toFixed(2);
+                          else if (["tbt", "fid"].includes(label)) displayValue = Math.round(value);
+                          else if (label === "cls") displayValue = value.toFixed(3);
+                          else displayValue = value.toString();
+                        }
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+
+                {/* Performance Metrics */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Performance Metrics</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['si', 'ttfb', 'fmp', 'fci', 'eil', 'mpu'].includes(label))
+                      .map(([label, value]) => {
+                        let displayValue: string | number = 'N/A';
+                        if (typeof value === 'number' && value > 0) {
+                          if (["si", "fmp", "fci"].includes(label)) displayValue = (value / 1000).toFixed(2);
+                          else if (["eil", "mpu"].includes(label)) displayValue = Math.round(value);
+                          else if (label === "ttfb") displayValue = (value / 1000).toFixed(2);
+                          else displayValue = value.toString();
+                        }
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+
+                {/* Resource Metrics */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Resource Metrics</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['totalResources', 'totalSize', 'domSize', 'criticalRequestChains'].includes(label))
+                      .map(([label, value]) => {
+                        let displayValue: string | number = 'N/A';
+                        if (typeof value === 'number' && value > 0) {
+                          if (label === "totalSize") {
+                            const mb = value / (1024 * 1024);
+                            displayValue = mb > 1 ? `${mb.toFixed(2)} MB` : `${(value / 1024).toFixed(2)} KB`;
+                          } else {
+                            displayValue = value.toString();
+                          }
+                        }
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+
+                {/* Optimization Scores */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Optimization Scores</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['usesOptimizedImages', 'usesWebpImages', 'usesResponsiveImages', 'usesEfficientImageFormats', 'usesTextCompression'].includes(label))
+                      .map(([label, value]) => {
+                        const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+
+                {/* Accessibility Scores */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">Accessibility Scores</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['colorContrast', 'documentTitle', 'linkName', 'imageAlt'].includes(label))
+                      .map(([label, value]) => {
+                        const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+
+                {/* SEO Scores */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-700">SEO Scores</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Object.entries(result[view].metrics)
+                      .filter(([label]) => ['metaDescription', 'hreflang', 'canonical', 'robotsTxt', 'structuredData'].includes(label))
+                      .map(([label, value]) => {
+                        const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
+                        return <MetricCard key={label} label={label} value={displayValue} />;
+                      })}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          {/* Diagnose performance issues */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+            <h2 className="text-xl font-bold mb-6 text-gray-800">Diagnose performance issues</h2>
+            {result[view].warnings && result[view].warnings.length > 0 && (
+              <Banner type="warning" message={result[view].warnings.join(', ')} />
+            )}
+            {result[view].opportunities && (
+              <OpportunitiesPanel opportunities={result[view].opportunities} />
+            )}
+            {result[view].resourceSummary && (
+              <ResourceSummaryChart resourceSummary={result[view].resourceSummary} />
+            )}
+            {result[view].diagnostics && (
+              <DiagnosticsPanel diagnostics={result[view].diagnostics} />
+            )}
+            {result[view].passedAudits && (
+              <AuditsPanel audits={result[view].passedAudits} label="Passed Audits" color="text-green-700 dark:text-green-400" />
+            )}
+            {result[view].manualAudits && (
+              <AuditsPanel audits={result[view].manualAudits} label="Manual Audits" color="text-blue-700 dark:text-blue-400" />
+            )}
+            {result[view].notApplicableAudits && (
+              <AuditsPanel audits={result[view].notApplicableAudits} label="Not Applicable Audits" color="text-gray-700 dark:text-gray-400" />
+            )}
+            {result[view].audits && (
+              <AccessibilityIssuesPanel audits={result[view].audits} />
+            )}
+          </div>
+          {/* Screenshots */}
+          <ScreenshotPanel 
+            screenshots={result[view].screenshots || []}
+            currentView={view}
+          />
+          
+          {/* Additional Checks */}
+          <AdditionalChecksPanel additionalChecks={result.additionalChecks} />
+          
+          {/* Console Errors */}
+          <ConsoleErrorsPanel consoleErrors={result[view].consoleErrors} />
+          
+          {/* Environment & Details */}
+          {result[view] && (
+            <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
+              <EnvironmentPanel
+                env={result[view].environment}
+                warnings={result[view].warnings}
+                fetchTime={result[view].fetchTime}
+                finalUrl={result[view].finalUrl}
+                userAgent={result[view].userAgent}
+                timing={result[view].timing}
+              />
+            </div>
+          )}
+        </div>
+      )}
+      {/* Error State */}
+      {error && (
+        <div className="w-full max-w-4xl backdrop-blur-xl bg-red-50/70 dark:bg-red-900/20 border border-red-200/50 dark:border-red-700/50 rounded-2xl p-6 mt-6 shadow-xl">
+          <div className="flex items-center justify-center gap-3">
+            <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-sm">❌</span>
+            </div>
+            <p className="text-red-700 dark:text-red-300 text-center text-lg font-medium">{error}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

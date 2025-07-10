@@ -103,6 +103,7 @@ export default function HeaderCheckerPage() {
   }, []);
 
   const loadReports = async (uid: string) => {
+    if (!db) return;
     const q = query(collection(db, 'headerReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -112,6 +113,7 @@ export default function HeaderCheckerPage() {
   useEffect(() => {
     if (result && url) {
       const save = async () => {
+        if (!db) return;
         await addDoc(collection(db, 'headerReports'), {
           uid: user?.uid || null,
           url,
