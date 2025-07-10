@@ -1,23 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 const UPTIME_ROBOT_API = 'https://api.uptimerobot.com/v2/';
-const UPTIME_ROBOT_KEY = 'u3021240-f139913b83d2a1d00c8fbb54';
+const UPTIME_ROBOT_KEY = process.env.UPTIME_ROBOT_API_KEY || 'u3021240-f139913b83d2a1d00c8fbb54';
 
 // ============================
 // 🌐 MONITORING API ROUTE (UptimeRobot)
 // ============================
 
 async function callUptimeRobot(endpoint: string, body: Record<string, any>) {
-  const res = await fetch(UPTIME_ROBOT_API + endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ api_key: UPTIME_ROBOT_KEY, ...body }).toString(),
-  });
-  const data = await res.json();
-  if (!res.ok || data.stat !== 'ok') {
-    throw new Error(data.error?.message || data.error || 'UptimeRobot API error');
+  try {
+    console.log(`🔍 Calling UptimeRobot API: ${endpoint}`, { body });
+    
+    const res = await fetch(UPTIME_ROBOT_API + endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ api_key: UPTIME_ROBOT_KEY, ...body }).toString(),
+    });
+    
+    const data = await res.json();
+    console.log(`📡 UptimeRobot API response:`, { status: res.status, data });
+    
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: ${data.error?.message || data.error || 'UptimeRobot API error'}`);
+    }
+    
+    if (data.stat !== 'ok') {
+      throw new Error(data.error?.message || data.error || 'UptimeRobot API error');
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`❌ UptimeRobot API error for ${endpoint}:`, error);
+    throw error;
   }
-  return data;
 }
 
 export async function GET(request: NextRequest) {
@@ -61,9 +76,10 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
-    console.error('Monitoring API error:', error);
+    console.error('❌ Monitoring API error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: errorMessage, details: error instanceof Error ? error.stack : undefined },
       { status: 500 }
     );
   }
