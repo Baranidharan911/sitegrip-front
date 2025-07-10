@@ -121,9 +121,14 @@ export default function WebVitalsCheckerPage() {
     if (!isFirebaseConfigured()) return;
     let unsub: any;
     (async () => {
-      const firebase = await import('@/lib/firebase');
+      const firebaseModule = await import('@/lib/firebase');
+      console.log('firebaseModule:', firebaseModule); // DEBUG
+      const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
+      const db = firebaseModule.db;
+      const auth = firebaseModule.auth;
+      if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db || !auth) return;
       const { onAuthStateChanged } = await import('firebase/auth');
-      unsub = onAuthStateChanged(firebase.auth, (u) => {
+      unsub = onAuthStateChanged(auth, (u) => {
         setUser(u);
         if (u) loadReports(u.uid);
         else setSavedReports([]);
@@ -134,11 +139,14 @@ export default function WebVitalsCheckerPage() {
 
   const loadReports = async (uid: string) => {
     if (!isFirebaseConfigured()) return;
-    const firebase = await import('@/lib/firebase');
-    if (!firebase.isFirestoreAvailable() || !firebase.db) return;
-    const db = firebase.db as import('firebase/firestore').Firestore;
+    const firebaseModule = await import('@/lib/firebase');
+    console.log('firebaseModule:', firebaseModule); // DEBUG
+    const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
+    const db = firebaseModule.db;
+    if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db) return;
+    const firestoreDb = db as import('firebase/firestore').Firestore;
     const { collection, query, where, orderBy, limit, getDocs } = await import('firebase/firestore');
-    const q = query(collection(db, 'webVitalsReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
+    const q = query(collection(firestoreDb, 'webVitalsReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
@@ -147,11 +155,14 @@ export default function WebVitalsCheckerPage() {
   useEffect(() => {
     if (!result || !url || !isFirebaseConfigured()) return;
     const save = async () => {
-      const firebase = await import('@/lib/firebase');
-      if (!firebase.isFirestoreAvailable() || !firebase.db) return;
-      const db = firebase.db as import('firebase/firestore').Firestore;
+      const firebaseModule = await import('@/lib/firebase');
+      console.log('firebaseModule:', firebaseModule); // DEBUG
+      const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
+      const db = firebaseModule.db;
+      if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db) return;
+      const firestoreDb = db as import('firebase/firestore').Firestore;
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
-      await addDoc(collection(db, 'webVitalsReports'), {
+      await addDoc(collection(firestoreDb, 'webVitalsReports'), {
         uid: user?.uid || null,
         url,
         result,
