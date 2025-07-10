@@ -6,10 +6,18 @@ import { Loader2, Globe, Gauge, Smartphone, Monitor, ChevronDown, ChevronUp, Inf
 import { Tooltip } from 'react-tooltip';
 
 // 1. Import Firebase and export utilities
-import { db, auth } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
-import { onAuthStateChanged } from 'firebase/auth';
+// REMOVE these static imports:
+// import { db, auth } from '@/lib/firebase';
+// import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+// import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';
+
+// Helper to check if Firebase config is present
+function isFirebaseConfigured() {
+  if (typeof window === 'undefined') return false;
+  const firebaseConfig = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  return !!firebaseConfig;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -110,15 +118,26 @@ export default function WebVitalsCheckerPage() {
 
   // 3. On mount, listen for auth state and load saved reports
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      if (u) loadReports(u.uid);
-      else setSavedReports([]);
-    });
-    return () => unsub();
+    if (!isFirebaseConfigured()) return;
+    let unsub: any;
+    (async () => {
+      const firebase = await import('@/lib/firebase');
+      const { onAuthStateChanged } = await import('firebase/auth');
+      unsub = onAuthStateChanged(firebase.auth, (u) => {
+        setUser(u);
+        if (u) loadReports(u.uid);
+        else setSavedReports([]);
+      });
+    })();
+    return () => unsub && unsub();
   }, []);
+
   const loadReports = async (uid: string) => {
-    if (!db) return;
+    if (!isFirebaseConfigured()) return;
+    const firebase = await import('@/lib/firebase');
+    if (!firebase.isFirestoreAvailable() || !firebase.db) return;
+    const db = firebase.db as import('firebase/firestore').Firestore;
+    const { collection, query, where, orderBy, limit, getDocs } = await import('firebase/firestore');
     const q = query(collection(db, 'webVitalsReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -126,19 +145,21 @@ export default function WebVitalsCheckerPage() {
 
   // 4. On successful result, save to Firestore
   useEffect(() => {
-    if (result && url) {
-      const save = async () => {
-        if (!db) return;
-        await addDoc(collection(db, 'webVitalsReports'), {
-          uid: user?.uid || null,
-          url,
-          result,
-          created: serverTimestamp(),
-        });
-        if (user) loadReports(user.uid);
-      };
-      save();
-    }
+    if (!result || !url || !isFirebaseConfigured()) return;
+    const save = async () => {
+      const firebase = await import('@/lib/firebase');
+      if (!firebase.isFirestoreAvailable() || !firebase.db) return;
+      const db = firebase.db as import('firebase/firestore').Firestore;
+      const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');
+      await addDoc(collection(db, 'webVitalsReports'), {
+        uid: user?.uid || null,
+        url,
+        result,
+        created: serverTimestamp(),
+      });
+      if (user) loadReports(user.uid);
+    };
+    save();
     // eslint-disable-next-line
   }, [result]);
 
