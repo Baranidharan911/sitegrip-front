@@ -69,6 +69,7 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Internal Link Checker', path: '/internal-link-checker', icon: Link, pro: false },
       { name: 'Page Speed Analyzer', path: '/page-speed-analyzer', icon: Radar, pro: false },
       { name: 'Schema Markup Generator', path: '/schema-markup-generator', icon: Braces, pro: false },
+      { name: 'SEO Tags Generator', path: '/seo-tools/seo-tags-generator', icon: FileText, pro: false },
     ],
   },
 
