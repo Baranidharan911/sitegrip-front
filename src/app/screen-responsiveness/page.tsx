@@ -3,7 +3,9 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MonitorSmartphone, Smartphone, Tablet, Laptop, Monitor, XCircle, Loader2, RotateCw, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
-import React, { useRef } from 'react';
+import { Listbox, Transition } from '@headlessui/react';
+import { ChevronsUpDown } from 'lucide-react';
+import { Fragment } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -169,16 +171,66 @@ export default function ScreenResponsivenessPage() {
           </button>
         </div>
 
-        {/* Device selector: custom modern dropdown */}
-        <div className="w-full flex justify-center mb-4 relative z-30">
-          <CustomDeviceDropdown
-            devicePresets={devicePresets}
-            selectedDevice={selectedDevice}
-            setSelectedDevice={setSelectedDevice}
-            deviceIcons={deviceIcons}
-          />
+        {/* Device selector: modern dropdown */}
+        <div className="w-full flex justify-center mb-4">
+          <div className="relative min-w-[280px] max-w-xs w-full">
+            <Listbox value={selectedDevice} onChange={setSelectedDevice}>
+              {({ open }) => (
+                <>
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-white/60 dark:bg-gray-900/60 backdrop-blur-md py-3 pl-4 pr-10 text-left border border-primary/30 shadow-lg focus:outline-none focus:ring-2 focus:ring-primary text-base font-semibold transition-all">
+                    <span className="block truncate">
+                      {selectedDevice.name} ({selectedDevice.width}×{selectedDevice.height})
+                    </span>
+                    <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                      <ChevronsUpDown className="h-5 w-5 text-primary" aria-hidden="true" />
+                    </span>
+                  </Listbox.Button>
+                  <Transition
+                    show={open}
+                    as={Fragment}
+                    leave="transition ease-in duration-100"
+                    leaveFrom="opacity-100"
+                    leaveTo="opacity-0"
+                  >
+                    <Listbox.Options className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl bg-white/90 dark:bg-gray-900/90 shadow-2xl ring-1 ring-black/10 backdrop-blur-lg py-2 text-base focus:outline-none">
+                      {devicePresets.map(section => [
+                        <div key={section.category} className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2 sticky top-0 bg-white/80 dark:bg-gray-900/80 z-10">
+                          {deviceIcons[section.category]}
+                          {section.category}
+                        </div>,
+                        ...section.items.map(device => (
+                          <Listbox.Option
+                            key={device.name}
+                            value={device}
+                            className={({ active, selected }) =>
+                              `cursor-pointer select-none relative px-4 py-3 rounded-lg mx-2 my-1 transition-all
+                              ${active ? 'bg-primary/10 text-primary font-semibold' : 'text-gray-800 dark:text-gray-200'}
+                              ${selected ? 'ring-2 ring-primary/30 bg-primary/5' : ''}`
+                            }
+                          >
+                            {({ selected }) => (
+                              <>
+                                <span className={`block truncate ${selected ? 'font-bold' : ''}`}>
+                                  {device.name} <span className="text-xs text-gray-400">({device.width}×{device.height})</span>
+                                </span>
+                                {selected ? (
+                                  <span className="absolute inset-y-0 right-4 flex items-center text-primary">
+                                    ✓
+                                  </span>
+                                ) : null}
+                              </>
+                            )}
+                          </Listbox.Option>
+                        ))
+                      ])}
+                    </Listbox.Options>
+                  </Transition>
+                </>
+              )}
+            </Listbox>
+          </div>
         </div>
-        {/* END Device selector: custom modern dropdown */}
+        {/* END Device selector: modern dropdown */}
 
         <div className="flex flex-col gap-8 transition-all duration-300">
           {/* Preview with device frame, controls, and animated skeleton loader */}
@@ -231,7 +283,7 @@ export default function ScreenResponsivenessPage() {
                         className={`relative rounded-[2.5rem] border-8 ${darkFrame ? 'border-gray-900 bg-gray-900' : 'border-gray-200 bg-white'} shadow-2xl transition-all duration-300`}
                         style={{ 
                           width: `min(${deviceWidth * zoom + 32}px, 95vw)`,
-                          height: `min(${deviceHeight * zoom + 32}px, 80vh)`,
+                          height: `min(${deviceHeight * zoom + 32}px, 95vh)`,
                           aspectRatio: `${deviceWidth + 32} / ${deviceHeight + 32}`
                         }}
                       >
@@ -248,7 +300,7 @@ export default function ScreenResponsivenessPage() {
                         
                         {/* Iframe container */}
                         <div 
-                          className="absolute inset-2 rounded-[2rem] overflow-hidden"
+                          className="absolute inset-2 rounded-[2rem] overflow-auto"
                           style={{ 
                             width: `calc(100% - 16px)`,
                             height: `calc(100% - 16px)`
@@ -296,88 +348,6 @@ export default function ScreenResponsivenessPage() {
           Some websites may block being embedded in an iframe due to security policies (X-Frame-Options / Content-Security-Policy). If the preview remains blank, the target site likely prevents embedding.
         </p>
       </div>
-    </div>
-  );
-} 
-
-type DeviceSection = {
-  category: string;
-  items: DevicePreset[];
-};
-
-type CustomDeviceDropdownProps = {
-  devicePresets: DeviceSection[];
-  selectedDevice: DevicePreset;
-  setSelectedDevice: (device: DevicePreset) => void;
-  deviceIcons: Record<string, JSX.Element>;
-};
-
-function CustomDeviceDropdown({ devicePresets, selectedDevice, setSelectedDevice, deviceIcons }: CustomDeviceDropdownProps) {
-  const [open, setOpen] = React.useState(false);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-
-  // Close dropdown on outside click
-  React.useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (buttonRef.current && !(buttonRef.current as Node).contains(e.target as Node)) {
-        setOpen(false);
-      }
-    }
-    if (open) {
-      document.addEventListener('mousedown', handleClick);
-    } else {
-      document.removeEventListener('mousedown', handleClick);
-    }
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [open]);
-
-  return (
-    <div className="relative w-full max-w-xs">
-      <button
-        ref={buttonRef}
-        className={`w-full px-4 py-3 rounded-xl border-2 border-primary/40 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md shadow-lg text-base flex items-center justify-between gap-2 font-semibold focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 ${open ? 'ring-2 ring-primary' : ''}`}
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        type="button"
-      >
-        <span className="truncate flex items-center gap-2">
-          {selectedDevice && (
-            <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2" />
-          )}
-          {selectedDevice?.name} ({selectedDevice?.width}×{selectedDevice?.height})
-        </span>
-        <svg className={`w-5 h-5 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
-      </button>
-      {open && (
-        <div className="absolute left-0 mt-2 w-full max-h-80 overflow-y-auto rounded-2xl shadow-2xl border border-primary/20 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl z-50 animate-fade-in flex flex-col">
-          {devicePresets.map((section) => (
-            <div key={section.category} className="px-3 py-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-primary/80 uppercase tracking-wide mb-1">
-                {deviceIcons[section.category]}
-                {section.category}
-              </div>
-              {section.items.map((device) => {
-                const active = selectedDevice.name === device.name;
-                return (
-                  <button
-                    key={device.name}
-                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center justify-between gap-2 mb-1 transition-all duration-150 ${active ? 'bg-primary/10 text-primary font-bold ring-2 ring-primary/30' : 'hover:bg-primary/5 text-gray-800 dark:text-gray-200'}`}
-                    onClick={() => {
-                      setSelectedDevice(device);
-                      setOpen(false);
-                    }}
-                    type="button"
-                  >
-                    <span className="truncate">{device.name} <span className="text-xs text-gray-400">({device.width}×{device.height})</span></span>
-                    {active && <span className="ml-2 text-primary">✓</span>}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 } 
