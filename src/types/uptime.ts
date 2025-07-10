@@ -854,4 +854,14 @@ export interface SSLInfoResponse {
   ssl_cert_days_until_expiry?: number;
   ssl_cert_issuer?: string;
   message?: string;
+  ssl_status?: 'valid' | 'expired' | 'expiring_soon' | 'invalid' | 'timeout' | 'error';
+  ssl_last_checked?: string;
+  protocol?: string;
+  cipher_suite?: string;
+  certificate_chain?: any[];
+  ocsp_status?: 'good' | 'revoked' | 'unknown';
+  hsts_enabled?: boolean;
+  ssl_labs_grade?: string;
+  vulnerabilities?: string[];
+  recommendations?: string[];
 } 
