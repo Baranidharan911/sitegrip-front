@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileText, Gauge, Code, CheckCircle, TrendingUp, Grid } from 'lucide-react';
+import SEOTagsGenerator from './SEOTagsGenerator';
 
 const SEOTools: React.FC = () => {
   const tools = [
@@ -82,6 +83,11 @@ const SEOTools: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+      {/* Divider and SEO Tags Generator */}
+      <div className="my-24">
+        <div className="h-1 w-24 mx-auto bg-gradient-to-r from-purple-400 to-cyan-400 rounded-full mb-12 opacity-40"></div>
+        <SEOTagsGenerator />
       </div>
     </section>
   );

@@ -39,16 +39,14 @@ const NewFeatures: React.FC = () => {
           {features.map((feature, index) => (
             <div
               key={index}
-              className="bg-white/90 dark:bg-gray-900/60 backdrop-blur-lg rounded-3xl p-10 flex flex-col items-center border border-gray-200 dark:border-gray-800 hover:shadow-2xl hover:scale-105 transition-all duration-300 shadow-lg group"
+              className="bg-white/80 dark:bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 lg:p-10 border border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-300 hover:transform hover:scale-105 shadow-lg"
             >
-              <div className="relative mb-8 flex items-center justify-center">
-                <div className={`absolute w-24 h-24 rounded-full blur-xl opacity-40 bg-gradient-to-r ${feature.color}`}></div>
-                <div className={`w-20 h-20 rounded-full bg-gradient-to-r ${feature.color} flex items-center justify-center shadow-lg z-10 border-4 border-white dark:border-gray-900`}>
-                  <feature.icon className="h-10 w-10 text-white" />
-                </div>
+              <div className={`w-18 h-18 mb-8 rounded-xl bg-gradient-to-r ${feature.color} flex items-center justify-center`}>
+                <feature.icon className="h-9 w-9 text-white" />
               </div>
-              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 text-center">{feature.title}</h3>
-              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed text-center">{feature.description}</p>
+              
+              <h3 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-6">{feature.title}</h3>
+              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed">{feature.description}</p>
             </div>
           ))}
         </div>
