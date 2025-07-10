@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MonitorSmartphone, Smartphone, Tablet, Laptop, Monitor, XCircle, Loader2, RotateCw, ZoomIn, ZoomOut, Sun, Moon } from 'lucide-react';
+import React, { useRef } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -168,69 +169,18 @@ export default function ScreenResponsivenessPage() {
           </button>
         </div>
 
+        {/* Device selector: custom modern dropdown */}
+        <div className="w-full flex justify-center mb-4 relative z-30">
+          <CustomDeviceDropdown
+            devicePresets={devicePresets}
+            selectedDevice={selectedDevice}
+            setSelectedDevice={setSelectedDevice}
+            deviceIcons={deviceIcons}
+          />
+        </div>
+        {/* END Device selector: custom modern dropdown */}
+
         <div className="flex flex-col gap-8 transition-all duration-300">
-          {/* Device selector: always visible */}
-          <div className="w-full">
-            {/* Desktop: vertical sidebar */}
-            <div className="hidden lg:block space-y-8 max-h-[70vh] overflow-y-auto pr-2">
-              <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Choose Device</h2>
-              {devicePresets.length === 0 ? (
-                <div className="text-gray-400 text-center py-8">No devices available</div>
-              ) : (
-                devicePresets.map((section) => (
-                  <div key={section.category}>
-                    <h3 className="flex items-center gap-2 text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">
-                      {deviceIcons[section.category]}
-                      {section.category}
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                      {section.items.map((device) => {
-                        const active = selectedDevice.name === device.name;
-                        return (
-                          <motion.button
-                            key={device.name}
-                            onClick={() => setSelectedDevice(device)}
-                            className={`group relative p-4 flex flex-col items-center rounded-2xl border ${active ? 'border-primary shadow-2xl scale-105 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md ring-2 ring-primary/30' : 'border-gray-300 dark:border-gray-700'} bg-white/50 dark:bg-gray-800/50 hover:shadow-lg transition-all duration-200`}
-                            whileTap={{ scale: 0.97 }}
-                            whileHover={{ scale: 1.04 }}
-                          >
-                            <span className="w-6 h-10 mb-2 bg-gradient-to-br from-gray-200 via-primary/20 to-gray-100 dark:from-gray-600 dark:via-primary/20 dark:to-gray-800 rounded-sm group-hover:bg-primary group-hover:opacity-80 transition"></span>
-                            <span className="text-xs text-center text-gray-700 dark:text-gray-300 leading-tight font-medium">
-                              {device.name}
-                            </span>
-                            {active && (
-                              <span className="absolute -top-2 -right-2 bg-primary text-white text-[10px] rounded-full px-2 py-0.5 shadow">✓</span>
-                            )}
-                            <span className="absolute bottom-2 right-2 text-xs text-gray-400">{device.width}×{device.height}</span>
-                          </motion.button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-            {/* Mobile: sticky horizontal bar */}
-            <div className="lg:hidden sticky top-0 z-20 bg-gradient-to-b from-white/90 dark:from-gray-900/90 backdrop-blur-md py-2 mb-4 overflow-x-auto flex gap-2 w-full shadow-md">
-              <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 mr-2 pl-2">Choose Device:</span>
-              {devicePresets.flatMap(section => section.items).length === 0 ? (
-                <span className="text-gray-400">No devices available</span>
-              ) : (
-                devicePresets.flatMap(section => section.items).map((device) => {
-                  const active = selectedDevice.name === device.name;
-                  return (
-                    <button
-                      key={device.name}
-                      onClick={() => setSelectedDevice(device)}
-                      className={`px-4 py-2 rounded-full whitespace-nowrap text-xs font-semibold border ${active ? 'border-primary bg-primary text-white shadow-lg' : 'border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300'} transition-all duration-200`}
-                    >
-                      {device.name}
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
           {/* Preview with device frame, controls, and animated skeleton loader */}
           <div className="w-full flex-1 flex flex-col items-center gap-4 transition-all duration-300">
             <div className="w-full overflow-x-auto flex justify-center px-2">
@@ -346,6 +296,88 @@ export default function ScreenResponsivenessPage() {
           Some websites may block being embedded in an iframe due to security policies (X-Frame-Options / Content-Security-Policy). If the preview remains blank, the target site likely prevents embedding.
         </p>
       </div>
+    </div>
+  );
+} 
+
+type DeviceSection = {
+  category: string;
+  items: DevicePreset[];
+};
+
+type CustomDeviceDropdownProps = {
+  devicePresets: DeviceSection[];
+  selectedDevice: DevicePreset;
+  setSelectedDevice: (device: DevicePreset) => void;
+  deviceIcons: Record<string, JSX.Element>;
+};
+
+function CustomDeviceDropdown({ devicePresets, selectedDevice, setSelectedDevice, deviceIcons }: CustomDeviceDropdownProps) {
+  const [open, setOpen] = React.useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (buttonRef.current && !(buttonRef.current as Node).contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) {
+      document.addEventListener('mousedown', handleClick);
+    } else {
+      document.removeEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [open]);
+
+  return (
+    <div className="relative w-full max-w-xs">
+      <button
+        ref={buttonRef}
+        className={`w-full px-4 py-3 rounded-xl border-2 border-primary/40 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md shadow-lg text-base flex items-center justify-between gap-2 font-semibold focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 ${open ? 'ring-2 ring-primary' : ''}`}
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        type="button"
+      >
+        <span className="truncate flex items-center gap-2">
+          {selectedDevice && (
+            <span className="inline-block w-2 h-2 rounded-full bg-primary mr-2" />
+          )}
+          {selectedDevice?.name} ({selectedDevice?.width}×{selectedDevice?.height})
+        </span>
+        <svg className={`w-5 h-5 ml-2 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+      </button>
+      {open && (
+        <div className="absolute left-0 mt-2 w-full max-h-80 overflow-y-auto rounded-2xl shadow-2xl border border-primary/20 bg-white/80 dark:bg-gray-900/90 backdrop-blur-xl z-50 animate-fade-in flex flex-col">
+          {devicePresets.map((section) => (
+            <div key={section.category} className="px-3 py-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-primary/80 uppercase tracking-wide mb-1">
+                {deviceIcons[section.category]}
+                {section.category}
+              </div>
+              {section.items.map((device) => {
+                const active = selectedDevice.name === device.name;
+                return (
+                  <button
+                    key={device.name}
+                    className={`w-full text-left px-4 py-2 rounded-lg flex items-center justify-between gap-2 mb-1 transition-all duration-150 ${active ? 'bg-primary/10 text-primary font-bold ring-2 ring-primary/30' : 'hover:bg-primary/5 text-gray-800 dark:text-gray-200'}`}
+                    onClick={() => {
+                      setSelectedDevice(device);
+                      setOpen(false);
+                    }}
+                    type="button"
+                  >
+                    <span className="truncate">{device.name} <span className="text-xs text-gray-400">({device.width}×{device.height})</span></span>
+                    {active && <span className="ml-2 text-primary">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 } 
