@@ -48,7 +48,9 @@ function KeywordToolsContent() {
   useEffect(() => {
     if (!selectedCrawlId) return;
 
-    const q = collection(db, `crawls/${selectedCrawlId}/keywordAnalysis`);
+    const q = db ? collection(db, `crawls/${selectedCrawlId}/keywordAnalysis`) : null;
+    if (!q) return;
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const analysisResults = snapshot.docs.map((doc) => {
         const data = doc.data();

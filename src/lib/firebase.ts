@@ -70,6 +70,7 @@ export async function saveToFirebase(collectionName: string, data: any) {
   
   try {
     console.log(`💾 Attempting to save to Firestore collection: ${collectionName}`);
+    if (!db) return null;
     const result = await addDoc(collection(db, collectionName), data);
     console.log('✅ Data saved to Firestore successfully:', result.id);
     return result;

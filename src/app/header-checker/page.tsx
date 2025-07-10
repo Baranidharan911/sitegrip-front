@@ -109,6 +109,11 @@ export default function HeaderCheckerPage() {
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
   };
 
+  const saveReport = async (data: any) => {
+    if (!db) return;
+    await addDoc(collection(db, 'headerReports'), data);
+  };
+
   // On successful result, save to Firestore
   useEffect(() => {
     if (result && url) {

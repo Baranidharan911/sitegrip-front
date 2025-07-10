@@ -20,10 +20,13 @@ export default function CrawlHistory() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
+  const crawlCollection = db ? collection(db, 'crawls') : null;
+  if (!crawlCollection) return;
+
   const fetchCrawls = async (userId: string) => {
     try {
       const q = query(
-        collection(db, 'crawls'),
+        crawlCollection,
         where('userId', '==', userId),
         orderBy('createdAt', 'desc')
       );

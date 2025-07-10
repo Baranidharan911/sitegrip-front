@@ -846,45 +846,83 @@ export default function WebVitalsCheckerPage() {
             </div>
           )}
           {/* Core Web Vitals Assessment Card */}
-          {result[view].fieldData && (
+          {result[view] && result[view].fieldData && (
             <div className="backdrop-blur-xl bg-white/70 dark:bg-gray-900/70 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
               <div className="flex flex-col lg:flex-row items-start lg:items-center gap-6 mb-6">
                 <div className={`inline-flex items-center px-6 py-3 rounded-2xl font-bold text-lg shadow-lg ${
-                  getAssessment(result[view].fieldData).pass 
+                  getAssessment(result[view]?.fieldData).pass 
                     ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
                     : 'bg-gradient-to-r from-red-500 to-pink-500 text-white'
                 }`}>
-                  {getAssessment(result[view].fieldData).pass ? '✅ Passed' : '❌ Failed'}
+                  {getAssessment(result[view]?.fieldData).pass ? '✅ Passed' : '❌ Failed'}
                   <span className="ml-2 text-base font-medium">
                     Core Web Vitals
                   </span>
                 </div>
                 <div className="flex-1">
                   <p className="text-base text-gray-600 dark:text-gray-300 leading-relaxed">
-                    {getAssessment(result[view].fieldData).reason}
+                    {getAssessment(result[view]?.fieldData).reason}
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-2">
-                {result[view].fieldData['LARGEST_CONTENTFUL_PAINT_MS'] && (
-                  <FieldBar label="LCP" value={+(result[view].fieldData['LARGEST_CONTENTFUL_PAINT_MS'].percentile / 1000).toFixed(2)} unit="s" thresholds={[2.5, 4]} />
-                )}
-                {result[view].fieldData['INTERACTION_TO_NEXT_PAINT'] && (
-                  <FieldBar label="INP" value={Math.round(result[view].fieldData['INTERACTION_TO_NEXT_PAINT'].percentile)} unit="ms" thresholds={[200, 500]} />
-                )}
-                {result[view].fieldData['CUMULATIVE_LAYOUT_SHIFT_SCORE'] && (
-                  <FieldBar label="CLS" value={+(result[view].fieldData['CUMULATIVE_LAYOUT_SHIFT_SCORE'].percentile).toFixed(3)} unit="" thresholds={[0.1, 0.25]} />
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mb-2">  
+                {/* LCP */}
+                {(() => {
+                  const lcp = result[view]?.fieldData?.['LARGEST_CONTENTFUL_PAINT_MS'];
+                  if (lcp && lcp.percentile != null) {
+                    return (
+                      <FieldBar
+                        label="LCP"
+                        value={+(lcp.percentile / 1000).toFixed(2)}
+                        unit="s"
+                        thresholds={[2.5, 4]}
+                      />
+                    );
+                  }
+                  return null;
+                })()}
+                {/* INP */}
+                {(() => {
+                  const inp = result[view]?.fieldData?.['INTERACTION_TO_NEXT_PAINT'];
+                  if (inp && inp.percentile != null) {
+                    return (
+                      <FieldBar
+                        label="INP"
+                        value={Math.round(inp.percentile)}
+                        unit="ms"
+                        thresholds={[200, 500]}
+                      />
+                    );
+                  }
+                  return null;
+                })()}
+                {/* CLS */}
+                {(() => {
+                  const cls = result[view]?.fieldData?.['CUMULATIVE_LAYOUT_SHIFT_SCORE'];
+                  if (cls && cls.percentile != null) {
+                    return (
+                      <FieldBar
+                        label="CLS"
+                        value={+(cls.percentile).toFixed(3)}
+                        unit=""
+                        thresholds={[0.1, 0.25]}
+                      />
+                    );
+                  }
+                  return null;
+                })()}
               </div>
               <div className="mt-4">
                 <h4 className="font-semibold text-gray-700 mb-2 text-base">Other Notable Metrics</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {result[view].fieldData['FIRST_CONTENTFUL_PAINT_MS'] && (
-                    <FieldBar label="FCP" value={+(result[view].fieldData['FIRST_CONTENTFUL_PAINT_MS'].percentile / 1000).toFixed(2)} unit="s" thresholds={[1.8, 3]} />
-                  )}
-                  {result[view].fieldData['EXPERIMENTAL_TIME_TO_FIRST_BYTE'] && (
-                    <FieldBar label="TTFB" value={+(result[view].fieldData['EXPERIMENTAL_TIME_TO_FIRST_BYTE'].percentile / 1000).toFixed(2)} unit="s" thresholds={[0.8, 1.8]} />
-                  )}
+                  {result[view]?.fieldData?.['FIRST_CONTENTFUL_PAINT_MS'] &&
+                    result[view]?.fieldData?.['FIRST_CONTENTFUL_PAINT_MS'].percentile != null && (
+                      <FieldBar label="FCP" value={+(result[view]?.fieldData?.['FIRST_CONTENTFUL_PAINT_MS'].percentile / 1000).toFixed(2)} unit="s" thresholds={[1.8, 3]} />
+                    )}
+                  {result[view]?.fieldData?.['EXPERIMENTAL_TIME_TO_FIRST_BYTE'] &&
+                    result[view]?.fieldData?.['EXPERIMENTAL_TIME_TO_FIRST_BYTE'].percentile != null && (
+                      <FieldBar label="TTFB" value={+(result[view]?.fieldData?.['EXPERIMENTAL_TIME_TO_FIRST_BYTE'].percentile / 1000).toFixed(2)} unit="s" thresholds={[0.8, 1.8]} />
+                    )}
                 </div>
               </div>
             </div>
@@ -901,21 +939,21 @@ export default function WebVitalsCheckerPage() {
               </div>
             </div>
             {/* Category Scores */}
-            {result[view].scores && (
+            {result[view]?.scores && (
               <div className="flex flex-wrap gap-6 justify-center mb-8">
-                {Object.entries(result[view].scores).map(([label, score]) => (
+                {Object.entries(result[view]?.scores).map(([label, score]) => (
                   <ScoreRing key={label} label={label} score={score} />
                 ))}
               </div>
             )}
             {/* Lab Metrics */}
-            {result[view].metrics && (
+            {result[view]?.metrics && (
               <>
                 {/* Core Web Vitals */}
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Core Web Vitals</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['lcp', 'fcp', 'cls', 'tti', 'tbt', 'fid'].includes(label))
                       .map(([label, value]) => {
                         let displayValue: string | number = 'N/A';
@@ -934,7 +972,7 @@ export default function WebVitalsCheckerPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Performance Metrics</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['si', 'ttfb', 'fmp', 'fci', 'eil', 'mpu'].includes(label))
                       .map(([label, value]) => {
                         let displayValue: string | number = 'N/A';
@@ -953,7 +991,7 @@ export default function WebVitalsCheckerPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Resource Metrics</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['totalResources', 'totalSize', 'domSize', 'criticalRequestChains'].includes(label))
                       .map(([label, value]) => {
                         let displayValue: string | number = 'N/A';
@@ -974,7 +1012,7 @@ export default function WebVitalsCheckerPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Optimization Scores</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['usesOptimizedImages', 'usesWebpImages', 'usesResponsiveImages', 'usesEfficientImageFormats', 'usesTextCompression'].includes(label))
                       .map(([label, value]) => {
                         const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
@@ -987,7 +1025,7 @@ export default function WebVitalsCheckerPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">Accessibility Scores</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['colorContrast', 'documentTitle', 'linkName', 'imageAlt'].includes(label))
                       .map(([label, value]) => {
                         const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
@@ -1000,7 +1038,7 @@ export default function WebVitalsCheckerPage() {
                 <div className="mb-8">
                   <h3 className="text-lg font-semibold mb-4 text-gray-700">SEO Scores</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {Object.entries(result[view].metrics)
+                    {Object.entries(result[view]?.metrics)
                       .filter(([label]) => ['metaDescription', 'hreflang', 'canonical', 'robotsTxt', 'structuredData'].includes(label))
                       .map(([label, value]) => {
                         const displayValue = typeof value === 'number' ? `${Math.round(value * 100)}%` : 'N/A';
@@ -1014,34 +1052,34 @@ export default function WebVitalsCheckerPage() {
           {/* Diagnose performance issues */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
             <h2 className="text-xl font-bold mb-6 text-gray-800">Diagnose performance issues</h2>
-            {result[view].warnings && result[view].warnings.length > 0 && (
-              <Banner type="warning" message={result[view].warnings.join(', ')} />
+            {result[view]?.warnings && result[view]?.warnings.length > 0 && (
+              <Banner type="warning" message={result[view]?.warnings.join(', ')} />
             )}
-            {result[view].opportunities && (
-              <OpportunitiesPanel opportunities={result[view].opportunities} />
+            {result[view]?.opportunities && (
+              <OpportunitiesPanel opportunities={result[view]?.opportunities || []} />
             )}
-            {result[view].resourceSummary && (
-              <ResourceSummaryChart resourceSummary={result[view].resourceSummary} />
+            {result[view]?.resourceSummary && (
+              <ResourceSummaryChart resourceSummary={result[view]?.resourceSummary || []} />
             )}
-            {result[view].diagnostics && (
-              <DiagnosticsPanel diagnostics={result[view].diagnostics} />
+            {result[view]?.diagnostics && (
+              <DiagnosticsPanel diagnostics={result[view]?.diagnostics} />
             )}
-            {result[view].passedAudits && (
-              <AuditsPanel audits={result[view].passedAudits} label="Passed Audits" color="text-green-700 dark:text-green-400" />
+            {result[view]?.passedAudits && (
+              <AuditsPanel audits={result[view]?.passedAudits || []} label="Passed Audits" color="text-green-700 dark:text-green-400" />
             )}
-            {result[view].manualAudits && (
-              <AuditsPanel audits={result[view].manualAudits} label="Manual Audits" color="text-blue-700 dark:text-blue-400" />
+            {result[view]?.manualAudits && (
+              <AuditsPanel audits={result[view]?.manualAudits || []} label="Manual Audits" color="text-blue-700 dark:text-blue-400" />
             )}
-            {result[view].notApplicableAudits && (
-              <AuditsPanel audits={result[view].notApplicableAudits} label="Not Applicable Audits" color="text-gray-700 dark:text-gray-400" />
+            {result[view]?.notApplicableAudits && (
+              <AuditsPanel audits={result[view]?.notApplicableAudits || []} label="Not Applicable Audits" color="text-gray-700 dark:text-gray-400" />
             )}
-            {result[view].audits && (
-              <AccessibilityIssuesPanel audits={result[view].audits} />
+            {result[view]?.audits && (
+              <AccessibilityIssuesPanel audits={result[view]?.audits} />
             )}
           </div>
           {/* Screenshots */}
           <ScreenshotPanel 
-            screenshots={result[view].screenshots || []}
+            screenshots={result[view]?.screenshots || []}
             currentView={view}
           />
           
@@ -1049,18 +1087,18 @@ export default function WebVitalsCheckerPage() {
           <AdditionalChecksPanel additionalChecks={result.additionalChecks} />
           
           {/* Console Errors */}
-          <ConsoleErrorsPanel consoleErrors={result[view].consoleErrors} />
+          <ConsoleErrorsPanel consoleErrors={result[view]?.consoleErrors} />
           
           {/* Environment & Details */}
           {result[view] && (
             <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6">
               <EnvironmentPanel
-                env={result[view].environment}
-                warnings={result[view].warnings}
-                fetchTime={result[view].fetchTime}
-                finalUrl={result[view].finalUrl}
-                userAgent={result[view].userAgent}
-                timing={result[view].timing}
+                env={result[view]?.environment}
+                warnings={result[view]?.warnings || []}
+                fetchTime={result[view]?.fetchTime}
+                finalUrl={result[view]?.finalUrl}
+                userAgent={result[view]?.userAgent}
+                timing={result[view]?.timing}
               />
             </div>
           )}

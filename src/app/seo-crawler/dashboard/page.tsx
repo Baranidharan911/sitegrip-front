@@ -10,6 +10,11 @@ import { db, auth } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';
+import { Firestore } from 'firebase/firestore';
+
+function isFirestore(db: any): db is Firestore {
+  return db !== null && typeof db === 'object';
+}
 
 import RunCrawlForm from '@/components/seo-crawler/RunCrawlForm';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
@@ -103,16 +108,27 @@ export default function SeoCrawlerDashboardPage() {
   }, []);
 
   const loadReports = async (uid: string) => {
-    const q = query(collection(db, 'seoCrawlReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
+    if (!db) return;
+    const q = query(
+      collection(db!, 'seoCrawlReports'),
+      where('uid', '==', uid),
+      orderBy('created', 'desc'),
+      limit(10)
+    );
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  };
+
+  const saveReport = async (data: any) => {
+    if (!db) return;
+    await addDoc(collection(db!, 'seoCrawlReports'), data);
   };
 
   // On successful result, save to Firestore
   useEffect(() => {
     if (crawlResult && url) {
       const save = async () => {
-        await addDoc(collection(db, 'seoCrawlReports'), {
+        await addDoc(collection(db!, 'seoCrawlReports'), {
           uid: user?.uid || null,
           url,
           crawlResult,
