@@ -40,6 +40,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
 
+    console.log(`🔍 Monitoring API request: ${action}`);
+
     switch (action) {
       case 'monitors': {
         const data = await callUptimeRobot('getMonitors', {});
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
         const totalMonitors = monitors.length;
         const onlineMonitors = monitors.filter((m: any) => m.status === 2).length;
         const offlineMonitors = monitors.filter((m: any) => m.status !== 2).length;
-        const averageUptime = monitors.length ? (monitors.reduce((sum: number, m: any) => sum + (parseFloat(m.all_time_uptime_ratio) || 0), 0) / monitors.length) : 0;
+        const averageUptime = monitors.length ? (monitors.reduce((sum: number, m: any) => sum + (parseFloat(m.uptime_ratio) || 0), 0) / monitors.length) : 0;
         return NextResponse.json({
           totalMonitors,
           onlineMonitors,
