@@ -21,7 +21,7 @@ import {
   MonitorType,
   NotificationType
 } from '../types/uptime';
-import { firebaseMonitoringService } from '../lib/firebaseMonitoringService';
+// import { firebaseMonitoringService } from '../lib/firebaseMonitoringService'; // Removed - using UptimeRobot
 import useAuth from './useAuth';
 
 /**
@@ -448,27 +448,11 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     throw new Error('bulkUpdateMonitors not implemented');
   }, []);
 
-  // Resolve incident
+  // Resolve incident - Placeholder for UptimeRobot
   const resolveIncident = useCallback(async (incidentId: string): Promise<void> => {
-    if (!user?.uid) return;
-    try {
-      await firebaseMonitoringService.resolveIncident(incidentId);
-      setStateIfMounted(prev => {
-        const updatedIncidents = { ...prev.monitorIncidents };
-        for (const monitorId in updatedIncidents) {
-          updatedIncidents[monitorId] = updatedIncidents[monitorId].map(incident =>
-            incident.id === incidentId
-              ? { ...incident, status: 'resolved', resolvedAt: new Date() }
-              : incident
-          );
-        }
-        return { ...prev, monitorIncidents: updatedIncidents };
-      });
-    } catch (error) {
-      handleError(error, 'resolveIncident');
-      throw error;
-    }
-  }, [setStateIfMounted, handleError, user?.uid]);
+    // TODO: Implement with UptimeRobot API if needed
+    console.log('Resolve incident not implemented with UptimeRobot:', incidentId);
+  }, []);
 
   // Export monitor data (implement as needed, placeholder for now)
   const exportMonitorData = useCallback(async (
@@ -567,78 +551,23 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     // getNotificationTypes, // Removed
     handleError, setStateIfMounted, user?.uid]);
 
-  // Real-time monitor subscription
-  useEffect(() => {
-    if (!user?.uid) return;
-    if (unsubscribeRef.current) {
-      unsubscribeRef.current();
-    }
-    unsubscribeRef.current = firebaseMonitoringService.subscribeToMonitors(user.uid, (monitors) => {
-      setStateIfMounted(prev => ({ ...prev, monitors, loading: false, lastRefresh: new Date() }));
-    });
-    return () => {
-      if (unsubscribeRef.current) {
-        unsubscribeRef.current();
-      }
-    };
-  }, [user?.uid]);
+  // Real-time monitor subscription - Disabled since we're using UptimeRobot
+  // useEffect(() => {
+  //   if (!user?.uid) return;
+  //   // Firebase subscriptions removed - using UptimeRobot API instead
+  // }, [user?.uid]);
 
-  // Real-time incident subscription
-  useEffect(() => {
-    if (!user?.uid) return;
-    const unsubscribeIncidents = firebaseMonitoringService.subscribeToIncidents(user.uid, (incidents) => {
-      // Filter incidents by user's monitors
-      setStateIfMounted(prev => {
-        const userMonitorIds = prev.monitors.map(m => m.id);
-        const userIncidents = incidents.filter(i => userMonitorIds.includes(i.monitorId));
-        // Group by monitorId
-        const monitorIncidents: Record<string, Incident[]> = {};
-        userIncidents.forEach(incident => {
-          if (!monitorIncidents[incident.monitorId]) monitorIncidents[incident.monitorId] = [];
-          monitorIncidents[incident.monitorId].push(incident);
-        });
-        return { ...prev, monitorIncidents };
-      });
-    });
-    return () => {
-      unsubscribeIncidents();
-    };
-  }, [user?.uid, state.monitors]);
+  // Real-time incident subscription - Disabled since we're using UptimeRobot
+  // useEffect(() => {
+  //   if (!user?.uid) return;
+  //   // Firebase subscriptions removed - using UptimeRobot API instead
+  // }, [user?.uid, state.monitors]);
 
-  // Real-time SSL info subscription
-  useEffect(() => {
-    if (!user?.uid) return;
-    // Listen to all monitors for this user
-    const unsubscribe = firebaseMonitoringService.subscribeToMonitors(user.uid, (monitors) => {
-      // Update SSL info state for all monitors
-      const sslInfo: Record<string, SSLInfoResponse> = {};
-      monitors.forEach(monitor => {
-        if (monitor.ssl_status || monitor.ssl_cert_days_until_expiry !== undefined) {
-          sslInfo[monitor.id] = {
-            ssl_monitoring_enabled: true,
-            ssl_info: {
-              valid: monitor.ssl_status === 'valid',
-              days_until_expiry: monitor.ssl_cert_days_until_expiry ?? undefined,
-              expires_at: monitor.ssl_cert_expires_at ?? undefined,
-              is_valid: monitor.ssl_status === 'valid',
-              is_self_signed: false,
-              issuer: monitor.ssl_cert_issuer ?? undefined,
-              subject: monitor.name ?? monitor.url,
-            },
-            monitor_ssl_status: monitor.ssl_status,
-            ssl_cert_expires_at: monitor.ssl_cert_expires_at,
-            ssl_cert_days_until_expiry: monitor.ssl_cert_days_until_expiry ?? undefined,
-            ssl_cert_issuer: monitor.ssl_cert_issuer,
-            message: undefined,
-          };
-        }
-      });
-      setStateIfMounted(prev => ({ ...prev, sslInfo }));
-    });
-    return () => {
-      unsubscribe();
-    };
-  }, [user?.uid]);
+  // Real-time SSL info subscription - Disabled since we're using UptimeRobot
+  // useEffect(() => {
+  //   if (!user?.uid) return;
+  //   // Firebase subscriptions removed - using UptimeRobot API instead
+  // }, [user?.uid]);
 
   // Compute summary from real-time state
   const summary = useMemo(() => {

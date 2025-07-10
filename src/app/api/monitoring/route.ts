@@ -28,7 +28,19 @@ export async function GET(request: NextRequest) {
     switch (action) {
       case 'monitors': {
         const data = await callUptimeRobot('getMonitors', {});
-        return NextResponse.json(data.monitors || []);
+        return NextResponse.json({ success: true, monitors: data.monitors || [] });
+      }
+      case 'get': {
+        const monitorId = searchParams.get('monitorId');
+        if (!monitorId) {
+          return NextResponse.json({ error: 'Monitor ID required' }, { status: 400 });
+        }
+        const data = await callUptimeRobot('getMonitors', { monitors: monitorId });
+        const monitor = (data.monitors || []).find((m: any) => m.id === monitorId);
+        if (!monitor) {
+          return NextResponse.json({ error: 'Monitor not found' }, { status: 404 });
+        }
+        return NextResponse.json({ success: true, monitor });
       }
       case 'summary': {
         // UptimeRobot does not have a direct summary endpoint, so fetch monitors and compute summary
@@ -87,6 +99,28 @@ export async function POST(request: NextRequest) {
           timestamp: new Date().toISOString(),
           error: null
         });
+      }
+      case 'get_logs': {
+        const monitorId = data.monitorId;
+        const limit = data.limit || 50;
+        if (!monitorId) {
+          return NextResponse.json({ error: 'Monitor ID required' }, { status: 400 });
+        }
+        const monitorData = await callUptimeRobot('getMonitors', { monitors: monitorId, logs: 1 });
+        const monitor = (monitorData.monitors || []).find((m: any) => m.id === monitorId);
+        if (!monitor) {
+          return NextResponse.json({ error: 'Monitor not found' }, { status: 404 });
+        }
+        // UptimeRobot logs are limited, so we'll return a simplified version
+        const logs = monitor.logs ? monitor.logs.slice(0, limit).map((log: any) => ({
+          id: log.id,
+          type: log.type, // 1 = up, 2 = down
+          datetime: log.datetime,
+          duration: log.duration,
+          response_code: log.response_code,
+          details: log.details
+        })) : [];
+        return NextResponse.json({ success: true, logs });
       }
       case 'delete_monitor': {
         const res = await callUptimeRobot('deleteMonitor', { id: data.id });
