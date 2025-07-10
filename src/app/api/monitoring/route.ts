@@ -1,11 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SCRAPINGBEE_API = 'https://app.scrapingbee.com/api/v1/';
-const SCRAPINGBEE_KEY = '03AO48GG72NL2CDT3T1SRO2KCYBYAHFNMANYTX4KJXK2IOTEZHY7A0Y2IEPL5KVKCQ5UHG2HAUZP6BSO';
+const UPTIME_ROBOT_API = 'https://api.uptimerobot.com/v2/';
+const UPTIME_ROBOT_KEY = 'u3021240-f139913b83d2a1d00c8fbb54';
 
 // ============================
-// 🌐 MONITORING API ROUTE
+// 🌐 MONITORING API ROUTE (UptimeRobot)
 // ============================
+
+async function callUptimeRobot(endpoint: string, body: Record<string, any>) {
+  const res = await fetch(UPTIME_ROBOT_API + endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ api_key: UPTIME_ROBOT_KEY, ...body }).toString(),
+  });
+  const data = await res.json();
+  if (!res.ok || data.stat !== 'ok') {
+    throw new Error(data.error?.message || data.error || 'UptimeRobot API error');
+  }
+  return data;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,79 +26,25 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get('action');
 
     switch (action) {
-      case 'health':
+      case 'monitors': {
+        const data = await callUptimeRobot('getMonitors', {});
+        return NextResponse.json(data.monitors || []);
+      }
+      case 'summary': {
+        // UptimeRobot does not have a direct summary endpoint, so fetch monitors and compute summary
+        const data = await callUptimeRobot('getMonitors', {});
+        const monitors = data.monitors || [];
+        const totalMonitors = monitors.length;
+        const onlineMonitors = monitors.filter((m: any) => m.status === 2).length;
+        const offlineMonitors = monitors.filter((m: any) => m.status !== 2).length;
+        const averageUptime = monitors.length ? (monitors.reduce((sum: number, m: any) => sum + (parseFloat(m.all_time_uptime_ratio) || 0), 0) / monitors.length) : 0;
         return NextResponse.json({
-          status: 'healthy',
-          timestamp: new Date().toISOString(),
-          version: '1.0.0'
+          totalMonitors,
+          onlineMonitors,
+          offlineMonitors,
+          averageUptime,
         });
-
-      case 'monitors':
-        // Return sample monitors for demo
-        return NextResponse.json([
-          {
-            id: '1',
-            name: 'WebWatch Homepage',
-            url: 'https://webwatch.com',
-            status: true,
-            uptime: 99.95,
-            responseTime: 245,
-            lastCheck: new Date().toISOString(),
-            isActive: true,
-            ssl_cert_days_until_expiry: 45
-          },
-          {
-            id: '2',
-            name: 'API Gateway',
-            url: 'https://api.webwatch.com',
-            status: true,
-            uptime: 99.98,
-            responseTime: 89,
-            lastCheck: new Date().toISOString(),
-            isActive: true,
-            ssl_cert_days_until_expiry: 12
-          },
-          {
-            id: '3',
-            name: 'Database Server',
-            url: 'https://db.webwatch.com',
-            status: false,
-            uptime: 95.2,
-            responseTime: null,
-            lastCheck: new Date(Date.now() - 300000).toISOString(),
-            isActive: true,
-            ssl_cert_days_until_expiry: 30
-          }
-        ]);
-
-      case 'summary':
-        return NextResponse.json({
-          totalMonitors: 3,
-          onlineMonitors: 2,
-          offlineMonitors: 1,
-          averageUptime: 98.38,
-          totalChecks: 15420,
-          averageResponseTime: 167,
-          incidentsLast24h: 1,
-          resolvedToday: 0,
-          averageMTTR: 15
-        });
-
-      case 'incidents':
-        return NextResponse.json([
-          {
-            id: '1',
-            title: 'Database connectivity issues',
-            description: 'Database server is experiencing intermittent connectivity problems',
-            severity: 'critical',
-            status: 'open',
-            createdAt: new Date(Date.now() - 1800000).toISOString(),
-            monitorId: '3',
-            duration: '30 minutes',
-            affectedUsers: 'All users'
-          }
-        ]);
-
+      }
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
@@ -104,62 +63,53 @@ export async function POST(request: NextRequest) {
     const { action, data } = body;
 
     switch (action) {
-      case 'create_monitor':
-        return NextResponse.json({
-          id: Date.now().toString(),
-          ...data,
-          status: true,
-          uptime: 100,
-          responseTime: 0,
-          lastCheck: new Date().toISOString(),
-          isActive: true
-        });
-
+      case 'create_monitor': {
+        const payload = {
+          friendly_name: data.name,
+          url: data.url,
+          type: 1, // HTTP(s)
+        };
+        const res = await callUptimeRobot('newMonitor', payload);
+        return NextResponse.json(res.monitor);
+      }
       case 'trigger_check': {
-        const url = data?.url;
-        if (!url || typeof url !== 'string') {
-          return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
-        }
-        const beeUrl = `${SCRAPINGBEE_API}?api_key=${SCRAPINGBEE_KEY}&url=${encodeURIComponent(url)}&render_js=true`;
-        const start = Date.now();
-        let status = false;
-        let responseTime = null;
-        let error = null;
-        try {
-          const res = await fetch(beeUrl, { method: 'GET' });
-          responseTime = Date.now() - start;
-          status = res.ok;
-          if (!res.ok) {
-            const errorText = await res.text();
-            error = `ScrapingBee error: ${res.status} ${errorText}`;
-          }
-        } catch (err: any) {
-          responseTime = Date.now() - start;
-          error = err.message || 'Unknown error';
+        // UptimeRobot does not support manual trigger; just fetch status
+        const monitors = await callUptimeRobot('getMonitors', { logs: 1, search: data.url });
+        const monitor = (monitors.monitors || []).find((m: any) => m.url === data.url);
+        if (!monitor) {
+          return NextResponse.json({ error: 'Monitor not found' }, { status: 404 });
         }
         return NextResponse.json({
-          id: Date.now().toString(),
-          monitorId: data.monitorId,
-          status,
-          responseTime,
+          id: monitor.id,
+          monitorId: monitor.id,
+          status: monitor.status === 2, // 2 = up
+          responseTime: monitor.response_times?.[0]?.value || null,
           timestamp: new Date().toISOString(),
-          error
+          error: null
         });
       }
-
-      case 'update_monitor':
-        return NextResponse.json({
-          ...data,
-          updatedAt: new Date().toISOString()
-        });
-
+      case 'delete_monitor': {
+        const res = await callUptimeRobot('deleteMonitor', { id: data.id });
+        return NextResponse.json(res);
+      }
+      case 'update_monitor': {
+        // UptimeRobot does not support update, so delete and recreate
+        await callUptimeRobot('deleteMonitor', { id: data.id });
+        const payload = {
+          friendly_name: data.name,
+          url: data.url,
+          type: 1,
+        };
+        const res = await callUptimeRobot('newMonitor', payload);
+        return NextResponse.json(res.monitor);
+      }
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
   } catch (error) {
     console.error('Monitoring API error:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
   }

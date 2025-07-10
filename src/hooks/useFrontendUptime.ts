@@ -132,148 +132,315 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     setStateIfMounted(prev => ({ ...prev, error: errorMessage, loading: false }));
   }, [setStateIfMounted]);
 
-  // Refresh all monitors with real-time data
+  // Fetch all monitors from the new API
   const refreshMonitors = useCallback(async () => {
-    if (!user || typeof user.uid !== 'string') {
-      setStateIfMounted(prev => ({ ...prev, loading: false }));
-      return;
-    }
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      const monitors = await firebaseMonitoringService.getAllMonitors(user.uid);
+      const res = await fetch('/api/monitoring?action=monitors');
+      const data = await res.json();
+      
+      if (!data.success || !Array.isArray(data.monitors)) {
+        throw new Error(data.message || 'Failed to fetch monitors');
+      }
+
+      // Map UptimeRobot monitors to our Monitor format
+      const mappedMonitors: Monitor[] = data.monitors.map((monitor: any) => ({
+        id: monitor.id,
+        name: monitor.friendly_name,
+        url: monitor.url,
+        type: 'http',
+        status: monitor.status === 2, // 2 = up, 9 = down, 0 = paused
+        interval: monitor.interval || 5,
+        timeout: 30,
+        retries: 3,
+        userId: '',
+        createdAt: new Date(monitor.create_datetime * 1000),
+        updatedAt: new Date(),
+        lastCheck: monitor.last_check_datetime ? new Date(monitor.last_check_datetime * 1000) : null,
+        lastResponseTime: monitor.response_times ? monitor.response_times[0] : null,
+        lastStatusCode: monitor.http_status_code,
+        uptime: monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+        downtime: 100 - (monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100),
+        tags: monitor.tags || [],
+        notifications: [],
+        threshold: { responseTime: 0, statusCode: 200 },
+        regions: [],
+        protocol: 'http',
+        port: undefined,
+        expectedContent: [],
+        contentChecksum: '',
+        browserCheck: undefined,
+        redirectTracing: false,
+        sslMonitoring: undefined,
+        adaptiveFrequency: undefined,
+        slaTracking: undefined,
+        anomalyDetection: undefined,
+        dependencyChain: [],
+        impactCalculator: undefined,
+        last_status: monitor.status === 2 ? 'up' : monitor.status === 9 ? 'down' : 'unknown',
+        failures_in_a_row: monitor.failures_in_a_row || 0,
+        ssl_status: 'valid',
+        ssl_monitoring_enabled: false,
+        ssl_cert_expires_at: '',
+        ssl_cert_issuer: '',
+        ssl_cert_days_until_expiry: null,
+        ssl_last_checked: '',
+        is_public: true,
+        frequency: monitor.interval || 5,
+        http_status: monitor.http_status_code,
+        uptime_stats: {
+          '24h': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+          '7d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+          '30d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+        },
+        lastDown: monitor.last_down_datetime ? new Date(monitor.last_down_datetime * 1000).toISOString() : '',
+        lastUp: monitor.last_up_datetime ? new Date(monitor.last_up_datetime * 1000).toISOString() : '',
+        isActive: monitor.status !== 0, // 0 = paused
+        description: monitor.friendly_name,
+        expectedStatusCode: 200,
+        retryInterval: 5,
+      }));
+
       setStateIfMounted(prev => ({
         ...prev,
-        monitors,
+        monitors: mappedMonitors,
         loading: false,
         lastRefresh: new Date(),
       }));
     } catch (error) {
       handleError(error, 'refreshMonitors');
     }
-  }, [setStateIfMounted, handleError, user]);
+  }, [setStateIfMounted, handleError]);
 
   // Create new monitor
   const createMonitor = useCallback(async (data: CreateMonitorRequest): Promise<Monitor> => {
-    if (!user?.uid) throw new Error('User not authenticated');
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      // Fill in required fields for Monitor
-      const monitorData = {
-        ...data,
-        status: true,
-        interval: data.interval ?? 60,
-        timeout: data.timeout ?? 10,
-        retries: data.retries ?? 3,
-        isActive: data.isActive ?? true,
-      };
-      const monitor = await firebaseMonitoringService.createMonitor(user.uid, monitorData);
+      const res = await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create_monitor', data })
+      });
+      const monitor = await res.json();
       await refreshMonitors();
       return monitor;
     } catch (error) {
       handleError(error, 'createMonitor');
       throw error;
     }
-  }, [setStateIfMounted, handleError, refreshMonitors, user?.uid]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
-  // Update existing monitor
+  // Update monitor (delete + create)
   const updateMonitor = useCallback(async (id: string, data: UpdateMonitorRequest): Promise<Monitor> => {
-    if (!user?.uid) throw new Error('User not authenticated');
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      const monitor = await firebaseMonitoringService.updateMonitor(user.uid, id, data);
+      const res = await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update_monitor', data: { ...data, id } })
+      });
+      const monitor = await res.json();
       await refreshMonitors();
       return monitor;
     } catch (error) {
       handleError(error, 'updateMonitor');
       throw error;
     }
-  }, [setStateIfMounted, handleError, refreshMonitors, user?.uid]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
   // Delete monitor
   const deleteMonitor = useCallback(async (id: string): Promise<void> => {
-    if (!user?.uid) throw new Error('User not authenticated');
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      await firebaseMonitoringService.deleteMonitor(user.uid, id);
+      await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete_monitor', data: { id } })
+      });
       await refreshMonitors();
     } catch (error) {
       handleError(error, 'deleteMonitor');
       throw error;
     }
-  }, [setStateIfMounted, handleError, refreshMonitors, user?.uid]);
+  }, [setStateIfMounted, handleError, refreshMonitors]);
 
   // Select monitor
   const selectMonitor = useCallback((monitor: Monitor | null) => {
     setStateIfMounted(prev => ({ ...prev, selectedMonitor: monitor }));
   }, [setStateIfMounted]);
 
-  // Get monitor checks
-  const getMonitorChecks = useCallback(async (monitorId: string, limit: number = 30): Promise<CheckResult[]> => {
-    if (!user?.uid) return [];
+  // Get monitor checks (logs)
+  const getMonitorChecks = useCallback(async (monitorId: string, limit: number = 50): Promise<CheckResult[]> => {
     try {
-      const checks = await firebaseMonitoringService.getMonitorChecks(user.uid, monitorId, limit);
-      setStateIfMounted(prev => ({
-        ...prev,
-        monitorChecks: { ...prev.monitorChecks, [monitorId]: checks }
-      }));
-      return checks;
+      // UptimeRobot: get logs for the monitor
+      const res = await fetch('/api/monitoring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_logs', data: { monitorId, limit } })
+      });
+      const data = await res.json();
+      
+      if (!data.success || !Array.isArray(data.logs)) {
+        return [];
+      }
+      
+      // Map UptimeRobot logs to CheckResult format
+      return data.logs.map((log: any) => ({
+        id: log.id || `log_${Date.now()}_${Math.random()}`,
+        monitorId: monitorId,
+        status: log.type === 1, // 1 = up, 2 = down
+        responseTime: log.duration || 0,
+        statusCode: log.response_code,
+        message: log.type === 1 ? 'Monitor is up' : 'Monitor is down',
+        createdAt: new Date(log.datetime * 1000),
+        error: log.type === 2 ? log.details : undefined,
+        timestamp: new Date(log.datetime * 1000),
+      })) as CheckResult[];
     } catch (error) {
       handleError(error, 'getMonitorChecks');
       return [];
     }
-  }, [setStateIfMounted, handleError, user?.uid]);
+  }, [handleError]);
 
-  // Get monitor incidents
-  const getMonitorIncidents = useCallback(async (monitorId: string, limit: number = 50): Promise<Incident[]> => {
-    if (!user?.uid) return [];
-    try {
-      const incidents = await firebaseMonitoringService.getIncidents(monitorId, user.uid);
-      setStateIfMounted(prev => ({
-        ...prev,
-        monitorIncidents: { ...prev.monitorIncidents, [monitorId]: incidents }
-      }));
-      return incidents;
-    } catch (error) {
-      handleError(error, 'getMonitorIncidents');
-      return [];
-    }
-  }, [setStateIfMounted, handleError, user?.uid]);
-
-  // Get monitor stats (not implemented)
-  const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
-    throw new Error('Monitor stats are not implemented.');
+  // Get monitor incidents (not directly supported, use logs for downtime)
+  const getMonitorIncidents = useCallback(async (monitorId: string, limit: number = 20): Promise<Incident[]> => {
+    // Not directly supported; return empty for now
+    return [];
   }, []);
 
-  // Perform monitor check using the new API
+  // Get monitor stats (summary)
+  const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
+    try {
+      const response = await fetch(`/api/monitoring?action=get&monitorId=${monitorId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch monitor stats: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      
+      if (!data.success || !data.monitor) {
+        throw new Error(data.message || 'Failed to fetch monitor data');
+      }
+
+      const monitor = data.monitor;
+      
+      // Convert UptimeRobot data to our MonitorStats format
+      return {
+        monitor: {
+          id: monitor.id,
+          name: monitor.friendly_name,
+          url: monitor.url,
+          type: 'http',
+          status: monitor.status === 2, // 2 = up, 9 = down
+          interval: monitor.interval || 5,
+          timeout: 30,
+          retries: 3,
+          userId: '',
+          createdAt: new Date(monitor.create_datetime * 1000),
+          updatedAt: new Date(),
+          lastCheck: monitor.last_check_datetime ? new Date(monitor.last_check_datetime * 1000) : null,
+          lastResponseTime: monitor.response_times ? monitor.response_times[0] : null,
+          lastStatusCode: monitor.http_status_code,
+          uptime: monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+          downtime: 100 - (monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100),
+          tags: monitor.tags || [],
+          notifications: [],
+          threshold: { responseTime: 0, statusCode: 200 },
+          regions: [],
+          protocol: 'http',
+          port: undefined,
+          expectedContent: [],
+          contentChecksum: '',
+          browserCheck: undefined,
+          redirectTracing: false,
+          sslMonitoring: undefined,
+          adaptiveFrequency: undefined,
+          slaTracking: undefined,
+          anomalyDetection: undefined,
+          dependencyChain: [],
+          impactCalculator: undefined,
+          last_status: monitor.status === 2 ? 'up' : 'down',
+          failures_in_a_row: monitor.failures_in_a_row || 0,
+          ssl_status: 'valid',
+          ssl_monitoring_enabled: false,
+          ssl_cert_expires_at: '',
+          ssl_cert_issuer: '',
+          ssl_cert_days_until_expiry: null,
+          ssl_last_checked: '',
+          is_public: true,
+          frequency: monitor.interval || 5,
+          http_status: monitor.http_status_code,
+          uptime_stats: {
+            '24h': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            '7d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            '30d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+          },
+          lastDown: monitor.last_down_datetime ? new Date(monitor.last_down_datetime * 1000).toISOString() : '',
+          lastUp: monitor.last_up_datetime ? new Date(monitor.last_up_datetime * 1000).toISOString() : '',
+          isActive: monitor.status !== 0, // 0 = paused
+          description: monitor.friendly_name,
+          expectedStatusCode: 200,
+          retryInterval: 5,
+        },
+        stats: {
+          uptime: {
+            '24h': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            '7d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            '30d': monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+          },
+          average_response_time: monitor.response_times ? monitor.response_times[0] : 0,
+          total_checks: monitor.total_checks || 0,
+          regional_performance: [],
+          protocol_performance: [],
+          anomaly_history: [],
+          sla_metrics: {
+            targetUptime: 100,
+            actualUptime: monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            compliance: monitor.uptime_ratio ? parseFloat(monitor.uptime_ratio) * 100 : 100,
+            violations: 0,
+          },
+        },
+      };
+    } catch (error) {
+      console.error('Error fetching monitor stats:', error);
+      throw error;
+    }
+  }, []);
+
+  // Perform monitor check (fetch status)
   const performMonitorCheck = useCallback(async (monitorId: string): Promise<CheckResult> => {
     try {
-      const monitor = state.monitors.find(m => m.id === monitorId);
-      if (!monitor) throw new Error('Monitor not found');
       const res = await fetch('/api/monitoring', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'trigger_check',
-          data: { monitorId, url: monitor.url }
-        })
+        body: JSON.stringify({ action: 'trigger_check', data: { monitorId } })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to check monitor');
-      // Optionally update state with the new check result
-      // (You may want to push to monitorChecks or refreshMonitors)
+      if (!res.ok) throw new Error(data.message || 'Failed to check monitor');
+      
+      // Map UptimeRobot response to CheckResult format
       return {
-        id: data.id,
-        monitorId: data.monitorId,
-        status: data.status,
-        responseTime: data.responseTime,
-        timestamp: data.timestamp,
-        error: data.error || null
+        id: data.id || `check_${Date.now()}`,
+        monitorId: monitorId,
+        status: data.status === 2, // 2 = up, 9 = down
+        responseTime: data.response_times ? data.response_times[0] : 0,
+        statusCode: data.http_status_code,
+        message: data.status === 2 ? 'Monitor is up' : 'Monitor is down',
+        createdAt: new Date(),
+        error: data.status !== 2 ? 'Monitor check failed' : undefined,
+        timestamp: new Date(),
       } as CheckResult;
     } catch (error) {
       handleError(error, 'performMonitorCheck');
       throw error;
     }
-  }, [state.monitors, handleError]);
+  }, [handleError]);
 
   // Bulk update monitors (implement as needed, placeholder for now)
   const bulkUpdateMonitors = useCallback(async (data: BulkUpdateRequest): Promise<BulkUpdateResponse> => {
