@@ -1,0 +1,229 @@
+{
+  "common": {
+    "loading": "Laden...",
+    "error": "Ein Fehler ist aufgetreten",
+    "success": "Erfolg!",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "add": "Hinzufügen",
+    "search": "Suchen",
+    "filter": "Filtern",
+    "sort": "Sortieren",
+    "export": "Exportieren",
+    "import": "Importieren",
+    "download": "Herunterladen",
+    "upload": "Hochladen",
+    "submit": "Absenden",
+    "reset": "Zurücksetzen",
+    "close": "Schließen",
+    "back": "Zurück",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "finish": "Beenden",
+    "skip": "Überspringen",
+    "continue": "Weiter",
+    "retry": "Wiederholen",
+    "refresh": "Aktualisieren",
+    "settings": "Einstellungen",
+    "profile": "Profil",
+    "logout": "Abmelden",
+    "login": "Anmelden",
+    "signup": "Registrieren",
+    "dashboard": "Dashboard",
+    "analytics": "Analytik",
+    "reports": "Berichte",
+    "tools": "Tools",
+    "help": "Hilfe",
+    "support": "Support",
+    "contact": "Kontakt",
+    "about": "Über uns",
+    "privacy": "Datenschutz",
+    "terms": "AGB",
+    "pricing": "Preise"
+  },
+  "navigation": {
+    "home": "Startseite",
+    "seo_tools": "SEO-Tools",
+    "local_seo": "Lokales SEO",
+    "competitor_analysis": "Wettbewerbsanalyse",
+    "keyword_research": "Keyword-Recherche",
+    "rank_tracking": "Ranking-Tracking",
+    "reputation_management": "Reputationsmanagement",
+    "content_optimization": "Content-Optimierung",
+    "technical_seo": "Technisches SEO",
+    "reporting": "Berichterstattung",
+    "uptime_monitoring": "Uptime-Überwachung",
+    "web_vitals": "Web Vitals",
+    "indexing": "Indexierung"
+  },
+  "home": {
+    "hero": {
+      "title": "Steigern Sie Ihre lokale SEO-Performance",
+      "subtitle": "Umfassende Tools, um lokale Suchergebnisse zu dominieren und Ihr Unternehmen zu vergrößern",
+      "cta": "Kostenlos starten",
+      "secondary_cta": "Demo ansehen"
+    },
+    "features": {
+      "title": "Alles, was Sie für lokalen SEO-Erfolg brauchen",
+      "subtitle": "Leistungsstarke Tools, die speziell für lokale Unternehmen entwickelt wurden"
+    },
+    "testimonials": {
+      "title": "Vertraut von lokalen Unternehmen",
+      "subtitle": "Sehen Sie, was unsere Kunden über SiteGrip sagen"
+    },
+    "pricing": {
+      "title": "Einfache, transparente Preisgestaltung",
+      "subtitle": "Wählen Sie den perfekten Plan für Ihr Unternehmen"
+    }
+  },
+  "seo_tools": {
+    "title": "SEO-Tools-Suite",
+    "subtitle": "Umfassende SEO-Tools, um Ihre lokale Suchpräsenz zu steigern, Wettbewerber zu analysieren und Ihre Online-Sichtbarkeit zu optimieren",
+    "local_keyword_finder": {
+      "title": "Lokaler Keyword-Finder",
+      "description": "Entdecken Sie lokale Keywords mit hoher Wirkung für Ihr Unternehmen"
+    },
+    "competitor_analysis": {
+      "title": "Wettbewerbsanalyse",
+      "description": "Analysieren Sie Ihre Wettbewerber und identifizieren Sie Chancen"
+    },
+    "local_rank_tracker": {
+      "title": "Lokaler Ranking-Tracker",
+      "description": "Verfolgen Sie Ihre lokalen Suchrankings in Echtzeit"
+    },
+    "gbp_audit": {
+      "title": "GBP-Audit",
+      "description": "Umfassende Google Business Profile-Prüfung"
+    },
+    "citation_builder": {
+      "title": "Citation Builder",
+      "description": "Erstellen und verwalten Sie Unternehmenszitate"
+    },
+    "review_management": {
+      "title": "Bewertungsmanagement",
+      "description": "Überwachen und beantworten Sie Kundenbewertungen"
+    },
+    "reputation_monitoring": {
+      "title": "Reputationsüberwachung",
+      "description": "Überwachen Sie Ihren Online-Ruf auf verschiedenen Plattformen"
+    },
+    "ai_content_generator": {
+      "title": "KI-Content-Generator",
+      "description": "Generieren Sie SEO-optimierte Inhalte mit KI"
+    },
+    "seo_tags_generator": {
+      "title": "SEO-Tags-Generator",
+      "description": "Generieren Sie Meta-Tags und strukturierte Daten"
+    },
+    "listing_management": {
+      "title": "Listing-Management",
+      "description": "Verwalten Sie Ihre Unternehmenslistings in Verzeichnissen"
+    },
+    "maps_audit": {
+      "title": "Maps-Audit",
+      "description": "Prüfen Sie Ihre Google Maps-Präsenz und Optimierung"
+    }
+  },
+  "pricing": {
+    "title": "Einfache, transparente Preisgestaltung",
+    "subtitle": "Wählen Sie den perfekten Plan für Ihr Unternehmen. Alle Pläne beinhalten eine 14-tägige kostenlose Testphase ohne Kreditkarte.",
+    "starter": {
+      "name": "Starter",
+      "price": "29€",
+      "period": "/Monat",
+      "description": "Perfekt für kleine Unternehmen, die mit SEO beginnen"
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "79€",
+      "period": "/Monat",
+      "description": "Ideal für wachsende Unternehmen, die es ernst mit lokalem SEO meinen"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "199€",
+      "period": "/Monat",
+      "description": "Für Agenturen und große Unternehmen mit mehreren Standorten"
+    },
+    "features": {
+      "title": "Warum SiteGrip wählen?",
+      "local_seo_focused": {
+        "title": "Lokales SEO-fokussiert",
+        "description": "Spezialisierte Tools für lokale Unternehmen, um lokale Suchergebnisse zu dominieren"
+      },
+      "ai_powered_insights": {
+        "title": "KI-gestützte Erkenntnisse",
+        "description": "Fortschrittliche KI-Algorithmen liefern umsetzbare Empfehlungen"
+      },
+      "multi_platform_support": {
+        "title": "Multi-Plattform-Support",
+        "description": "Verwalten Sie Ihre Präsenz auf Google, Bing und anderen Plattformen"
+      },
+      "enterprise_security": {
+        "title": "Enterprise-Sicherheit",
+        "description": "Banken-Level-Sicherheit zum Schutz Ihrer Unternehmensdaten"
+      }
+    },
+    "faq": {
+      "title": "Häufig gestellte Fragen",
+      "cancel_anytime": {
+        "question": "Kann ich jederzeit kündigen?",
+        "answer": "Ja, Sie können Ihr Abonnement jederzeit kündigen. Keine langfristigen Verträge oder versteckte Gebühren."
+      },
+      "free_trial": {
+        "question": "Gibt es eine kostenlose Testphase?",
+        "answer": "Ja, alle Pläne beinhalten eine 14-tägige kostenlose Testphase mit vollständigem Zugang zu allen Funktionen."
+      },
+      "refunds": {
+        "question": "Bieten Sie Rückerstattungen an?",
+        "answer": "Wir bieten eine 30-tägige Geld-zurück-Garantie, falls Sie mit unserem Service nicht zufrieden sind."
+      },
+      "payment_methods": {
+        "question": "Welche Zahlungsmethoden akzeptieren Sie?",
+        "answer": "Wir akzeptieren alle gängigen Kreditkarten, PayPal und Banküberweisungen für Enterprise-Pläne."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Willkommen zurück",
+      "subtitle": "Melden Sie sich in Ihrem Konto an, um fortzufahren",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "forgot_password": "Passwort vergessen?",
+      "sign_in": "Anmelden",
+      "no_account": "Haben Sie kein Konto?",
+      "sign_up": "Registrieren"
+    },
+    "signup": {
+      "title": "Erstellen Sie Ihr Konto",
+      "subtitle": "Starten Sie heute Ihre kostenlose Testphase",
+      "full_name": "Vollständiger Name",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "confirm_password": "Passwort bestätigen",
+      "agree_terms": "Ich stimme den Nutzungsbedingungen und der Datenschutzerklärung zu",
+      "create_account": "Konto erstellen",
+      "have_account": "Haben Sie bereits ein Konto?",
+      "sign_in": "Anmelden"
+    }
+  },
+  "dashboard": {
+    "welcome": "Willkommen zurück",
+    "overview": "Übersicht",
+    "recent_activity": "Letzte Aktivität",
+    "quick_actions": "Schnellaktionen",
+    "performance_summary": "Performance-Zusammenfassung",
+    "upcoming_tasks": "Anstehende Aufgaben"
+  },
+  "errors": {
+    "general": "Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.",
+    "network": "Netzwerkfehler. Bitte überprüfen Sie Ihre Verbindung.",
+    "unauthorized": "Sie sind nicht berechtigt, diese Aktion auszuführen.",
+    "not_found": "Die angeforderte Ressource wurde nicht gefunden.",
+    "validation": "Bitte überprüfen Sie Ihre Eingabe und versuchen Sie es erneut.",
+    "server": "Serverfehler. Bitte versuchen Sie es später erneut."
+  }
+} 

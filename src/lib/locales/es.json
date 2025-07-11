@@ -1,0 +1,229 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Ocurrió un error",
+    "success": "¡Éxito!",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "add": "Agregar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "sort": "Ordenar",
+    "export": "Exportar",
+    "import": "Importar",
+    "download": "Descargar",
+    "upload": "Subir",
+    "submit": "Enviar",
+    "reset": "Restablecer",
+    "close": "Cerrar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "finish": "Finalizar",
+    "skip": "Omitir",
+    "continue": "Continuar",
+    "retry": "Reintentar",
+    "refresh": "Actualizar",
+    "settings": "Configuración",
+    "profile": "Perfil",
+    "logout": "Cerrar sesión",
+    "login": "Iniciar sesión",
+    "signup": "Registrarse",
+    "dashboard": "Panel de control",
+    "analytics": "Analíticas",
+    "reports": "Informes",
+    "tools": "Herramientas",
+    "help": "Ayuda",
+    "support": "Soporte",
+    "contact": "Contacto",
+    "about": "Acerca de",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "pricing": "Precios"
+  },
+  "navigation": {
+    "home": "Inicio",
+    "seo_tools": "Herramientas SEO",
+    "local_seo": "SEO Local",
+    "competitor_analysis": "Análisis de Competidores",
+    "keyword_research": "Investigación de Palabras Clave",
+    "rank_tracking": "Seguimiento de Posiciones",
+    "reputation_management": "Gestión de Reputación",
+    "content_optimization": "Optimización de Contenido",
+    "technical_seo": "SEO Técnico",
+    "reporting": "Informes",
+    "uptime_monitoring": "Monitoreo de Tiempo Activo",
+    "web_vitals": "Web Vitals",
+    "indexing": "Indexación"
+  },
+  "home": {
+    "hero": {
+      "title": "Impulsa tu Rendimiento SEO Local",
+      "subtitle": "Herramientas integrales para dominar los resultados de búsqueda local y hacer crecer tu negocio",
+      "cta": "Comenzar Gratis",
+      "secondary_cta": "Ver Demo"
+    },
+    "features": {
+      "title": "Todo lo que Necesitas para el Éxito SEO Local",
+      "subtitle": "Herramientas poderosas diseñadas específicamente para negocios locales"
+    },
+    "testimonials": {
+      "title": "Confiado por Negocios Locales",
+      "subtitle": "Ve lo que dicen nuestros clientes sobre SiteGrip"
+    },
+    "pricing": {
+      "title": "Precios Simples y Transparentes",
+      "subtitle": "Elige el plan perfecto para tu negocio"
+    }
+  },
+  "seo_tools": {
+    "title": "Suite de Herramientas SEO",
+    "subtitle": "Herramientas SEO integrales para impulsar tu presencia de búsqueda local, analizar competidores y optimizar tu visibilidad en línea",
+    "local_keyword_finder": {
+      "title": "Buscador de Palabras Clave Locales",
+      "description": "Descubre palabras clave locales de alto impacto para tu negocio"
+    },
+    "competitor_analysis": {
+      "title": "Análisis de Competidores",
+      "description": "Analiza tus competidores e identifica oportunidades"
+    },
+    "local_rank_tracker": {
+      "title": "Seguimiento de Posiciones Locales",
+      "description": "Rastrea tus posiciones de búsqueda local en tiempo real"
+    },
+    "gbp_audit": {
+      "title": "Auditoría GBP",
+      "description": "Auditoría integral del Perfil de Negocio de Google"
+    },
+    "citation_builder": {
+      "title": "Constructor de Citas",
+      "description": "Construye y gestiona las citas de tu negocio"
+    },
+    "review_management": {
+      "title": "Gestión de Reseñas",
+      "description": "Monitorea y responde a las reseñas de clientes"
+    },
+    "reputation_monitoring": {
+      "title": "Monitoreo de Reputación",
+      "description": "Monitorea tu reputación en línea en múltiples plataformas"
+    },
+    "ai_content_generator": {
+      "title": "Generador de Contenido IA",
+      "description": "Genera contenido optimizado para SEO con IA"
+    },
+    "seo_tags_generator": {
+      "title": "Generador de Etiquetas SEO",
+      "description": "Genera meta etiquetas y datos estructurados"
+    },
+    "listing_management": {
+      "title": "Gestión de Listados",
+      "description": "Gestiona los listados de tu negocio en directorios"
+    },
+    "maps_audit": {
+      "title": "Auditoría de Mapas",
+      "description": "Audita tu presencia en Google Maps y optimización"
+    }
+  },
+  "pricing": {
+    "title": "Precios Simples y Transparentes",
+    "subtitle": "Elige el plan perfecto para tu negocio. Todos los planes incluyen una prueba gratuita de 14 días sin tarjeta de crédito.",
+    "starter": {
+      "name": "Inicial",
+      "price": "$29",
+      "period": "/mes",
+      "description": "Perfecto para pequeñas empresas que comienzan con SEO"
+    },
+    "professional": {
+      "name": "Profesional",
+      "price": "$79",
+      "period": "/mes",
+      "description": "Ideal para empresas en crecimiento serias sobre SEO local"
+    },
+    "enterprise": {
+      "name": "Empresa",
+      "price": "$199",
+      "period": "/mes",
+      "description": "Para agencias y grandes empresas con múltiples ubicaciones"
+    },
+    "features": {
+      "title": "¿Por qué Elegir SiteGrip?",
+      "local_seo_focused": {
+        "title": "Enfocado en SEO Local",
+        "description": "Herramientas especializadas para que las empresas locales dominen los resultados de búsqueda local"
+      },
+      "ai_powered_insights": {
+        "title": "Insights Impulsados por IA",
+        "description": "Algoritmos de IA avanzados proporcionan recomendaciones accionables"
+      },
+      "multi_platform_support": {
+        "title": "Soporte Multiplataforma",
+        "description": "Gestiona tu presencia en Google, Bing y otras plataformas"
+      },
+      "enterprise_security": {
+        "title": "Seguridad Empresarial",
+        "description": "Seguridad de nivel bancario para proteger los datos de tu negocio"
+      }
+    },
+    "faq": {
+      "title": "Preguntas Frecuentes",
+      "cancel_anytime": {
+        "question": "¿Puedo cancelar en cualquier momento?",
+        "answer": "Sí, puedes cancelar tu suscripción en cualquier momento. Sin contratos a largo plazo ni tarifas ocultas."
+      },
+      "free_trial": {
+        "question": "¿Hay una prueba gratuita?",
+        "answer": "Sí, todos los planes incluyen una prueba gratuita de 14 días con acceso completo a todas las funciones."
+      },
+      "refunds": {
+        "question": "¿Ofrecen reembolsos?",
+        "answer": "Ofrecemos una garantía de devolución de dinero de 30 días si no estás satisfecho con nuestro servicio."
+      },
+      "payment_methods": {
+        "question": "¿Qué métodos de pago aceptan?",
+        "answer": "Aceptamos todas las tarjetas de crédito principales, PayPal y transferencias bancarias para planes empresariales."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bienvenido de Vuelta",
+      "subtitle": "Inicia sesión en tu cuenta para continuar",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "forgot_password": "¿Olvidaste tu contraseña?",
+      "sign_in": "Iniciar Sesión",
+      "no_account": "¿No tienes una cuenta?",
+      "sign_up": "Registrarse"
+    },
+    "signup": {
+      "title": "Crea tu Cuenta",
+      "subtitle": "Comienza tu prueba gratuita hoy",
+      "full_name": "Nombre Completo",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "confirm_password": "Confirmar Contraseña",
+      "agree_terms": "Acepto los Términos de Servicio y la Política de Privacidad",
+      "create_account": "Crear Cuenta",
+      "have_account": "¿Ya tienes una cuenta?",
+      "sign_in": "Iniciar Sesión"
+    }
+  },
+  "dashboard": {
+    "welcome": "Bienvenido de vuelta",
+    "overview": "Resumen",
+    "recent_activity": "Actividad Reciente",
+    "quick_actions": "Acciones Rápidas",
+    "performance_summary": "Resumen de Rendimiento",
+    "upcoming_tasks": "Tareas Próximas"
+  },
+  "errors": {
+    "general": "Algo salió mal. Por favor, inténtalo de nuevo.",
+    "network": "Error de red. Por favor, verifica tu conexión.",
+    "unauthorized": "No estás autorizado para realizar esta acción.",
+    "not_found": "El recurso solicitado no fue encontrado.",
+    "validation": "Por favor, verifica tu entrada e inténtalo de nuevo.",
+    "server": "Error del servidor. Por favor, inténtalo más tarde."
+  }
+} 

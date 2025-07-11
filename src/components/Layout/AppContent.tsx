@@ -1,27 +1,59 @@
-// src/layout/AppContent.tsx         ← adjust path/casing to match your choice
 'use client';
+import React, { memo, useMemo, Suspense, lazy } from 'react';
+import { useSidebar } from '@/context/SidebarContext';
+import AppHeader from './AppHeader';
+import AppSidebar from './AppSidebar';
+import Backdrop from './Backdrop';
 
-import { usePathname } from 'next/navigation';
-import { SidebarProvider } from '@/context/SidebarContext';   // adjust if SidebarContext lives elsewhere
-import AppSidebar from '@/components/Layout/AppSidebar';
-import AppHeader from '@/components/Layout/AppHeader';
-import Backdrop from '@/components/Layout/Backdrop';
+// Lazy load components for better performance
+const PageTransition = lazy(() => import('@/components/Common/PageTransition'));
 
+interface AppContentProps {
+  children: React.ReactNode;
+}
 
-export default function AppContent({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
-  const hideLayout = pathname === '/' || pathname === '/login';
+const AppContent = memo(({ children }: AppContentProps) => {
+  const { isOpen } = useSidebar();
 
-  if (hideLayout) return <>{children}</>;
+  // Memoize the sidebar component to prevent unnecessary re-renders
+  const sidebarComponent = useMemo(() => <AppSidebar />, []);
+  
+  // Memoize the header component
+  const headerComponent = useMemo(() => <AppHeader />, []);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <Backdrop />
-      <div className="flex flex-col min-h-screen md:ml-64">
-        <AppHeader />
-        <main className="flex-1 p-4">{children}</main>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+      {/* Sidebar */}
+      <div className={`fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 ease-in-out ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      } lg:translate-x-0 lg:static lg:inset-0`}>
+        {sidebarComponent}
       </div>
-    </SidebarProvider>
+
+      {/* Backdrop for mobile */}
+      {isOpen && <Backdrop />}
+
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {headerComponent}
+        
+        {/* Main content */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+            </div>
+          }>
+            <PageTransition>
+              {children}
+            </PageTransition>
+          </Suspense>
+        </main>
+      </div>
+    </div>
   );
-}
+});
+
+AppContent.displayName = 'AppContent';
+
+export default AppContent;

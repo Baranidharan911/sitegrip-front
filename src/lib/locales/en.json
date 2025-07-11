@@ -1,0 +1,229 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "success": "Success!",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "export": "Export",
+    "import": "Import",
+    "download": "Download",
+    "upload": "Upload",
+    "submit": "Submit",
+    "reset": "Reset",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "finish": "Finish",
+    "skip": "Skip",
+    "continue": "Continue",
+    "retry": "Retry",
+    "refresh": "Refresh",
+    "settings": "Settings",
+    "profile": "Profile",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Sign Up",
+    "dashboard": "Dashboard",
+    "analytics": "Analytics",
+    "reports": "Reports",
+    "tools": "Tools",
+    "help": "Help",
+    "support": "Support",
+    "contact": "Contact",
+    "about": "About",
+    "privacy": "Privacy",
+    "terms": "Terms",
+    "pricing": "Pricing"
+  },
+  "navigation": {
+    "home": "Home",
+    "seo_tools": "SEO Tools",
+    "local_seo": "Local SEO",
+    "competitor_analysis": "Competitor Analysis",
+    "keyword_research": "Keyword Research",
+    "rank_tracking": "Rank Tracking",
+    "reputation_management": "Reputation Management",
+    "content_optimization": "Content Optimization",
+    "technical_seo": "Technical SEO",
+    "reporting": "Reporting",
+    "uptime_monitoring": "Uptime Monitoring",
+    "web_vitals": "Web Vitals",
+    "indexing": "Indexing"
+  },
+  "home": {
+    "hero": {
+      "title": "Boost Your Local SEO Performance",
+      "subtitle": "Comprehensive tools to dominate local search results and grow your business",
+      "cta": "Get Started Free",
+      "secondary_cta": "Watch Demo"
+    },
+    "features": {
+      "title": "Everything You Need for Local SEO Success",
+      "subtitle": "Powerful tools designed specifically for local businesses"
+    },
+    "testimonials": {
+      "title": "Trusted by Local Businesses",
+      "subtitle": "See what our customers say about SiteGrip"
+    },
+    "pricing": {
+      "title": "Simple, Transparent Pricing",
+      "subtitle": "Choose the perfect plan for your business"
+    }
+  },
+  "seo_tools": {
+    "title": "SEO Tools Suite",
+    "subtitle": "Comprehensive SEO tools to boost your local search presence, analyze competitors, and optimize your online visibility",
+    "local_keyword_finder": {
+      "title": "Local Keyword Finder",
+      "description": "Discover high-impact local keywords for your business"
+    },
+    "competitor_analysis": {
+      "title": "Competitor Analysis",
+      "description": "Analyze your competitors and identify opportunities"
+    },
+    "local_rank_tracker": {
+      "title": "Local Rank Tracker",
+      "description": "Track your local search rankings in real-time"
+    },
+    "gbp_audit": {
+      "title": "GBP Audit",
+      "description": "Comprehensive Google Business Profile audit"
+    },
+    "citation_builder": {
+      "title": "Citation Builder",
+      "description": "Build and manage your business citations"
+    },
+    "review_management": {
+      "title": "Review Management",
+      "description": "Monitor and respond to customer reviews"
+    },
+    "reputation_monitoring": {
+      "title": "Reputation Monitoring",
+      "description": "Monitor your online reputation across platforms"
+    },
+    "ai_content_generator": {
+      "title": "AI Content Generator",
+      "description": "Generate SEO-optimized content with AI"
+    },
+    "seo_tags_generator": {
+      "title": "SEO Tags Generator",
+      "description": "Generate meta tags and structured data"
+    },
+    "listing_management": {
+      "title": "Listing Management",
+      "description": "Manage your business listings across directories"
+    },
+    "maps_audit": {
+      "title": "Maps Audit",
+      "description": "Audit your Google Maps presence and optimization"
+    }
+  },
+  "pricing": {
+    "title": "Simple, Transparent Pricing",
+    "subtitle": "Choose the perfect plan for your business. All plans include a 14-day free trial with no credit card required.",
+    "starter": {
+      "name": "Starter",
+      "price": "$29",
+      "period": "/month",
+      "description": "Perfect for small businesses getting started with SEO"
+    },
+    "professional": {
+      "name": "Professional",
+      "price": "$79",
+      "period": "/month",
+      "description": "Ideal for growing businesses serious about local SEO"
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "price": "$199",
+      "period": "/month",
+      "description": "For agencies and large businesses with multiple locations"
+    },
+    "features": {
+      "title": "Why Choose SiteGrip?",
+      "local_seo_focused": {
+        "title": "Local SEO Focused",
+        "description": "Specialized tools for local businesses to dominate local search results"
+      },
+      "ai_powered_insights": {
+        "title": "AI-Powered Insights",
+        "description": "Advanced AI algorithms provide actionable recommendations"
+      },
+      "multi_platform_support": {
+        "title": "Multi-Platform Support",
+        "description": "Manage your presence across Google, Bing, and other platforms"
+      },
+      "enterprise_security": {
+        "title": "Enterprise Security",
+        "description": "Bank-level security to protect your business data"
+      }
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "cancel_anytime": {
+        "question": "Can I cancel anytime?",
+        "answer": "Yes, you can cancel your subscription at any time. No long-term contracts or hidden fees."
+      },
+      "free_trial": {
+        "question": "Is there a free trial?",
+        "answer": "Yes, all plans include a 14-day free trial with full access to all features."
+      },
+      "refunds": {
+        "question": "Do you offer refunds?",
+        "answer": "We offer a 30-day money-back guarantee if you're not satisfied with our service."
+      },
+      "payment_methods": {
+        "question": "What payment methods do you accept?",
+        "answer": "We accept all major credit cards, PayPal, and bank transfers for enterprise plans."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to your account to continue",
+      "email": "Email",
+      "password": "Password",
+      "forgot_password": "Forgot Password?",
+      "sign_in": "Sign In",
+      "no_account": "Don't have an account?",
+      "sign_up": "Sign Up"
+    },
+    "signup": {
+      "title": "Create Your Account",
+      "subtitle": "Start your free trial today",
+      "full_name": "Full Name",
+      "email": "Email",
+      "password": "Password",
+      "confirm_password": "Confirm Password",
+      "agree_terms": "I agree to the Terms of Service and Privacy Policy",
+      "create_account": "Create Account",
+      "have_account": "Already have an account?",
+      "sign_in": "Sign In"
+    }
+  },
+  "dashboard": {
+    "welcome": "Welcome back",
+    "overview": "Overview",
+    "recent_activity": "Recent Activity",
+    "quick_actions": "Quick Actions",
+    "performance_summary": "Performance Summary",
+    "upcoming_tasks": "Upcoming Tasks"
+  },
+  "errors": {
+    "general": "Something went wrong. Please try again.",
+    "network": "Network error. Please check your connection.",
+    "unauthorized": "You are not authorized to perform this action.",
+    "not_found": "The requested resource was not found.",
+    "validation": "Please check your input and try again.",
+    "server": "Server error. Please try again later."
+  }
+} 
