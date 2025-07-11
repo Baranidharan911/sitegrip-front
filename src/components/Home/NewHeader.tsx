@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Home, User, Search, BellRing, FileText, Gauge, Code, CheckCircle, TrendingUp, Grid, Users, Briefcase, Globe } from 'lucide-react';
+import { Home, User, Search, BellRing, FileText, Gauge, Code, CheckCircle, TrendingUp, Grid, Users, Briefcase, Globe, ChevronDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
 import { useTranslation } from 'react-i18next';
@@ -57,11 +57,12 @@ const LanguageSelector = () => {
   const current = i18n.language || 'en';
   return (
     <div className="relative group">
-      <button className="flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-        <Globe className="w-5 h-5 mr-1 text-gray-500" />
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{languages.find(l => l.code === current)?.label || 'English'}</span>
+      <button className="flex items-center px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <Globe className="w-6 h-6 mr-2 text-purple-600 dark:text-purple-400" />
+        <span className="text-sm font-medium text-gray-800 dark:text-gray-100 mr-1">{languages.find(l => l.code === current)?.label || 'English'}</span>
+        <ChevronDown className="w-4 h-4 text-gray-400" />
       </button>
-      <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200">
+      <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200">
         {languages.map(lang => (
           <button
             key={lang.code}
