@@ -1,7 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { Home, User } from 'lucide-react';
+import { Home, User, Search, BellRing, FileText, Gauge, Code, CheckCircle, TrendingUp, Grid, Users, Briefcase, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+
+const featuresDropdown = [
+  {
+    section: 'Core Features',
+    items: [
+      {
+        icon: <Search className="w-6 h-6 text-purple-500" />, title: 'Deep Dive SEO Audits', desc: 'Uncover hidden SEO issues and optimize your site for search engines.'
+      },
+      {
+        icon: <BellRing className="w-6 h-6 text-blue-500" />, title: 'Reliable Uptime Monitoring', desc: '24/7 monitoring and instant alerts for maximum uptime.'
+      },
+    ]
+  },
+  {
+    section: 'SEO Tools',
+    items: [
+      { icon: <FileText className="w-5 h-5 text-purple-500" />, title: 'On-Page SEO Analysis', desc: 'Analyze titles, meta descriptions, headers, and content quality.' },
+      { icon: <Gauge className="w-5 h-5 text-blue-500" />, title: 'Site Speed & Vitals', desc: 'Monitor Core Web Vitals and get speed recommendations.' },
+      { icon: <Code className="w-5 h-5 text-cyan-500" />, title: 'Broken Link Checker', desc: 'Scan for broken internal and external links.' },
+      { icon: <CheckCircle className="w-5 h-5 text-green-500" />, title: 'Uptime Monitoring', desc: 'Get instant alerts if your site goes down.' },
+      { icon: <TrendingUp className="w-5 h-5 text-orange-500" />, title: 'Keyword Tracking', desc: 'Track your Google search rankings for key terms.' },
+      { icon: <Grid className="w-5 h-5 text-red-500" />, title: 'Sitemap Manager', desc: 'Generate, validate, and submit your XML sitemap.' },
+    ]
+  },
+  {
+    section: 'Who We Serve',
+    items: [
+      { icon: <Users className="w-5 h-5 text-purple-500" />, title: 'Bloggers & Publishers', desc: 'Get your content seen by Google immediately.' },
+      { icon: <Briefcase className="w-5 h-5 text-blue-500" />, title: 'SaaS & Startups', desc: 'Fast indexing and monitoring for new features and sites.' },
+      { icon: <Globe className="w-5 h-5 text-emerald-500" />, title: 'Marketing Agencies', desc: 'Manage multiple client sites and deliver bulletproof reports.' },
+    ]
+  }
+];
+
+// Helper: Card for dropdown feature
+const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) => (
+  <div className="bg-white/80 dark:bg-gray-900/70 rounded-lg p-3 flex flex-col items-start shadow-sm group-hover:shadow-md border border-gray-200 dark:border-gray-800 hover:border-purple-400 transition-all duration-200 cursor-pointer">
+    <div className="mb-2">{icon}</div>
+    <div className="font-semibold text-gray-900 dark:text-white text-xs mb-1 leading-tight">{title}</div>
+    <div className="text-xs text-gray-600 dark:text-gray-300 leading-tight line-clamp-2">{desc}</div>
+  </div>
+);
 
 const NewHeader: React.FC = () => {
   const [mounted, setMounted] = useState(false);
@@ -120,10 +162,25 @@ const NewHeader: React.FC = () => {
             <span className="text-xl font-bold text-gray-900 dark:text-white">Site Grip</span>
           </div>
           
-          <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              Features
-            </a>
+          <nav className="hidden md:flex items-center space-x-8 relative">
+            <div className="relative group">
+              <a href="#features" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium cursor-pointer">
+                Features
+              </a>
+              {/* Dropdown */}
+              <div className="absolute left-0 top-full mt-3 w-[600px] bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 p-6 space-y-6">
+                {featuresDropdown.map(section => (
+                  <div key={section.section}>
+                    <div className="text-xs font-bold text-purple-500 uppercase mb-3 tracking-wider">{section.section}</div>
+                    <div className="grid grid-cols-3 gap-3">
+                      {section.items.map(item => (
+                        <FeatureCard key={item.title} icon={item.icon} title={item.title} desc={item.desc} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
             <a href="#pricing" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
               Pricing
             </a>
