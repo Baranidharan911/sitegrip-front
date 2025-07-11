@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { Rocket, LogOut, Moon, Sun, Menu, User, Settings, Bell, Search, Crown, Sparkles } from 'lucide-react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
@@ -15,16 +15,13 @@ const AppHeader = () => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const { toggleSidebar } = useSidebar();
-  const { theme, setTheme } = useTheme();
+  const { isDark, toggleTheme } = useTheme();
   const pathname = usePathname();
 
   // Set mounted state after component mounts
   useEffect(() => {
     setMounted(true);
   }, []);
-
-  // Use default theme during SSR to prevent hydration mismatch
-  const isDark = mounted ? theme === 'dark' : false;
 
   useEffect(() => {
     // Only access localStorage after component is mounted
@@ -159,7 +156,7 @@ const AppHeader = () => {
 
             {/* Theme Toggle */}
             <button
-              onClick={() => setTheme(isDark ? 'light' : 'dark')}
+              onClick={toggleTheme}
               className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200"
               aria-label="Toggle theme"
             >

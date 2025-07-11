@@ -1,7 +1,6 @@
 'use client';
 import React, { memo, useMemo, Suspense, lazy, useCallback } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
-import { usePathname } from 'next/navigation';
 import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
 import Backdrop from './Backdrop';
@@ -16,11 +15,6 @@ interface AppContentProps {
 
 const AppContent = memo(({ children }: AppContentProps) => {
   const { isOpen } = useSidebar();
-  const pathname = usePathname();
-
-  // Check if current page should not show sidebar and header
-  const pagesWithoutSidebar = ['/', '/login', '/signup', '/pricing', '/privacy'];
-  const shouldShowSidebar = !pagesWithoutSidebar.includes(pathname);
 
   // Memoize the sidebar component to prevent unnecessary re-renders
   const sidebarComponent = useMemo(() => <AppSidebar />, []);

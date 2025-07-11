@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
@@ -41,7 +41,7 @@ export default function ProfilePage() {
   const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const [isSaving, setIsSaving] = useState(false);
   const router = useRouter();
 

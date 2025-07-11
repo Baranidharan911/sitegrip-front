@@ -1,9 +1,6 @@
+'use client';
 import AppContent from '@/components/Layout/AppContent';
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }) {
   return <AppContent>{children}</AppContent>;
 } 

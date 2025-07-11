@@ -3,7 +3,6 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { SidebarProvider } from '@/context/SidebarContext';
-import AppContent from '@/components/Layout/AppContent';
 import I18nProvider from '@/components/Common/I18nProvider';
 import Script from 'next/script';
 
