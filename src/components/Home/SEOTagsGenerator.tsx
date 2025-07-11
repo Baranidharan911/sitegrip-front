@@ -1,19 +1,21 @@
+'use client';
+
 import React, { useState } from 'react';
 
 const defaultContent = '';
 const defaultUrl = '';
 
-function generateSEOTags(content, url) {
+function generateSEOTags(content: string, url: string) {
   // Simple keyword extraction (for demo)
   const words = content
     .replace(/[^a-zA-Z0-9 ]/g, '')
     .toLowerCase()
     .split(/\s+/)
     .filter(Boolean);
-  const freq = {};
-  words.forEach(w => (freq[w] = (freq[w] || 0) + 1));
+  const freq: Record<string, number> = {};
+  words.forEach((w: string) => (freq[w] = (freq[w] || 0) + 1));
   const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-  const keywords = sorted.slice(0, 7).map(([w]) => w).filter(w => w.length > 3);
+  const keywords = sorted.slice(0, 7).map(([w]) => w).filter((w: string) => w.length > 3);
   const primaryKeyword = keywords[0] || 'SEO';
 
   // Meta title (under 60 chars)
@@ -83,10 +85,10 @@ function generateSEOTags(content, url) {
 }
 
 const SEOTagsGenerator = () => {
-  const [content, setContent] = useState(defaultContent);
-  const [url, setUrl] = useState(defaultUrl);
-  const [output, setOutput] = useState(null);
-  const [error, setError] = useState('');
+  const [content, setContent] = useState<string>(defaultContent);
+  const [url, setUrl] = useState<string>(defaultUrl);
+  const [output, setOutput] = useState<string | null>(null);
+  const [error, setError] = useState<string>('');
 
   const handleGenerate = () => {
     setError('');
@@ -97,7 +99,7 @@ const SEOTagsGenerator = () => {
     try {
       const tags = generateSEOTags(content, url);
       setOutput(JSON.stringify(tags, null, 2));
-    } catch (e) {
+    } catch (e: unknown) {
       setError('Failed to generate SEO tags.');
     }
   };
