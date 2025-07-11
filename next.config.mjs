@@ -2,7 +2,7 @@
 const nextConfig = {
   // Performance optimizations
   experimental: {
-    optimizeCss: false,
+    optimizeCss: true,
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
     turbo: {
       rules: {

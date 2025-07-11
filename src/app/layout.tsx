@@ -104,15 +104,11 @@ export default function RootLayout({
         <link rel="preload" href="/api/web-vitals" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className={inter.className}>
-        <I18nProvider>
-          <ThemeProvider>
-            <SidebarProvider>
-              <AppContent>
-                {children}
-              </AppContent>
-            </SidebarProvider>
-          </ThemeProvider>
-        </I18nProvider>
+        <ThemeProvider>
+          <SidebarProvider>
+            {children}
+          </SidebarProvider>
+        </ThemeProvider>
         
         {/* Performance monitoring */}
         <script
