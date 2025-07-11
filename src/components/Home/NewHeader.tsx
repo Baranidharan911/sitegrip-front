@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Home, User, Search, BellRing, FileText, Gauge, Code, CheckCircle, TrendingUp, Grid, Users, Briefcase, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import { useTranslation } from 'react-i18next';
 
 const featuresDropdown = [
   {
@@ -45,11 +46,42 @@ const FeatureCard = ({ icon, title, desc }: { icon: React.ReactNode, title: stri
   </div>
 );
 
+const languages = [
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Français' },
+  { code: 'de', label: 'Deutsch' },
+];
+
+const LanguageSelector = () => {
+  const { i18n } = useTranslation();
+  const current = i18n.language || 'en';
+  return (
+    <div className="relative group">
+      <button className="flex items-center px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+        <Globe className="w-5 h-5 mr-1 text-gray-500" />
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{languages.find(l => l.code === current)?.label || 'English'}</span>
+      </button>
+      <div className="absolute right-0 mt-2 w-32 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded shadow-lg z-50 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200">
+        {languages.map(lang => (
+          <button
+            key={lang.code}
+            onClick={() => i18n.changeLanguage(lang.code)}
+            className={`w-full text-left px-4 py-2 text-sm hover:bg-purple-100 dark:hover:bg-gray-800 ${current === lang.code ? 'bg-purple-50 dark:bg-gray-800 font-semibold' : ''}`}
+          >
+            {lang.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const NewHeader: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Set mounted state after component mounts
   useEffect(() => {
@@ -137,14 +169,14 @@ const NewHeader: React.FC = () => {
             disabled={loading}
             className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50"
           >
-            {loading ? 'Loading...' : 'Sign In'}
+            {loading ? t('Loading...') : t('Sign in')}
           </button>
           <button 
             onClick={handleSignUp}
             disabled={loading}
             className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
           >
-            {loading ? 'Loading...' : 'Sign Up'}
+            {loading ? t('Loading...') : t('Sign up')}
           </button>
         </div>
       );
@@ -165,7 +197,7 @@ const NewHeader: React.FC = () => {
           <nav className="hidden md:flex items-center space-x-8 relative">
             <div className="relative group">
               <a href="#features" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium cursor-pointer">
-                Features
+                {t('Product')}
               </a>
               {/* Dropdown */}
               <div className="absolute left-0 top-full mt-3 w-[600px] bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 p-6 space-y-6">
@@ -182,18 +214,19 @@ const NewHeader: React.FC = () => {
               </div>
             </div>
             <a href="#pricing" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              Pricing
+              {t('Pricing')}
             </a>
             <a href="#faq" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              FAQ
+              {t('Resources')}
             </a>
             <a href="#contact" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              Contact
+              {t('Enterprise')}
             </a>
           </nav>
           
           <div className="flex items-center space-x-4">
             <ThemeToggle />
+            <LanguageSelector />
             {renderAuthButtons()}
           </div>
         </div>

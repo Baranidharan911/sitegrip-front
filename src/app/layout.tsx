@@ -5,6 +5,7 @@ import { Toaster } from 'react-hot-toast';
 import ScrollToTop from '@/components/ScrollToTop';
 import AppContent from '@/components/Layout/AppContent';
 import Script from 'next/script';
+import '../lib/i18n';
 
 const font = Poppins({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
