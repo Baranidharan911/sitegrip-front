@@ -4,14 +4,6 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     optimizePackageImports: ['lucide-react'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
   },
   
   // Image optimization
@@ -26,9 +18,9 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Webpack configuration to fix critters and caching issues
+  // Webpack configuration
   webpack: (config, { dev, isServer }) => {
-    // Fix critters issue
+    // Production optimizations only
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -46,23 +38,6 @@ const nextConfig = {
             priority: 5,
           },
         },
-      };
-      
-      // Disable critters if it causes issues
-      if (config.optimization.minimizer) {
-        config.optimization.minimizer = config.optimization.minimizer.filter(
-          (minimizer) => !minimizer.constructor.name.includes('Critters')
-        );
-      }
-    }
-
-    // Fix caching issues in development
-    if (dev) {
-      config.cache = {
-        type: 'filesystem',
-        cacheDirectory: '.next/cache',
-        compression: 'gzip',
-        maxAge: 172800000, // 2 days
       };
     }
 
@@ -106,17 +81,6 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
         ],
-      },
-    ];
-  },
-
-  // Redirects for better UX
-  async redirects() {
-    return [
-      {
-        source: '/',
-        destination: '/dashboard',
-        permanent: false,
       },
     ];
   },
