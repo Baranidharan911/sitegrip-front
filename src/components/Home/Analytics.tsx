@@ -63,8 +63,12 @@ const Analytics: React.FC = () => {
         {/* KPI CARDS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-16">
           {kpis.map((kpi, i) => (
-            <div key={i} className={`rounded-2xl p-6 shadow-xl bg-gradient-to-br ${kpi.bg} backdrop-blur-md border border-white/30 dark:border-gray-800 flex flex-col items-center relative overflow-hidden`}>
-              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-white/30 to-transparent rounded-full blur-2xl opacity-40"></div>
+            <div
+              key={i}
+              className={`rounded-2xl p-6 shadow-xl bg-gradient-to-br ${kpi.bg} backdrop-blur-md border border-white/30 dark:border-purple-900/70 flex flex-col items-center relative overflow-hidden
+                dark:bg-gradient-to-br dark:from-gray-800 dark:to-gray-900 dark:shadow-[0_4px_32px_0_rgba(80,0,120,0.25)] dark:backdrop-blur-xl`}
+            >
+              <div className="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-white/30 to-transparent rounded-full blur-2xl opacity-40 dark:from-purple-800/40 dark:to-transparent"></div>
               <div className="mb-4">{kpi.icon}</div>
               <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{kpi.value}</div>
               <div className="text-md font-semibold text-gray-700 dark:text-gray-200 mb-1">{kpi.label}</div>

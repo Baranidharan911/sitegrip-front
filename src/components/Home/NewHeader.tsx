@@ -53,8 +53,26 @@ const languages = [
 ];
 
 const LanguageSelector = () => {
+  const [mounted, setMounted] = useState(false);
   const { i18n } = useTranslation();
   const current = i18n.language || 'en';
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  // Don't render until mounted to avoid hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="relative group">
+        <button className="flex items-center px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+          <Globe className="w-6 h-6 mr-2 text-purple-600 dark:text-purple-400" />
+          <span className="text-sm font-medium text-gray-800 dark:text-gray-100 mr-1">English</span>
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        </button>
+      </div>
+    );
+  }
   return (
     <div className="relative group">
       <button className="flex items-center px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 shadow hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
@@ -81,8 +99,25 @@ const NewHeader: React.FC = () => {
   const [mounted, setMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownVisible, setDropdownVisible] = useState(false);
+  const dropdownTimeout = React.useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const { t } = useTranslation();
+
+  // Fallback function for when translations are not available
+  const translate = (key: string) => {
+    if (!mounted) {
+      // Return the key as fallback during SSR
+      return key;
+    }
+    try {
+      return t(key);
+    } catch {
+      // Return the key as fallback if translation fails
+      return key;
+    }
+  };
 
   // Set mounted state after component mounts
   useEffect(() => {
@@ -170,18 +205,32 @@ const NewHeader: React.FC = () => {
             disabled={loading}
             className="text-gray-700 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 px-4 py-2 rounded-lg font-medium transition-colors duration-200 disabled:opacity-50"
           >
-            {loading ? t('Loading...') : t('Sign in')}
+            {loading ? translate('Loading...') : translate('Sign in')}
           </button>
           <button 
             onClick={handleSignUp}
             disabled={loading}
             className="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50"
           >
-            {loading ? t('Loading...') : t('Sign up')}
+            {loading ? translate('Loading...') : translate('Sign up')}
           </button>
         </div>
       );
     }
+  };
+
+  // Dropdown hover handlers with delay for smoothness
+  const handleDropdownEnter = () => {
+    if (dropdownTimeout.current) clearTimeout(dropdownTimeout.current);
+    setShowDropdown(true);
+    setDropdownVisible(true);
+  };
+  const handleDropdownLeave = () => {
+    if (dropdownTimeout.current) clearTimeout(dropdownTimeout.current);
+    dropdownTimeout.current = setTimeout(() => {
+      setShowDropdown(false);
+      setDropdownVisible(false);
+    }, 120); // Small delay to allow moving between link and dropdown
   };
 
   return (
@@ -196,12 +245,21 @@ const NewHeader: React.FC = () => {
           </div>
           
           <nav className="hidden md:flex items-center space-x-8 relative">
-            <div className="relative group">
+            <div
+              className="relative group"
+              onMouseEnter={handleDropdownEnter}
+              onMouseLeave={handleDropdownLeave}
+            >
               <a href="#features" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium cursor-pointer">
-                {t('Product')}
+                {translate('Product')}
               </a>
-              {/* Dropdown */}
-              <div className="absolute left-0 top-full mt-3 w-[900px] max-w-[98vw] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-700 z-50 p-8 flex flex-col">
+              {/* Dropdown: always rendered, smooth transition */}
+              <div
+                className={`absolute left-0 top-full mt-2 w-[900px] bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl z-50 p-8 transition-all duration-300 ease-in-out
+                  ${showDropdown ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
+                onMouseEnter={handleDropdownEnter}
+                onMouseLeave={handleDropdownLeave}
+              >
                 <div className="grid grid-cols-3 gap-10">
                   {featuresDropdown.map(section => (
                     <div key={section.section}>
@@ -216,14 +274,12 @@ const NewHeader: React.FC = () => {
                             <span className="mt-1">{item.icon}</span>
                             <span className="flex flex-col">
                               <span className="font-semibold text-gray-900 dark:text-white text-base group-hover:text-purple-700 dark:group-hover:text-purple-300">{item.title}
-  {item.badge && (
-    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold align-middle ${item.badge === 'New' ? 'bg-yellow-200 text-yellow-800' : 'bg-purple-200 text-purple-800'}`}>{item.badge}</span>
-  )}
-</span>
+                                {item.badge && (
+                                  <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold align-middle ${item.badge === 'New' ? 'bg-yellow-200 text-yellow-800' : 'bg-purple-200 text-purple-800'}`}>{item.badge}</span>
+                                )}
+                              </span>
                               <span className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{item.desc}</span>
                             </span>
-                            {/* Optional badge example: */}
-                            {/* {item.badge && <span className="ml-2 bg-yellow-200 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">{item.badge}</span>} */}
                           </a>
                         ))}
                       </div>
@@ -233,13 +289,13 @@ const NewHeader: React.FC = () => {
               </div>
             </div>
             <a href="#pricing" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              {t('Pricing')}
+              {translate('Pricing')}
             </a>
             <a href="#faq" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              {t('Resources')}
+              {translate('Resources')}
             </a>
             <a href="#contact" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
-              {t('Enterprise')}
+              {translate('Enterprise')}
             </a>
           </nav>
           

@@ -109,9 +109,9 @@ const TreeNode: React.FC<TreeNodeProps> = ({ node, level, isExpandedProp }) => {
       exit="exit"
       className={`relative rounded-3xl transition-all duration-300`}
       style={{
-        backgroundColor: 'rgba(255, 255, 255, 0.6)', // Apply glass effect for all TreeNode instances
+        backgroundColor: 'rgba(255, 255, 255, 0.6)',
         backdropFilter: 'blur(10px)',
-      }}
+      } as React.CSSProperties}
     >
       <div className={`flex items-center gap-2 mb-2`}>
         {hasChildren ? (

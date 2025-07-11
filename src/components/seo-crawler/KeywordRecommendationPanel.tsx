@@ -44,6 +44,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
       setError(null);
       try {
         // Get authentication token
+        if (!auth) throw new Error('Authentication not available');
         const user = auth.currentUser;
         if (!user) {
           throw new Error('Authentication required. Please log in to get recommendations.');

@@ -1,157 +1,266 @@
-import React, { useState } from 'react';
-import { Check, Rocket, Lightbulb, ShieldCheck, FileText, Gauge, Code, TrendingUp, Grid, Users, Briefcase, Globe } from 'lucide-react';
-import Link from 'next/link';
+'use client';
 
-const FEATURES = [
-  { group: 'SEO Tools', features: [
-    { icon: <FileText className="w-5 h-5 text-purple-500" />, label: 'On-Page SEO Analysis', plans: ['Lite', 'Standard', 'Advanced'] },
-    { icon: <Gauge className="w-5 h-5 text-blue-500" />, label: 'Site Speed & Vitals', plans: ['Lite', 'Standard', 'Advanced'] },
-    { icon: <Code className="w-5 h-5 text-cyan-500" />, label: 'Broken Link Checker', plans: ['Standard', 'Advanced'], badge: 'New' },
-    { icon: <TrendingUp className="w-5 h-5 text-orange-500" />, label: 'Keyword Tracking', plans: ['Standard', 'Advanced'] },
-    { icon: <Grid className="w-5 h-5 text-red-500" />, label: 'Sitemap Manager', plans: ['Advanced'], badge: 'Beta' },
-  ]},
-  { group: 'Monitoring', features: [
-    { icon: <ShieldCheck className="w-5 h-5 text-green-500" />, label: 'Uptime Monitoring', plans: ['Lite', 'Standard', 'Advanced'] },
-    { icon: <Lightbulb className="w-5 h-5 text-blue-500" />, label: 'Reliable Uptime Alerts', plans: ['Standard', 'Advanced'] },
-  ]},
-  { group: 'Collaboration', features: [
-    { icon: <Users className="w-5 h-5 text-purple-500" />, label: 'Team Collaboration', plans: ['Standard', 'Advanced'] },
-    { icon: <Briefcase className="w-5 h-5 text-blue-500" />, label: 'Priority Indexing Support', plans: ['Advanced'] },
-    { icon: <Globe className="w-5 h-5 text-emerald-500" />, label: 'Multi-site Management', plans: ['Advanced'] },
-  ]},
+import React from 'react';
+import Link from 'next/link';
+import { Check, Star, Zap, Crown, Users, BarChart3, Globe, Shield, MapPin } from 'lucide-react';
+
+const pricingPlans = [
+  {
+    name: 'Starter',
+    price: '$29',
+    period: '/month',
+    description: 'Perfect for small businesses getting started with SEO',
+    icon: Zap,
+    color: 'from-blue-500 to-cyan-500',
+    features: [
+      '5 Local Keyword Reports',
+      'Basic Competitor Analysis',
+      'GBP Audit (Monthly)',
+      'Email Support',
+      'Basic Analytics Dashboard',
+      '10 Citation Submissions'
+    ],
+    cta: 'Start Free Trial',
+    popular: false
+  },
+  {
+    name: 'Professional',
+    price: '$79',
+    period: '/month',
+    description: 'Ideal for growing businesses serious about local SEO',
+    icon: Crown,
+    color: 'from-purple-500 to-pink-500',
+    features: [
+      'Unlimited Local Keyword Reports',
+      'Advanced Competitor Analysis',
+      'GBP Audit (Weekly)',
+      'Priority Support',
+      'Advanced Analytics Dashboard',
+      'Unlimited Citation Submissions',
+      'AI Content Generator',
+      'Review Management',
+      'Reputation Monitoring',
+      'Local Rank Tracking'
+    ],
+    cta: 'Start Free Trial',
+    popular: true
+  },
+  {
+    name: 'Enterprise',
+    price: '$199',
+    period: '/month',
+    description: 'For agencies and large businesses with multiple locations',
+    icon: Users,
+    color: 'from-orange-500 to-red-500',
+    features: [
+      'Everything in Professional',
+      'Multi-location Management',
+      'White-label Reports',
+      'API Access',
+      'Dedicated Account Manager',
+      'Custom Integrations',
+      'Advanced SEO Tags Generator',
+      'Maps Audit & Optimization',
+      'Listing Management',
+      'Priority Phone Support'
+    ],
+    cta: 'Contact Sales',
+    popular: false
+  }
 ];
 
-const PLANS = [
+const features = [
   {
-    name: 'Lite',
-    monthly: 19,
-    annual: 190,
-    description: 'Essential tools for small businesses and personal projects.',
-    highlight: false,
-    icon: <Rocket className="w-8 h-8 text-purple-500" />,
-    button: 'Start Free',
-    cta: '/signup',
+    title: 'Local SEO Focused',
+    description: 'Specialized tools for local businesses to dominate local search results',
+    icon: MapPin
   },
   {
-    name: 'Standard',
-    monthly: 49,
-    annual: 490,
-    description: 'Perfect for growing teams and agencies.',
-    highlight: true,
-    icon: <Users className="w-8 h-8 text-blue-500" />,
-    button: 'Start 14-day Free Trial',
-    cta: '/signup',
+    title: 'AI-Powered Insights',
+    description: 'Advanced AI algorithms provide actionable recommendations',
+    icon: BarChart3
   },
   {
-    name: 'Advanced',
-    monthly: 99,
-    annual: 990,
-    description: 'Advanced features for large teams and enterprises.',
-    highlight: false,
-    icon: <Briefcase className="w-8 h-8 text-emerald-500" />,
-    button: 'Contact Sales',
-    cta: '/contact',
+    title: 'Multi-Platform Support',
+    description: 'Manage your presence across Google, Bing, and other platforms',
+    icon: Globe
   },
+  {
+    title: 'Enterprise Security',
+    description: 'Bank-level security to protect your business data',
+    icon: Shield
+  }
 ];
 
 export default function PricingPage() {
-  const [annual, setAnnual] = useState(false);
   return (
-    <main className="min-h-screen bg-gradient-to-br from-white/80 via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 py-16 px-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6">Simple, Transparent Pricing</h1>
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">Choose the plan that fits your needs. Scale up as your website grows.</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-4">
+            Simple, Transparent Pricing
+          </h1>
+          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">
+            Choose the perfect plan for your business. All plans include a 14-day free trial 
+            with no credit card required.
+          </p>
         </div>
-        <div className="flex justify-center items-center mb-10">
-          <span className={`mr-3 font-medium ${!annual ? 'text-purple-600' : 'text-gray-400'}`}>Monthly</span>
-          <button
-            className="relative w-14 h-8 bg-gray-200 dark:bg-gray-800 rounded-full flex items-center transition-colors duration-300 focus:outline-none"
-            onClick={() => setAnnual(a => !a)}
-            aria-label="Toggle annual pricing"
-          >
-            <span className={`absolute left-1 top-1 w-6 h-6 rounded-full bg-white dark:bg-gray-900 shadow-md transition-transform duration-300 ${annual ? 'translate-x-6' : ''}`}/>
-            <span className="sr-only">Toggle annual pricing</span>
-          </button>
-          <span className={`ml-3 font-medium ${annual ? 'text-purple-600' : 'text-gray-400'}`}>Annual <span className="ml-1 text-xs bg-yellow-200 text-yellow-800 px-2 py-0.5 rounded-full align-middle">Save 2 months</span></span>
-        </div>
-        <div className="grid md:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto mb-16">
-          {PLANS.map(plan => (
+
+        {/* Pricing Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          {pricingPlans.map((plan, index) => (
             <div
               key={plan.name}
-              className={`relative backdrop-blur-md rounded-2xl p-8 lg:p-10 border transition-all duration-300 hover:scale-105 shadow-lg dark:shadow-2xl overflow-hidden
-                ${plan.highlight ? 'bg-white/95 dark:bg-gray-900/30 border-purple-500/50 dark:border-purple-400/30 shadow-lg shadow-purple-500/20 scale-105 ring-2 ring-purple-400/30' : 'bg-white/90 dark:bg-gray-900/20 border-gray-200/50 dark:border-white/10 hover:bg-white/95 dark:hover:bg-gray-900/30'}
-              `}
+              className={`relative ${
+                plan.popular 
+                  ? 'md:scale-105 md:-translate-y-4' 
+                  : ''
+              }`}
             >
-              {plan.highlight && (
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 z-10">
-                  <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg animate-pulse">MOST POPULAR</div>
+              {plan.popular && (
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-full text-sm font-semibold flex items-center">
+                    <Star className="w-4 h-4 mr-2" />
+                    Most Popular
+                  </div>
                 </div>
               )}
-              <div className="flex flex-col items-center mb-8">
-                <div className="mb-4">{plan.icon}</div>
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-2">{plan.name}</h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-2 text-lg text-center">{plan.description}</p>
-                <div className="flex items-baseline justify-center mb-2">
-                  <span className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white">
-                    {annual ? `$${plan.annual}` : `$${plan.monthly}`}
-                  </span>
-                  <span className="text-gray-600 dark:text-gray-400 ml-2 text-lg">/mo</span>
+              
+              <div className="h-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl p-8 border border-white/20 dark:border-slate-700/50 shadow-xl hover:shadow-2xl transition-all duration-500">
+                {/* Plan Header */}
+                <div className="text-center mb-8">
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${plan.color} p-4 mx-auto mb-4 shadow-lg`}>
+                    <plan.icon className="w-full h-full text-white" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+                    {plan.name}
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 mb-4">
+                    {plan.description}
+                  </p>
+                  <div className="mb-6">
+                    <span className="text-4xl font-bold text-slate-800 dark:text-white">
+                      {plan.price}
+                    </span>
+                    <span className="text-slate-600 dark:text-slate-400">
+                      {plan.period}
+                    </span>
+                  </div>
                 </div>
-                {annual && <span className="text-xs text-green-600 font-semibold">Billed annually</span>}
+
+                {/* Features */}
+                <ul className="space-y-4 mb-8">
+                  {plan.features.map((feature, featureIndex) => (
+                    <li key={featureIndex} className="flex items-start">
+                      <Check className="w-5 h-5 text-green-500 mt-0.5 mr-3 flex-shrink-0" />
+                      <span className="text-slate-700 dark:text-slate-300">
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA Button */}
+                <Link
+                  href={plan.name === 'Enterprise' ? '/contact' : '/signup'}
+                  className={`w-full py-4 px-6 rounded-xl font-semibold text-center transition-all duration-300 ${
+                    plan.popular
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-xl'
+                      : 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600'
+                  } hover:scale-105`}
+                >
+                  {plan.cta}
+                </Link>
               </div>
-              <Link href={plan.cta} className={`w-full block py-4 px-6 rounded-lg font-semibold text-lg text-center transition-all duration-200 transform hover:scale-105 focus:outline-none
-                ${plan.highlight ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg hover:from-purple-600 hover:to-purple-700' : 'bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-white'}
-              `}>
-                {plan.button}
-              </Link>
             </div>
           ))}
         </div>
-        <div className="bg-white/90 dark:bg-gray-900/80 rounded-2xl shadow-xl border border-purple-100 dark:border-purple-800 max-w-6xl mx-auto p-8 overflow-x-auto">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Compare Features</h3>
-          <table className="w-full text-left border-separate border-spacing-y-2">
-            <thead>
-              <tr>
-                <th className="w-1/3"></th>
-                {PLANS.map(plan => (
-                  <th key={plan.name} className="text-lg font-semibold text-gray-700 dark:text-gray-200 text-center">{plan.name}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {FEATURES.map(group => (
-                <React.Fragment key={group.group}>
-                  <tr>
-                    <td colSpan={4} className="pt-6 pb-2 text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{group.group}</td>
-                  </tr>
-                  {group.features.map(f => (
-                    <tr key={f.label} className="align-top">
-                      <td className="flex items-center gap-3 py-2">
-                        {f.icon}
-                        <span className="font-medium text-gray-900 dark:text-white">{f.label}
-                          {f.badge && (
-                            <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold align-middle ${f.badge === 'New' ? 'bg-yellow-200 text-yellow-800' : 'bg-purple-200 text-purple-800'}`}>{f.badge}</span>
-                          )}
-                        </span>
-                      </td>
-                      {PLANS.map(plan => (
-                        <td key={plan.name} className="text-center">
-                          {f.plans.includes(plan.name) ? <Check className="w-5 h-5 text-green-500 mx-auto" /> : <span className="text-gray-300 dark:text-gray-700">—</span>}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
+
+        {/* Features Section */}
+        <div className="mb-16">
+          <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-white mb-12">
+            Why Choose SiteGrip?
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {features.map((feature, index) => (
+              <div
+                key={index}
+                className="text-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 p-3 mx-auto mb-4">
+                  <feature.icon className="w-full h-full text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+                  {feature.title}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-400">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="max-w-3xl mx-auto mt-16 text-center text-gray-600 dark:text-gray-300 text-lg">
-          <div className="mb-4 font-semibold">30-Day Money-Back Guarantee. No credit card required to start.</div>
-          <div>Need a custom plan or have questions? <Link href="/contact" className="text-purple-600 hover:underline font-semibold">Contact our team</Link>.</div>
+
+        {/* FAQ Section */}
+        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-3xl p-8 border border-white/20 dark:border-slate-700/50">
+          <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-white mb-8">
+            Frequently Asked Questions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+                Can I cancel anytime?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Yes, you can cancel your subscription at any time. No long-term contracts or hidden fees.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+                Is there a free trial?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                Yes, all plans include a 14-day free trial with full access to all features.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+                Do you offer refunds?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                We offer a 30-day money-back guarantee if you're not satisfied with our service.
+              </p>
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-slate-800 dark:text-white mb-2">
+                What payment methods do you accept?
+              </h3>
+              <p className="text-slate-600 dark:text-slate-400">
+                We accept all major credit cards, PayPal, and bank transfers for enterprise plans.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Final CTA */}
+        <div className="text-center mt-16">
+          <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 backdrop-blur-xl rounded-3xl p-8 border border-blue-200/20 dark:border-blue-800/20">
+            <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-6">
+              Join thousands of businesses using SiteGrip to improve their local SEO performance.
+            </p>
+            <Link
+              href="/signup"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              Start Your Free Trial
+            </Link>
+          </div>
         </div>
       </div>
-    </main>
+    </div>
   );
 } 

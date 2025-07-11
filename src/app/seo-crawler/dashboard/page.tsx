@@ -99,6 +99,8 @@ export default function SeoCrawlerDashboardPage() {
 
   // On mount, listen for auth state and load saved reports
   useEffect(() => {
+    if (!auth) return;
+    
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (u) loadReports(u.uid);
@@ -181,6 +183,9 @@ export default function SeoCrawlerDashboardPage() {
 
     try {
       const { auth } = await import('@/lib/firebase');
+      if (!auth) {
+        throw new Error('Authentication not available. Please refresh the page.');
+      }
       const token = auth.currentUser ? await auth.currentUser.getIdToken() : null;
       
       if (!token) {

@@ -2,32 +2,284 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Performance optimizations */
+* {
+  box-sizing: border-box;
+}
+
 html {
   scroll-behavior: smooth;
 }
 
-section {
-  @apply py-20;
+body {
+  font-feature-settings: 'rlig' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.slick-dots {
-  color: #1A21BC;
+/* Optimized transitions for better performance */
+.transition-fast {
+  transition: all 0.15s ease-in-out;
 }
 
-.slick-dots li.slick-active button:before {
-  opacity: 1;
-  color: #1A21BC !important;
+.transition-medium {
+  transition: all 0.2s ease-in-out;
 }
 
-.slick-dots li button:before {
-  font-size: 11px !important;
+/* Optimized backdrop blur for better performance */
+.backdrop-blur-optimized {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
-@keyframes fadein {
-  from { opacity: 0; transform: translateY(-2px); }
-  to { opacity: 1; transform: translateY(0); }
+/* Optimized gradients */
+.gradient-optimized {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background-attachment: fixed;
 }
 
-.animate-fadein {
-  animation: fadein 0.3s ease-out;
+/* Optimized shadows */
+.shadow-optimized {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+/* Optimized animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { transform: translateY(10px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.2s ease-out;
+}
+
+/* Optimized loading states */
+.loading-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Optimized scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(75, 85, 99, 0.7);
+}
+
+/* Optimized focus states */
+.focus-optimized:focus {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+}
+
+/* Optimized button states */
+.btn-optimized {
+  @apply transition-all duration-150 ease-in-out;
+  will-change: transform, opacity;
+}
+
+.btn-optimized:hover {
+  transform: translateY(-1px);
+}
+
+.btn-optimized:active {
+  transform: translateY(0);
+}
+
+/* Optimized card hover effects */
+.card-optimized {
+  @apply transition-all duration-200 ease-in-out;
+  will-change: transform, box-shadow;
+}
+
+.card-optimized:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Optimized glass effect */
+.glass-optimized {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass-optimized {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Optimized text rendering */
+.text-optimized {
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+/* Optimized image loading */
+.img-optimized {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Optimized table performance */
+.table-optimized {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-optimized th,
+.table-optimized td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(156, 163, 175, 0.2);
+}
+
+/* Optimized form elements */
+.input-optimized {
+  @apply transition-all duration-150 ease-in-out;
+  will-change: border-color, box-shadow;
+}
+
+.input-optimized:focus {
+  @apply border-purple-500 ring-2 ring-purple-200;
+}
+
+/* Optimized modal backdrop */
+.modal-backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+/* Optimized tooltip */
+.tooltip-optimized {
+  @apply transition-all duration-150 ease-in-out;
+  will-change: opacity, transform;
+}
+
+/* Optimized badge */
+.badge-optimized {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  will-change: background-color, color;
+}
+
+/* Optimized progress bar */
+.progress-optimized {
+  @apply transition-all duration-300 ease-out;
+  will-change: width;
+}
+
+/* Optimized spinner */
+.spinner-optimized {
+  @apply animate-spin rounded-full border-2 border-gray-300 border-t-purple-500;
+  will-change: transform;
+}
+
+/* Optimized skeleton loading */
+.skeleton-optimized {
+  @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  will-change: opacity;
+}
+
+/* Optimized grid layout */
+.grid-optimized {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1rem;
+  will-change: grid-template-columns;
+}
+
+/* Optimized flexbox */
+.flex-optimized {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+}
+
+/* Optimized responsive design */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    font-size: 0.875rem;
+  }
+}
+
+/* Optimized print styles */
+@media print {
+  .print-hidden {
+    display: none !important;
+  }
+  
+  .print-optimized {
+    color: black !important;
+    background: white !important;
+  }
+}
+
+/* Optimized accessibility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Optimized high contrast mode */
+@media (prefers-contrast: high) {
+  .high-contrast {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Optimized reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

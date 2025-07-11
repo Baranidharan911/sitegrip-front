@@ -94,6 +94,8 @@ export default function HeaderCheckerPage() {
 
   // On mount, listen for auth state and load saved reports
   useEffect(() => {
+    if (!auth) return;
+    
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (u) loadReports(u.uid);

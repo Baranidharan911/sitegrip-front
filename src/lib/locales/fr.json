@@ -1,0 +1,229 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Une erreur s'est produite",
+    "success": "Succès !",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "sort": "Trier",
+    "export": "Exporter",
+    "import": "Importer",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "submit": "Soumettre",
+    "reset": "Réinitialiser",
+    "close": "Fermer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "finish": "Terminer",
+    "skip": "Passer",
+    "continue": "Continuer",
+    "retry": "Réessayer",
+    "refresh": "Actualiser",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "logout": "Déconnexion",
+    "login": "Connexion",
+    "signup": "S'inscrire",
+    "dashboard": "Tableau de bord",
+    "analytics": "Analytiques",
+    "reports": "Rapports",
+    "tools": "Outils",
+    "help": "Aide",
+    "support": "Support",
+    "contact": "Contact",
+    "about": "À propos",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "pricing": "Tarifs"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "seo_tools": "Outils SEO",
+    "local_seo": "SEO Local",
+    "competitor_analysis": "Analyse des Concurrents",
+    "keyword_research": "Recherche de Mots-clés",
+    "rank_tracking": "Suivi des Positions",
+    "reputation_management": "Gestion de la Réputation",
+    "content_optimization": "Optimisation du Contenu",
+    "technical_seo": "SEO Technique",
+    "reporting": "Rapports",
+    "uptime_monitoring": "Surveillance du Temps de Fonctionnement",
+    "web_vitals": "Web Vitals",
+    "indexing": "Indexation"
+  },
+  "home": {
+    "hero": {
+      "title": "Améliorez vos Performances SEO Locales",
+      "subtitle": "Outils complets pour dominer les résultats de recherche locale et développer votre entreprise",
+      "cta": "Commencer Gratuitement",
+      "secondary_cta": "Voir la Démo"
+    },
+    "features": {
+      "title": "Tout ce dont vous avez Besoin pour Réussir en SEO Local",
+      "subtitle": "Outils puissants conçus spécifiquement pour les entreprises locales"
+    },
+    "testimonials": {
+      "title": "Approuvé par les Entreprises Locales",
+      "subtitle": "Découvrez ce que disent nos clients de SiteGrip"
+    },
+    "pricing": {
+      "title": "Tarification Simple et Transparente",
+      "subtitle": "Choisissez le plan parfait pour votre entreprise"
+    }
+  },
+  "seo_tools": {
+    "title": "Suite d'Outils SEO",
+    "subtitle": "Outils SEO complets pour améliorer votre présence de recherche locale, analyser les concurrents et optimiser votre visibilité en ligne",
+    "local_keyword_finder": {
+      "title": "Découvreur de Mots-clés Locaux",
+      "description": "Découvrez des mots-clés locaux à fort impact pour votre entreprise"
+    },
+    "competitor_analysis": {
+      "title": "Analyse des Concurrents",
+      "description": "Analysez vos concurrents et identifiez les opportunités"
+    },
+    "local_rank_tracker": {
+      "title": "Suivi des Positions Locales",
+      "description": "Suivez vos positions de recherche locale en temps réel"
+    },
+    "gbp_audit": {
+      "title": "Audit GBP",
+      "description": "Audit complet du Profil d'Entreprise Google"
+    },
+    "citation_builder": {
+      "title": "Constructeur de Citations",
+      "description": "Construisez et gérez les citations de votre entreprise"
+    },
+    "review_management": {
+      "title": "Gestion des Avis",
+      "description": "Surveillez et répondez aux avis clients"
+    },
+    "reputation_monitoring": {
+      "title": "Surveillance de la Réputation",
+      "description": "Surveillez votre réputation en ligne sur plusieurs plateformes"
+    },
+    "ai_content_generator": {
+      "title": "Générateur de Contenu IA",
+      "description": "Générez du contenu optimisé SEO avec l'IA"
+    },
+    "seo_tags_generator": {
+      "title": "Générateur de Balises SEO",
+      "description": "Générez des méta-balises et des données structurées"
+    },
+    "listing_management": {
+      "title": "Gestion des Listings",
+      "description": "Gérez les listings de votre entreprise dans les annuaires"
+    },
+    "maps_audit": {
+      "title": "Audit des Cartes",
+      "description": "Auditez votre présence Google Maps et optimisation"
+    }
+  },
+  "pricing": {
+    "title": "Tarification Simple et Transparente",
+    "subtitle": "Choisissez le plan parfait pour votre entreprise. Tous les plans incluent un essai gratuit de 14 jours sans carte de crédit.",
+    "starter": {
+      "name": "Débutant",
+      "price": "29€",
+      "period": "/mois",
+      "description": "Parfait pour les petites entreprises qui commencent avec le SEO"
+    },
+    "professional": {
+      "name": "Professionnel",
+      "price": "79€",
+      "period": "/mois",
+      "description": "Idéal pour les entreprises en croissance sérieuses sur le SEO local"
+    },
+    "enterprise": {
+      "name": "Entreprise",
+      "price": "199€",
+      "period": "/mois",
+      "description": "Pour les agences et grandes entreprises avec plusieurs emplacements"
+    },
+    "features": {
+      "title": "Pourquoi Choisir SiteGrip ?",
+      "local_seo_focused": {
+        "title": "Centré sur le SEO Local",
+        "description": "Outils spécialisés pour que les entreprises locales dominent les résultats de recherche locale"
+      },
+      "ai_powered_insights": {
+        "title": "Insights Alimentés par l'IA",
+        "description": "Des algorithmes d'IA avancés fournissent des recommandations actionnables"
+      },
+      "multi_platform_support": {
+        "title": "Support Multi-plateforme",
+        "description": "Gérez votre présence sur Google, Bing et d'autres plateformes"
+      },
+      "enterprise_security": {
+        "title": "Sécurité Entreprise",
+        "description": "Sécurité de niveau bancaire pour protéger les données de votre entreprise"
+      }
+    },
+    "faq": {
+      "title": "Questions Fréquemment Posées",
+      "cancel_anytime": {
+        "question": "Puis-je annuler à tout moment ?",
+        "answer": "Oui, vous pouvez annuler votre abonnement à tout moment. Aucun contrat à long terme ni frais cachés."
+      },
+      "free_trial": {
+        "question": "Y a-t-il un essai gratuit ?",
+        "answer": "Oui, tous les plans incluent un essai gratuit de 14 jours avec accès complet à toutes les fonctionnalités."
+      },
+      "refunds": {
+        "question": "Offrez-vous des remboursements ?",
+        "answer": "Nous offrons une garantie de remboursement de 30 jours si vous n'êtes pas satisfait de notre service."
+      },
+      "payment_methods": {
+        "question": "Quels modes de paiement acceptez-vous ?",
+        "answer": "Nous acceptons toutes les cartes de crédit principales, PayPal et les virements bancaires pour les plans entreprise."
+      }
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Bon Retour",
+      "subtitle": "Connectez-vous à votre compte pour continuer",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "forgot_password": "Mot de passe oublié ?",
+      "sign_in": "Se Connecter",
+      "no_account": "Vous n'avez pas de compte ?",
+      "sign_up": "S'inscrire"
+    },
+    "signup": {
+      "title": "Créez votre Compte",
+      "subtitle": "Commencez votre essai gratuit aujourd'hui",
+      "full_name": "Nom Complet",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "confirm_password": "Confirmer le Mot de Passe",
+      "agree_terms": "J'accepte les Conditions de Service et la Politique de Confidentialité",
+      "create_account": "Créer un Compte",
+      "have_account": "Vous avez déjà un compte ?",
+      "sign_in": "Se Connecter"
+    }
+  },
+  "dashboard": {
+    "welcome": "Bon retour",
+    "overview": "Aperçu",
+    "recent_activity": "Activité Récente",
+    "quick_actions": "Actions Rapides",
+    "performance_summary": "Résumé des Performances",
+    "upcoming_tasks": "Tâches à Venir"
+  },
+  "errors": {
+    "general": "Quelque chose s'est mal passé. Veuillez réessayer.",
+    "network": "Erreur réseau. Veuillez vérifier votre connexion.",
+    "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action.",
+    "not_found": "La ressource demandée n'a pas été trouvée.",
+    "validation": "Veuillez vérifier votre saisie et réessayer.",
+    "server": "Erreur serveur. Veuillez réessayer plus tard."
+  }
+} 

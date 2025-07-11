@@ -24,9 +24,10 @@ export default function KeywordStatsPanel() {
 
     try {
       // Get authentication token
+      if (!auth) throw new Error('Authentication not available');
       const user = auth.currentUser;
       if (!user) {
-        throw new Error('Authentication required. Please log in to view statistics.');
+        throw new Error('Authentication required. Please log in to view keyword stats.');
       }
 
       const token = await user.getIdToken();

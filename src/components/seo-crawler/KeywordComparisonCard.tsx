@@ -40,6 +40,7 @@ export default function KeywordComparisonCard({ current, proposed }: { current: 
       setError(null);
       try {
         // Get authentication token
+        if (!auth) throw new Error('Authentication not available');
         const user = auth.currentUser;
         if (!user) {
           throw new Error('Authentication required. Please log in to compare keywords.');
