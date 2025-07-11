@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { Radar, BarChart3, Star, TrendingUp, Link } from 'lucide-react';
 

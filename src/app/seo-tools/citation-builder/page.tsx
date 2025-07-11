@@ -1,7 +1,8 @@
+'use client';
 import { useState } from 'react';
 import { Link, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
-const mockSites = [
+const mockSites: { name: string; status: 'Ready to Submit' | 'Submitted' | 'Error' }[] = [
   { name: 'Yelp', status: 'Ready to Submit' },
   { name: 'Yellow Pages', status: 'Submitted' },
   { name: 'Bing Places', status: 'Ready to Submit' },
@@ -14,7 +15,7 @@ const statusIcon = {
   'Ready to Submit': <FileText className="w-5 h-5 text-blue-500" />,
   'Submitted': <CheckCircle className="w-5 h-5 text-green-500" />,
   'Error': <AlertCircle className="w-5 h-5 text-red-500" />,
-};
+} as const;
 
 export default function CitationBuilderPage() {
   const [business, setBusiness] = useState({ name: '', address: '', phone: '' });

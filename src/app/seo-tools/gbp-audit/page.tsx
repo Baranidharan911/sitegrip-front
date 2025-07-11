@@ -1,3 +1,4 @@
+'use client';
 import { useState } from 'react';
 import { Search, BarChart3, Star, Image, MapPin, CheckCircle, AlertCircle } from 'lucide-react';
 

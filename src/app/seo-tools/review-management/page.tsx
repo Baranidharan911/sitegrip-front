@@ -1,7 +1,8 @@
+'use client';
 import { useState } from 'react';
 import { Star, MessageCircle, Search, Smile, Frown, Meh, X } from 'lucide-react';
 
-const mockReviews = [
+const mockReviews: { id: number; author: string; date: string; rating: number; text: string; sentiment: 'positive' | 'neutral' | 'negative' }[] = [
   { id: 1, author: 'Jane Doe', date: '2024-06-01', rating: 5, text: 'Amazing service! Highly recommend.', sentiment: 'positive' },
   { id: 2, author: 'John Smith', date: '2024-05-28', rating: 4, text: 'Very good, but could be faster.', sentiment: 'neutral' },
   { id: 3, author: 'Alice Lee', date: '2024-05-20', rating: 2, text: 'Had some issues with support.', sentiment: 'negative' },
@@ -12,11 +13,11 @@ const sentimentIcon = {
   positive: <Smile className="w-5 h-5 text-green-500" />,
   neutral: <Meh className="w-5 h-5 text-yellow-500" />,
   negative: <Frown className="w-5 h-5 text-red-500" />,
-};
+} as const;
 
 export default function ReviewManagementPage() {
   const [search, setSearch] = useState('');
-  const [replyTo, setReplyTo] = useState(null);
+  const [replyTo, setReplyTo] = useState<number | null>(null);
   const [reply, setReply] = useState('');
 
   const filtered = mockReviews.filter(r =>
