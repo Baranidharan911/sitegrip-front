@@ -104,9 +104,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <ThemeProvider>
           <SidebarProvider>
-            <AppContent>
-              {children}
-            </AppContent>
+            {children}
           </SidebarProvider>
         </ThemeProvider>
         

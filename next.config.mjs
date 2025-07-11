@@ -3,7 +3,15 @@ const nextConfig = {
   // Performance optimizations
   experimental: {
     optimizeCss: true,
-    optimizePackageImports: ['lucide-react'],
+    optimizePackageImports: ['lucide-react', 'react-hot-toast'],
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   
   // Image optimization
@@ -12,15 +20,17 @@ const nextConfig = {
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 31536000, // 1 year
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
   // Compression and caching
   compress: true,
   poweredByHeader: false,
   
-  // Webpack configuration
+  // Webpack configuration for performance
   webpack: (config, { dev, isServer }) => {
-    // Production optimizations only
+    // Production optimizations
     if (!dev && !isServer) {
       config.optimization.splitChunks = {
         chunks: 'all',
@@ -30,21 +40,49 @@ const nextConfig = {
             name: 'vendors',
             chunks: 'all',
             priority: 10,
+            reuseExistingChunk: true,
           },
           common: {
             name: 'common',
             minChunks: 2,
             chunks: 'all',
             priority: 5,
+            reuseExistingChunk: true,
+          },
+          firebase: {
+            test: /[\\\\/]node_modules[\\\\/]firebase/,
+            name: 'firebase',
+            chunks: 'all',
+            priority: 20,
+          },
+          react: {
+            test: /[\\\\/]node_modules[\\\\/]react/,
+            name: 'react',
+            chunks: 'all',
+            priority: 20,
           },
         },
+      };
+      
+      // Enable tree shaking
+      config.optimization.usedExports = true;
+      config.optimization.sideEffects = false;
+    }
+
+    // Development optimizations
+    if (dev) {
+      // Faster builds in development
+      config.watchOptions = {
+        poll: 1000,
+        aggregateTimeout: 300,
+        ignored: ['**/node_modules', '**/.next'],
       };
     }
 
     return config;
   },
 
-  // Headers for caching
+  // Headers for caching and performance
   async headers() {
     return [
       {
@@ -61,6 +99,10 @@ const nextConfig = {
           {
             key: 'X-XSS-Protection',
             value: '1; mode=block',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=3600, s-maxage=86400',
           },
         ],
       },
@@ -81,6 +123,26 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable',
           },
         ],
+      },
+      {
+        source: '/images/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+    ];
+  },
+
+  // Redirects for better UX
+  async redirects() {
+    return [
+      {
+        source: '/dashboard',
+        destination: '/dashboard/overview',
+        permanent: false,
       },
     ];
   },
