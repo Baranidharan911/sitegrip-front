@@ -21,10 +21,10 @@ const featuresDropdown = [
     items: [
       { icon: <FileText className="w-5 h-5 text-purple-500" />, title: 'On-Page SEO Analysis', desc: 'Analyze titles, meta descriptions, headers, and content quality.' },
       { icon: <Gauge className="w-5 h-5 text-blue-500" />, title: 'Site Speed & Vitals', desc: 'Monitor Core Web Vitals and get speed recommendations.' },
-      { icon: <Code className="w-5 h-5 text-cyan-500" />, title: 'Broken Link Checker', desc: 'Scan for broken internal and external links.' },
+      { icon: <Code className="w-5 h-5 text-cyan-500" />, title: 'Broken Link Checker', desc: 'Scan for broken internal and external links.', badge: 'New' },
       { icon: <CheckCircle className="w-5 h-5 text-green-500" />, title: 'Uptime Monitoring', desc: 'Get instant alerts if your site goes down.' },
       { icon: <TrendingUp className="w-5 h-5 text-orange-500" />, title: 'Keyword Tracking', desc: 'Track your Google search rankings for key terms.' },
-      { icon: <Grid className="w-5 h-5 text-red-500" />, title: 'Sitemap Manager', desc: 'Generate, validate, and submit your XML sitemap.' },
+      { icon: <Grid className="w-5 h-5 text-red-500" />, title: 'Sitemap Manager', desc: 'Generate, validate, and submit your XML sitemap.', badge: 'Beta' },
     ]
   },
   {
@@ -215,7 +215,11 @@ const NewHeader: React.FC = () => {
                           >
                             <span className="mt-1">{item.icon}</span>
                             <span className="flex flex-col">
-                              <span className="font-semibold text-gray-900 dark:text-white text-base group-hover:text-purple-700 dark:group-hover:text-purple-300">{item.title}</span>
+                              <span className="font-semibold text-gray-900 dark:text-white text-base group-hover:text-purple-700 dark:group-hover:text-purple-300">{item.title}
+  {item.badge && (
+    <span className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold align-middle ${item.badge === 'New' ? 'bg-yellow-200 text-yellow-800' : 'bg-purple-200 text-purple-800'}`}>{item.badge}</span>
+  )}
+</span>
                               <span className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{item.desc}</span>
                             </span>
                             {/* Optional badge example: */}
