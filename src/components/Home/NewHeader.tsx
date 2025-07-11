@@ -201,17 +201,31 @@ const NewHeader: React.FC = () => {
                 {t('Product')}
               </a>
               {/* Dropdown */}
-              <div className="absolute left-0 top-full mt-3 w-[600px] bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-50 p-6 space-y-6">
-                {featuresDropdown.map(section => (
-                  <div key={section.section}>
-                    <div className="text-xs font-bold text-purple-500 uppercase mb-3 tracking-wider">{section.section}</div>
-                    <div className="grid grid-cols-3 gap-3">
-                      {section.items.map(item => (
-                        <FeatureCard key={item.title} icon={item.icon} title={item.title} desc={item.desc} />
-                      ))}
+              <div className="absolute left-0 top-full mt-3 w-[900px] max-w-[98vw] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-700 z-50 p-8 flex flex-col">
+                <div className="grid grid-cols-3 gap-10">
+                  {featuresDropdown.map(section => (
+                    <div key={section.section}>
+                      <div className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase mb-4 tracking-wider pl-2">{section.section}</div>
+                      <div className="flex flex-col gap-3">
+                        {section.items.map(item => (
+                          <a
+                            key={item.title}
+                            href="#"
+                            className="group flex items-start gap-3 rounded-lg px-2 py-3 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                          >
+                            <span className="mt-1">{item.icon}</span>
+                            <span className="flex flex-col">
+                              <span className="font-semibold text-gray-900 dark:text-white text-base group-hover:text-purple-700 dark:group-hover:text-purple-300">{item.title}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-300 mt-0.5">{item.desc}</span>
+                            </span>
+                            {/* Optional badge example: */}
+                            {/* {item.badge && <span className="ml-2 bg-yellow-200 text-yellow-800 text-xs font-bold px-2 py-0.5 rounded-full">{item.badge}</span>} */}
+                          </a>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
             <a href="#pricing" className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200 font-medium">
