@@ -26,22 +26,48 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   
-  // Bundle analyzer (optional - for debugging)
-  // webpack: (config, { dev, isServer }) => {
-  //   if (!dev && !isServer) {
-  //     config.optimization.splitChunks = {
-  //       chunks: 'all',
-  //       cacheGroups: {
-  //         vendor: {
-  //           test: /[\\/]node_modules[\\/]/,
-  //           name: 'vendors',
-  //           chunks: 'all',
-  //         },
-  //       },
-  //     };
-  //   }
-  //   return config;
-  // },
+  // Webpack configuration to fix critters and caching issues
+  webpack: (config, { dev, isServer }) => {
+    // Fix critters issue
+    if (!dev && !isServer) {
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          vendor: {
+            test: /[\\\\/]node_modules[\\\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+          common: {
+            name: 'common',
+            minChunks: 2,
+            chunks: 'all',
+            priority: 5,
+          },
+        },
+      };
+      
+      // Disable critters if it causes issues
+      if (config.optimization.minimizer) {
+        config.optimization.minimizer = config.optimization.minimizer.filter(
+          (minimizer) => !minimizer.constructor.name.includes('Critters')
+        );
+      }
+    }
+
+    // Fix caching issues in development
+    if (dev) {
+      config.cache = {
+        type: 'filesystem',
+        cacheDirectory: '.next/cache',
+        compression: 'gzip',
+        maxAge: 172800000, // 2 days
+      };
+    }
+
+    return config;
+  },
 
   // Headers for caching
   async headers() {

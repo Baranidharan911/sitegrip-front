@@ -19,6 +19,9 @@ export default function TestAuthPage() {
     addLog('Testing popup method...');
     
     try {
+      if (!auth || !provider) {
+        throw new Error('Authentication not available');
+      }
       addLog('Opening Google sign-in popup...');
       const result = await signInWithPopup(auth, provider);
       addLog(`✅ Popup success! User: ${result.user.email}`);
@@ -36,6 +39,9 @@ export default function TestAuthPage() {
     addLog('Testing redirect method...');
     
     try {
+      if (!auth || !provider) {
+        throw new Error('Authentication not available');
+      }
       addLog('Redirecting to Google sign-in...');
       await signInWithRedirect(auth, provider);
       // User will be redirected
@@ -51,6 +57,9 @@ export default function TestAuthPage() {
     addLog('Checking for redirect result...');
     
     try {
+      if (!auth) {
+        throw new Error('Authentication not available');
+      }
       const result = await getRedirectResult(auth);
       if (result) {
         addLog(`✅ Redirect result found! User: ${result.user?.email}`);
@@ -70,6 +79,9 @@ export default function TestAuthPage() {
     addLog('Testing delayed popup method...');
     
     try {
+      if (!auth || !provider) {
+        throw new Error('Authentication not available');
+      }
       addLog('Waiting 1 second before opening popup...');
       await new Promise(resolve => setTimeout(resolve, 1000));
       

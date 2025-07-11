@@ -53,6 +53,8 @@ export default function CrawlHistory() {
   };
 
   useEffect(() => {
+    if (!auth) return;
+    
     onAuthStateChanged(auth, (user) => {
       if (!user) {
         setError('Please log in to see crawl history.');
@@ -64,6 +66,7 @@ export default function CrawlHistory() {
   }, []);
 
   const handleRefresh = async () => {
+    if (!auth) return;
     const user = auth.currentUser;
     if (!user) return;
     setRefreshing(true);

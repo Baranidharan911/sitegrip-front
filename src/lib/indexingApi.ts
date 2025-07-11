@@ -36,17 +36,20 @@ const getAuthToken = async (): Promise<string | null> => {
     
     // Wait for auth state to be ready
     await new Promise((resolve) => {
+      if (!auth) {
+        resolve(null);
+        return;
+      }
       const unsubscribe = auth.onAuthStateChanged((user) => {
         unsubscribe();
         resolve(user);
       });
     });
     
-    if (auth.currentUser) {
+    if (auth && auth.currentUser) {
       const token = await auth.currentUser.getIdToken();
       return token;
     } else {
-      console.warn('⚠️ [Auth Token] No current Firebase user found');
       return null;
     }
   } catch (error) {

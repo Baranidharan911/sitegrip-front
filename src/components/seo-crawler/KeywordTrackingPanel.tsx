@@ -44,9 +44,10 @@ export default function KeywordTrackingPanel({ url }: { url: string }) {
 
     try {
       // Get authentication token
+      if (!auth) throw new Error('Authentication not available');
       const user = auth.currentUser;
       if (!user) {
-        throw new Error('Authentication required. Please log in to start tracking.');
+        throw new Error('Authentication required. Please log in to track keywords.');
       }
 
       const token = await user.getIdToken();

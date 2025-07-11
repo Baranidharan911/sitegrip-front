@@ -62,8 +62,10 @@ export const useAuth = (): UseAuthReturn => {
   // Store user data in localStorage
   const storeUserData = (userData: User) => {
     try {
-      localStorage.setItem('Sitegrip-user', JSON.stringify(userData));
-      console.log('✅ User data stored in localStorage');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('Sitegrip-user', JSON.stringify(userData));
+        console.log('✅ User data stored in localStorage');
+      }
     } catch (error) {
       console.error('❌ Failed to store user data:', error);
     }
@@ -72,8 +74,11 @@ export const useAuth = (): UseAuthReturn => {
   // Get user data from localStorage
   const getUserData = (): User | null => {
     try {
-      const userData = localStorage.getItem('Sitegrip-user');
-      return userData ? JSON.parse(userData) : null;
+      if (typeof window !== 'undefined') {
+        const userData = localStorage.getItem('Sitegrip-user');
+        return userData ? JSON.parse(userData) : null;
+      }
+      return null;
     } catch (error) {
       console.error('❌ Failed to get user data from localStorage:', error);
       return null;
@@ -83,8 +88,10 @@ export const useAuth = (): UseAuthReturn => {
   // Clear user data
   const clearUserData = () => {
     try {
-      localStorage.removeItem('Sitegrip-user');
-      console.log('🧹 User data cleared from localStorage');
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('Sitegrip-user');
+        console.log('🧹 User data cleared from localStorage');
+      }
     } catch (error) {
       console.error('❌ Failed to clear user data:', error);
     }
@@ -227,6 +234,13 @@ export const useAuth = (): UseAuthReturn => {
 
     console.log('🔄 Initializing auth state...');
     
+    // Check if Firebase is available
+    if (!auth) {
+      console.warn('⚠️ Firebase not available, skipping auth initialization');
+      setLoading(false);
+      return;
+    }
+    
     // Set loading to false immediately to ensure buttons are enabled
     setLoading(false);
     
@@ -248,8 +262,8 @@ export const useAuth = (): UseAuthReturn => {
             router.push('/profile');
           } else {
             // Sign out from Firebase if backend verification failed
-            await firebaseSignOut(auth);
-            toast.error('Google authentication verification failed');
+            await firebaseSignOut(auth2);
+            toast.error('Failed to verify authentication with server');
           }
           setLoading(false);
         }
@@ -258,51 +272,58 @@ export const useAuth = (): UseAuthReturn => {
         setLoading(false);
       }
     };
-    
-    // Check for redirect result first
-    handleRedirectResult();
-    
-    // Then set up the auth state listener
+
+    // Set up auth state listener
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          console.log('👤 Firebase user detected:', firebaseUser.uid);
+          console.log('✅ User authenticated:', firebaseUser.email);
+          setLoading(true);
           
           // Check if we already have user data in localStorage
-          const storedUser = getUserData();
-          if (storedUser && storedUser.uid === firebaseUser.uid) {
-            console.log('✅ Using stored user data');
-            setUser(storedUser);
-          } else {
-            console.log('🔄 Verifying user with backend...');
-            // Verify with backend (assume it's not Google auth for existing users)
-            const success = await verifyTokenWithBackend(firebaseUser, false);
-            if (!success) {
-              console.warn('⚠️ Backend verification failed for existing user');
-              // Don't sign out automatically for existing users, just show warning
-              toast.error('Authentication verification failed. Some features may not work correctly.');
-            }
+          const existingUser = getUserData();
+          if (existingUser && existingUser.uid === firebaseUser.uid) {
+            console.log('✅ Using existing user data from localStorage');
+            setUser(existingUser);
+            setLoading(false);
+            return;
+          }
+          
+          // Verify with backend
+          const success = await verifyTokenWithBackend(firebaseUser, false);
+          if (!success) {
+            // Sign out if verification failed
+            await firebaseSignOut(auth!);
+            setUser(null);
+            clearUserData();
           }
         } else {
-          console.log('👤 No Firebase user');
+          console.log('👤 User signed out');
           setUser(null);
           clearUserData();
         }
       } catch (error) {
-        console.error('❌ Auth state change error:', error);
+        console.error('❌ Error in auth state change:', error);
+        setUser(null);
+        clearUserData();
       } finally {
         setLoading(false);
       }
     });
 
+    // Handle redirect result
+    handleRedirectResult();
+
     return () => {
-      console.log('🧹 Cleaning up auth listener');
       unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
+      if (!auth) {
+        throw new Error('Authentication not available');
+      }
       setLoading(true);
       setError(null);
       console.log('🔐 Signing in user:', email);
@@ -320,6 +341,9 @@ export const useAuth = (): UseAuthReturn => {
 
   const signUp = async (email: string, password: string): Promise<void> => {
     try {
+      if (!auth) {
+        throw new Error('Authentication not available');
+      }
       setLoading(true);
       setError(null);
       console.log('🔐 Creating user account:', email);
@@ -337,6 +361,9 @@ export const useAuth = (): UseAuthReturn => {
 
   const signInWithGoogle = async (): Promise<void> => {
     try {
+      if (!auth || !provider) {
+        throw new Error('Authentication not available');
+      }
       setLoading(true);
       setError(null);
       console.log('🔐 Signing in with Google (with GSC scopes)...');
@@ -372,6 +399,9 @@ export const useAuth = (): UseAuthReturn => {
 
   const signOut = async (): Promise<void> => {
     try {
+      if (!auth) {
+        throw new Error('Authentication not available');
+      }
       console.log('🔐 Signing out user...');
       await firebaseSignOut(auth);
       console.log('✅ Sign out successful');
