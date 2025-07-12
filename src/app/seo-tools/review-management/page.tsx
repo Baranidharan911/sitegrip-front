@@ -36,7 +36,7 @@ export default function ReviewManagementPage() {
           <Search className="w-5 h-5 text-gray-400" />
           <input
             type="text"
-            className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+            className="flex-1 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
             placeholder="Search reviews..."
             value={search}
             onChange={e => setSearch(e.target.value)}
@@ -70,7 +70,7 @@ export default function ReviewManagementPage() {
               <button className="absolute top-3 right-3 text-gray-400 hover:text-red-500" onClick={() => setReplyTo(null)}><X /></button>
               <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Reply to Review</h2>
               <textarea
-                className="w-full min-h-[100px] rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                className="w-full min-h-[100px] rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 p-3 mb-4 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                 placeholder="Write your reply..."
                 value={reply}
                 onChange={e => setReply(e.target.value)}

@@ -133,28 +133,28 @@ export default function JsRenderingTesterPage() {
         <div className="flex items-center justify-between mb-3">
           <h4 className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             {title}
-            <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
+                                    <span className="text-xs text-gray-700 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">
               {formattedLines.length} lines
             </span>
           </h4>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowLineNumbers(!showLineNumbers)}
-              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Toggle line numbers"
             >
               {showLineNumbers ? <EyeOff size={14} /> : <Eye size={14} />}
             </button>
             <button
               onClick={() => setExpandedView(!expandedView)}
-              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Toggle expanded view"
             >
               {expandedView ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
             </button>
             <button
               onClick={() => handleCopy(html, copyKey)}
-              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              className="p-1.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               title="Copy to clipboard"
             >
               {copiedStates[copyKey] ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
@@ -167,7 +167,7 @@ export default function JsRenderingTesterPage() {
               {formattedLines.map((lineData, index) => (
                 <div key={index} className="flex hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                   {showLineNumbers && (
-                    <span className="select-none text-gray-400 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-3 py-1 text-right min-w-[60px] border-r border-gray-200 dark:border-gray-700">
+                    <span className="select-none text-gray-600 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-3 py-1 text-right min-w-[60px] border-r border-gray-200 dark:border-gray-700">
                       {lineData.number}
                     </span>
                   )}
@@ -205,7 +205,7 @@ export default function JsRenderingTesterPage() {
               JS Rendering Tester
             </h1>
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
+          <p className="text-gray-700 dark:text-gray-400 text-lg max-w-xl mx-auto">
             Compare raw HTML with JavaScript-rendered DOM
           </p>
         </motion.div>
@@ -215,7 +215,7 @@ export default function JsRenderingTesterPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
+                      className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
         >
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="flex-1 relative">
@@ -224,9 +224,9 @@ export default function JsRenderingTesterPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://your-site.com"
-                className="w-full px-5 py-3 pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base shadow"
+                className="w-full px-5 py-3 pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-base shadow text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               />
-              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <Globe className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-600" size={20} />
             </div>
             <button
               onClick={handleTest}
@@ -344,7 +344,7 @@ export default function JsRenderingTesterPage() {
 
             {/* Tabbed Interface */}
             <Tab.Group>
-              <Tab.List className="flex flex-wrap gap-2 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl p-2 shadow-inner">
+                              <Tab.List className="flex flex-wrap gap-2 bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl p-2 shadow-inner">
                 {tabList.map((tab) => (
                   <Tab
                     key={tab.key}
@@ -368,7 +368,7 @@ export default function JsRenderingTesterPage() {
                   <div className="space-y-6">
                     <div className="text-center">
                       <h3 className="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-3">HTML Comparison Analysis</h3>
-                      <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-700 dark:text-gray-400">
                         <div className="flex items-center gap-1">
                           <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
                           <span>Initial: {(result.initialHtml.length / 1024).toFixed(1)}KB</span>
@@ -389,27 +389,27 @@ export default function JsRenderingTesterPage() {
                       <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2">Analysis Summary</h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Character Change:</span>
+                          <span className="text-gray-700 dark:text-gray-400">Character Change:</span>
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
                             {result.differences > 0 ? '+' : result.differences < 0 ? '-' : ''}
                             {result.differences.toLocaleString()} chars
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Line Change:</span>
+                          <span className="text-gray-700 dark:text-gray-400">Line Change:</span>
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
                             {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length > 0 ? '+' : ''}
                             {result.renderedHtml.split('\n').length - result.initialHtml.split('\n').length} lines
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Initial Lines:</span>
+                          <span className="text-gray-700 dark:text-gray-400">Initial Lines:</span>
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
                             {result.initialHtml.split('\n').length}
                           </p>
                         </div>
                         <div>
-                          <span className="text-gray-500 dark:text-gray-400">Rendered Lines:</span>
+                          <span className="text-gray-700 dark:text-gray-400">Rendered Lines:</span>
                           <p className="font-semibold text-gray-800 dark:text-gray-200">
                             {result.renderedHtml.split('\n').length}
                           </p>
@@ -428,7 +428,7 @@ export default function JsRenderingTesterPage() {
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-800 dark:text-gray-200">Initial HTML</h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">Raw server response • {result.initialHtml.split('\n').length} lines</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-400">Raw server response • {result.initialHtml.split('\n').length} lines</p>
                             </div>
                           </div>
                           <button
@@ -444,14 +444,14 @@ export default function JsRenderingTesterPage() {
                             <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
                               {result.initialHtml.split('\n').slice(0, 100).map((line, index) => (
                                 <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
-                                  <span className="text-gray-400 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
+                                  <span className="text-gray-600 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
                                     {index + 1}
                                   </span>
                                   <span dangerouslySetInnerHTML={{ __html: highlightSyntax(line || ' ') }} />
                                 </div>
                               ))}
                               {result.initialHtml.split('\n').length > 100 && (
-                                <div className="text-gray-400 dark:text-gray-500 text-center py-2 italic">
+                                <div className="text-gray-600 dark:text-gray-500 text-center py-2 italic">
                                   ... {result.initialHtml.split('\n').length - 100} more lines (switch to "Initial HTML" tab to see full content)
                                 </div>
                               )}
@@ -469,7 +469,7 @@ export default function JsRenderingTesterPage() {
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-800 dark:text-gray-200">Rendered HTML</h4>
-                              <p className="text-sm text-gray-500 dark:text-gray-400">After JavaScript execution • {result.renderedHtml.split('\n').length} lines</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-400">After JavaScript execution • {result.renderedHtml.split('\n').length} lines</p>
                             </div>
                           </div>
                           <button
@@ -485,14 +485,14 @@ export default function JsRenderingTesterPage() {
                             <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
                               {result.renderedHtml.split('\n').slice(0, 100).map((line, index) => (
                                 <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
-                                  <span className="text-gray-400 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
+                                  <span className="text-gray-600 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
                                     {index + 1}
                                   </span>
                                   <span dangerouslySetInnerHTML={{ __html: highlightSyntax(line || ' ') }} />
                                 </div>
                               ))}
                               {result.renderedHtml.split('\n').length > 100 && (
-                                <div className="text-gray-400 dark:text-gray-500 text-center py-2 italic">
+                                <div className="text-gray-600 dark:text-gray-500 text-center py-2 italic">
                                   ... {result.renderedHtml.split('\n').length - 100} more lines (switch to "Rendered HTML" tab to see full content)
                                 </div>
                               )}
@@ -506,11 +506,11 @@ export default function JsRenderingTesterPage() {
                     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
                       <div className="p-4 max-h-[60vh] overflow-auto">
                         {displayedDiffs.length === 0 && (
-                          <div className="text-gray-400 text-center py-4">No significant differences found.</div>
+                          <div className="text-gray-600 text-center py-4">No significant differences found.</div>
                         )}
                         {displayedDiffs.map((diff, idx) => (
                           <div key={idx} className={`flex items-start gap-2 py-1 px-2 rounded transition-colors ${diff.type === 'added' ? 'bg-green-50 dark:bg-green-900/20' : diff.type === 'removed' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
-                            <span className="text-xs text-gray-400 w-10 text-right select-none">{diff.lineNumber}</span>
+                            <span className="text-xs text-gray-600 w-10 text-right select-none">{diff.lineNumber}</span>
                             <span className="flex-1 font-mono text-xs text-gray-700 dark:text-gray-300 break-all">
                               {diff.type === 'added' && <span className="text-green-600 dark:text-green-400 mr-2">[+]</span>}
                               {diff.type === 'removed' && <span className="text-red-600 dark:text-red-400 mr-2">[-]</span>}

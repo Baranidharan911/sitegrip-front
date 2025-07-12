@@ -23,7 +23,7 @@ export default function CompetitorAnalysisPage() {
         <div className="flex gap-4 mb-8 justify-center">
           <input
             type="text"
-            className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+            className="flex-1 px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
             placeholder="Enter competitor URLs (comma separated)"
             value={urls}
             onChange={e => setUrls(e.target.value)}

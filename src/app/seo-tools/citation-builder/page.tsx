@@ -76,21 +76,21 @@ export default function CitationBuilderPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <input
               type="text"
-              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               placeholder="Business Name"
               value={business.name}
               onChange={e => setBusiness({ ...business, name: e.target.value })}
             />
             <input
               type="text"
-              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               placeholder="Address"
               value={business.address}
               onChange={e => setBusiness({ ...business, address: e.target.value })}
             />
             <input
               type="text"
-              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+              className="px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               placeholder="Phone Number"
               value={business.phone}
               onChange={e => setBusiness({ ...business, phone: e.target.value })}

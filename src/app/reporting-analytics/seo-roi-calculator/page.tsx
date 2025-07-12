@@ -223,7 +223,7 @@ RESULTS:
                       type="number"
                       value={formData.organicTraffic}
                       onChange={(e) => handleInputChange('organicTraffic', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="10000"
                     />
                   </div>
@@ -239,7 +239,7 @@ RESULTS:
                       step="0.1"
                       value={formData.conversionRate}
                       onChange={(e) => handleInputChange('conversionRate', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="2.5"
                     />
                   </div>
@@ -258,7 +258,7 @@ RESULTS:
                       type="number"
                       value={formData.averageOrderValue}
                       onChange={(e) => handleInputChange('averageOrderValue', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="100"
                     />
                   </div>
@@ -273,7 +273,7 @@ RESULTS:
                       type="number"
                       value={formData.keywordRankings}
                       onChange={(e) => handleInputChange('keywordRankings', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="50"
                     />
                   </div>
@@ -293,7 +293,7 @@ RESULTS:
                       step="0.1"
                       value={formData.clickThroughRate}
                       onChange={(e) => handleInputChange('clickThroughRate', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="3.2"
                     />
                   </div>
@@ -309,7 +309,7 @@ RESULTS:
                       step="0.1"
                       value={formData.costPerClick}
                       onChange={(e) => handleInputChange('costPerClick', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="2.5"
                     />
                   </div>
@@ -328,7 +328,7 @@ RESULTS:
                       type="number"
                       value={formData.monthlyBudget}
                       onChange={(e) => handleInputChange('monthlyBudget', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="2000"
                     />
                   </div>
@@ -343,7 +343,7 @@ RESULTS:
                       type="number"
                       value={formData.timeFrame}
                       onChange={(e) => handleInputChange('timeFrame', Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                      className="w-full pl-10 pr-4 py-3 bg-white/80 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                       placeholder="12"
                     />
                   </div>

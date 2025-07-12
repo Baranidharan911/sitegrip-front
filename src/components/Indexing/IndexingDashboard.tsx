@@ -116,7 +116,7 @@ const IndexingDashboard: React.FC = () => {
         <button
           onClick={handleRefresh}
           disabled={refreshing || loading}
-          className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
+          className="flex items-center gap-2 px-4 py-2.5 test-black-300 bg-gray-300 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 transition-all duration-200 shadow-sm hover:shadow-md"
         >
           <RefreshCw className={`h-4 w-4 ${refreshing || loading ? 'animate-spin' : ''}`} />
           Refresh

@@ -191,7 +191,7 @@ export default function SchemaMarkupGeneratorPage() {
               <select
                 value={type}
                 onChange={e => { setType(e.target.value); setFields({}); setResult(null); setError(''); setValid(null); }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100"
               >
                 {schemaTypes.map(st => (
                   <option key={st.value} value={st.value}>{st.label}</option>
@@ -208,7 +208,7 @@ export default function SchemaMarkupGeneratorPage() {
                     value={fields[field.name] || ''}
                     onChange={handleFieldChange}
                     placeholder={field.placeholder || ''}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                   />
                 </div>
               ))}
@@ -234,7 +234,7 @@ export default function SchemaMarkupGeneratorPage() {
               value={pastedJson}
               onChange={e => setPastedJson(e.target.value)}
               placeholder="Paste your JSON-LD here to validate..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4 min-h-[100px]"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-4 min-h-[100px] text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
             />
             <button
               onClick={handleValidate}

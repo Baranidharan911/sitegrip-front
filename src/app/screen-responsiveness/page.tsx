@@ -136,7 +136,7 @@ export default function ScreenResponsivenessPage() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-4xl font-extrabold text-gray-900 dark:text-white mb-2 tracking-tight drop-shadow-lg">Responsive Preview Tool</h1>
-          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto text-lg">Enter any public URL, choose a device, and instantly preview how the site looks on different screens.</p>
+          <p className="text-gray-800 dark:text-gray-400 max-w-xl mx-auto text-lg">Enter any public URL, choose a device, and instantly preview how the site looks on different screens.</p>
         </div>
 
         {/* URL input with floating label and clear button */}
@@ -147,18 +147,18 @@ export default function ScreenResponsivenessPage() {
               value={inputUrl}
               onChange={(e) => setInputUrl(e.target.value)}
               placeholder=" "
-              className="peer w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/60 dark:bg-gray-900/60 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary text-base shadow-lg"
+              className="peer w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary text-base shadow-lg text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
             />
-            <label className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none transition-all duration-200
+            <label className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-500 pointer-events-none transition-all duration-200
               peer-focus:-top-3 peer-focus:text-xs peer-focus:text-primary
-              peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-400
+              peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-600
               peer-not-placeholder-shown:-top-3 peer-not-placeholder-shown:text-xs peer-not-placeholder-shown:text-primary
             ">
               Website URL
             </label>
             {inputUrl && (
               <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-red-500"
                 onClick={() => setInputUrl('')}
                 aria-label="Clear URL"
               >
@@ -181,12 +181,12 @@ export default function ScreenResponsivenessPage() {
             <Listbox value={selectedDevice} onChange={setSelectedDevice}>
               {({ open }) => (
                 <>
-                  <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-white/60 dark:bg-gray-900/60 backdrop-blur-md py-3 pl-4 pr-10 text-left border border-primary/30 shadow-lg focus:outline-none focus:ring-2 focus:ring-primary text-base font-semibold transition-all">
-                    <span className="block truncate">
+                  <Listbox.Button className="relative w-full cursor-pointer rounded-xl bg-white/80 dark:bg-gray-900/60 backdrop-blur-md py-3 pl-4 pr-10 text-left border border-primary/30 shadow-lg focus:outline-none focus:ring-2 focus:ring-primary text-base font-semibold transition-all text-gray-900 dark:text-gray-100">
+                    <span className="block truncate text-gray-900 dark:text-gray-100">
                       {selectedDevice.name} ({selectedDevice.width}×{selectedDevice.height})
                     </span>
                     <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
-                      <ChevronsUpDown className="h-5 w-5 text-primary" aria-hidden="true" />
+                      <ChevronsUpDown className="h-5 w-5 text-gray-900 dark:text-gray-100" aria-hidden="true" />
                     </span>
                   </Listbox.Button>
                   <Transition
@@ -198,7 +198,7 @@ export default function ScreenResponsivenessPage() {
                   >
                     <Listbox.Options className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl bg-white/90 dark:bg-gray-900/90 shadow-2xl ring-1 ring-black/10 backdrop-blur-lg py-2 text-base focus:outline-none">
                       {devicePresets.map(section => [
-                        <div key={section.category} className="px-4 py-2 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center gap-2 sticky top-0 bg-white/80 dark:bg-gray-900/80 z-10">
+                        <div key={section.category} className="px-4 py-2 text-xs font-bold text-gray-700 dark:text-gray-400 flex items-center gap-2 sticky top-0 bg-white/80 dark:bg-gray-900/80 z-10">
                           {deviceIcons[section.category]}
                           {section.category}
                         </div>,
@@ -208,14 +208,14 @@ export default function ScreenResponsivenessPage() {
                             value={device}
                             className={({ active, selected }) =>
                               `cursor-pointer select-none relative px-4 py-3 rounded-lg mx-2 my-1 transition-all
-                              ${active ? 'bg-primary/10 text-primary font-semibold' : 'text-gray-800 dark:text-gray-200'}
+                              ${active ? 'bg-primary/10 text-primary font-semibold' : 'text-gray-900 dark:text-gray-100'}
                               ${selected ? 'ring-2 ring-primary/30 bg-primary/5' : ''}`
                             }
                           >
                             {({ selected }) => (
                               <>
-                                <span className={`block truncate ${selected ? 'font-bold' : ''}`}>
-                                  {device.name} <span className="text-xs text-gray-400">({device.width}×{device.height})</span>
+                                <span className={`block truncate ${selected ? 'font-bold' : ''} text-gray-900 dark:text-gray-100`}>
+                                  {device.name} <span className="text-xs text-gray-700 dark:text-gray-300">({device.width}×{device.height})</span>
                                 </span>
                                 {selected ? (
                                   <span className="absolute inset-y-0 right-4 flex items-center text-primary">
@@ -248,28 +248,28 @@ export default function ScreenResponsivenessPage() {
                     onClick={() => setIsRotated((r) => !r)}
                     title="Rotate device"
                   >
-                    <RotateCw className="w-5 h-5" />
+                    <RotateCw className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                   </button>
                   <button
                     className="p-2 rounded-lg bg-white/70 dark:bg-gray-800/70 shadow border border-gray-200 dark:border-gray-700 hover:bg-primary/10 hover:scale-105 transition"
                     onClick={() => setZoom((z) => Math.max(0.3, z - 0.1))}
                     title="Zoom out"
                   >
-                    <ZoomOut className="w-5 h-5" />
+                    <ZoomOut className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                   </button>
                   <button
                     className="p-2 rounded-lg bg-white/70 dark:bg-gray-800/70 shadow border border-gray-200 dark:border-gray-700 hover:bg-primary/10 hover:scale-105 transition"
                     onClick={() => setZoom((z) => Math.min(2, z + 0.1))}
                     title="Zoom in"
                   >
-                    <ZoomIn className="w-5 h-5" />
+                    <ZoomIn className="w-5 h-5 text-gray-700 dark:text-gray-200" />
                   </button>
                   <button
                     className={`p-2 rounded-lg shadow border border-gray-200 dark:border-gray-700 hover:scale-105 transition ${darkFrame ? 'bg-gray-900 text-white' : 'bg-white/70 dark:bg-gray-800/70'}`}
                     onClick={() => setDarkFrame((d) => !d)}
                     title="Toggle device frame theme"
                   >
-                    {darkFrame ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                    {darkFrame ? <Sun className="w-5 h-5 text-gray-700 dark:text-gray-200" /> : <Moon className="w-5 h-5 text-gray-700 dark:text-gray-200" />}
                   </button>
                 </div>
                 
@@ -298,7 +298,7 @@ export default function ScreenResponsivenessPage() {
                         {iframeLoading && (
                           <div className="absolute inset-2 flex flex-col items-center justify-center bg-white/80 dark:bg-gray-900/80 z-10 rounded-[2rem]">
                             <Loader2 className="w-10 h-10 animate-spin text-primary mb-2" />
-                            <span className="text-gray-500 dark:text-gray-300 text-sm">Loading preview...</span>
+                            <span className="text-gray-700 dark:text-gray-300 text-sm">Loading preview...</span>
                           </div>
                         )}
                         
@@ -330,13 +330,13 @@ export default function ScreenResponsivenessPage() {
                   </AnimatePresence>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-64 w-full max-w-md mx-auto bg-white/80 dark:bg-gray-900/80 rounded-2xl shadow-inner border border-dashed border-gray-300 dark:border-gray-700">
-                    <span className="text-2xl text-gray-400 dark:text-gray-600 mb-2">📱</span>
-                    <span className="text-gray-500 dark:text-gray-400 text-center px-4">Select a device to preview the site</span>
+                    <span className="text-2xl text-gray-600 dark:text-gray-600 mb-2">📱</span>
+                    <span className="text-gray-700 dark:text-gray-400 text-center px-4">Select a device to preview the site</span>
                   </div>
                 )}
                 
                 {/* Device info */}
-                <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400 mt-4 justify-center flex-wrap">
+                <div className="flex gap-4 text-xs text-gray-700 dark:text-gray-400 mt-4 justify-center flex-wrap">
                   <span>Device: <b>{selectedDevice?.name || '-'}</b></span>
                   <span>Size: <b>{selectedDevice ? `${deviceWidth}×${deviceHeight}` : '-'}</b></span>
                   <span>Zoom: <b>{Math.round(zoom * 100)}%</b></span>
@@ -348,7 +348,7 @@ export default function ScreenResponsivenessPage() {
         </div>
 
         {/* Disclaimer */}
-        <p className="text-xs text-center text-gray-500 dark:text-gray-400 max-w-4xl mx-auto mt-6">
+        <p className="text-xs text-center text-gray-700 dark:text-gray-400 max-w-4xl mx-auto mt-6">
           Some websites may block being embedded in an iframe due to security policies (X-Frame-Options / Content-Security-Policy). If the preview remains blank, the target site likely prevents embedding.
         </p>
       </div>

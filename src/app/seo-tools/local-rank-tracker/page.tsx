@@ -118,7 +118,7 @@ export default function LocalRankTrackerPage() {
             <div className="flex items-center gap-4">
               <label className="text-sm text-slate-700 dark:text-slate-200">Rank:</label>
               <select
-                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                 value={filterRank}
                 onChange={e => setFilterRank(e.target.value)}
               >
@@ -128,7 +128,7 @@ export default function LocalRankTrackerPage() {
               </select>
               <label className="text-sm text-slate-700 dark:text-slate-200">Sort by:</label>
               <select
-                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                 value={sortBy}
                 onChange={e => setSortBy(e.target.value as any)}
               >
@@ -151,7 +151,7 @@ export default function LocalRankTrackerPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               placeholder="Keyword (e.g. plumber near me)"
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
@@ -161,7 +161,7 @@ export default function LocalRankTrackerPage() {
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               placeholder="Location (e.g. New York)"
               value={location}
               onChange={e => setLocation(e.target.value)}

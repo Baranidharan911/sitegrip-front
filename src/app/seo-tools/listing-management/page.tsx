@@ -128,7 +128,7 @@ export default function ListingManagementPage() {
             <div className="flex items-center gap-4">
               <label className="text-sm text-slate-700 dark:text-slate-200">Platform:</label>
               <select
-                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                 value={filterPlatform}
                 onChange={e => setFilterPlatform(e.target.value)}
               >
@@ -136,7 +136,7 @@ export default function ListingManagementPage() {
               </select>
               <label className="text-sm text-slate-700 dark:text-slate-200">Status:</label>
               <select
-                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                className="px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
                 value={filterStatus}
                 onChange={e => setFilterStatus(e.target.value)}
               >
@@ -259,21 +259,21 @@ export default function ListingManagementPage() {
               <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">Edit Listing</h2>
               <input
                 type="text"
-                className="w-full mb-3 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                className="w-full mb-3 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
                 placeholder="Business Name"
                 value={editListing.name}
                 onChange={e => setEditListing({ ...editListing, name: e.target.value })}
               />
               <input
                 type="text"
-                className="w-full mb-3 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                className="w-full mb-3 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
                 placeholder="Address"
                 value={editListing.address}
                 onChange={e => setEditListing({ ...editListing, address: e.target.value })}
               />
               <input
                 type="text"
-                className="w-full mb-6 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                className="w-full mb-6 px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
                 placeholder="Phone Number"
                 value={editListing.phone}
                 onChange={e => setEditListing({ ...editListing, phone: e.target.value })}

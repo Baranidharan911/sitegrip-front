@@ -192,7 +192,7 @@ export default function PricingPage() {
             {features.map((feature, index) => (
               <div
                 key={index}
-                className="text-center bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50 hover:bg-white/80 dark:hover:bg-slate-800/80 transition-all duration-300"
+                className="text-center bg-white/80 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50 hover:bg-white/90 dark:hover:bg-slate-800/80 transition-all duration-300"
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 p-3 mx-auto mb-4">
                   <feature.icon className="w-full h-full text-white" />
@@ -209,7 +209,7 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Section */}
-        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-3xl p-8 border border-white/20 dark:border-slate-700/50">
+                    <div className="bg-white/80 dark:bg-slate-800/60 backdrop-blur-xl rounded-3xl p-8 border border-white/20 dark:border-slate-700/50">
           <h2 className="text-3xl font-bold text-center text-slate-800 dark:text-white mb-8">
             Frequently Asked Questions
           </h2>

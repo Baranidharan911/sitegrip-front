@@ -230,7 +230,7 @@ export default function HeaderCheckerPage() {
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://your-site.com"
-                className="w-full px-4 sm:px-5 py-3 pl-10 sm:pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base shadow"
+                className="w-full px-4 sm:px-5 py-3 pl-10 sm:pl-12 rounded-full border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm sm:text-base shadow text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
               />
               <Globe className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 sm:w-5 sm:h-5" />
             </div>

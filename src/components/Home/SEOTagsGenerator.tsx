@@ -111,13 +111,13 @@ const SEOTagsGenerator = () => {
         <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 text-center">Paste your webpage content and URL to generate a complete, optimized set of SEO tags in JSON format.</p>
         <div className="flex flex-col gap-6">
           <textarea
-            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 p-4 text-base text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none min-h-[120px] resize-vertical shadow-sm"
+            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 p-4 text-base text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none min-h-[120px] resize-vertical shadow-sm placeholder-gray-700 dark:placeholder-gray-400"
             placeholder="Paste the full text content of the webpage here..."
             value={content}
             onChange={e => setContent(e.target.value)}
           />
           <input
-            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 p-4 text-base text-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none shadow-sm"
+            className="rounded-xl border border-gray-300 dark:border-gray-700 bg-white/90 dark:bg-gray-800/80 p-4 text-base text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-purple-400 outline-none shadow-sm placeholder-gray-700 dark:placeholder-gray-400"
             placeholder="Enter the full URL of the page (e.g., https://www.example.com/page)"
             value={url}
             onChange={e => setUrl(e.target.value)}

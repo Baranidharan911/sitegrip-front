@@ -64,7 +64,7 @@ export default function MapsAuditPage() {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
               <input
                 type="text"
-                className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base"
+                className="w-full pl-12 pr-4 py-4 rounded-xl border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                 placeholder="Enter business name or address"
                 value={input}
                 onChange={e => setInput(e.target.value)}
@@ -196,7 +196,7 @@ export default function MapsAuditPage() {
                         <input
                           type="text"
                           placeholder="Search platforms..."
-                          className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                          className="pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
