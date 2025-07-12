@@ -1,8 +1,13 @@
 'use client';
 
 import React from 'react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { Check, Star, Zap, Crown, Users, BarChart3, Globe, Shield, MapPin } from 'lucide-react';
+
+const NewHeader = dynamic(() => import('@/components/Home/NewHeader'), { ssr: false });
+const NewFooter = dynamic(() => import('@/components/Home/NewFooter'), { ssr: false });
+const Contact = dynamic(() => import('@/components/Home/Contact'), { ssr: false });
 
 const pricingPlans = [
   {
@@ -95,7 +100,8 @@ const features = [
 export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-8">
+      <NewHeader />
+      <main className="container mx-auto px-4 py-8 pt-40">
         {/* Header */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-white dark:to-slate-300 bg-clip-text text-transparent mb-4">
@@ -260,7 +266,9 @@ export default function PricingPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </main>
+      <Contact />
+      <NewFooter />
     </div>
   );
 } 
