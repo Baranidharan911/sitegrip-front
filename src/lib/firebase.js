@@ -145,4 +145,43 @@ function getFirestoreInstance() {
   return db;
 }
 
+// Add missing function definitions
+function getFirebaseApp() {
+  if (typeof window === 'undefined') return null;
+  if (!app) {
+    try {
+      app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    } catch (error) {
+      console.error('❌ Firebase app initialization failed:', error);
+      return null;
+    }
+  }
+  return app;
+}
+
+function getAuthInstance() {
+  if (typeof window === 'undefined') return null;
+  if (!auth) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) return null;
+    auth = getAuth(firebaseApp);
+  }
+  return auth;
+}
+
+function getProvider() {
+  if (typeof window === 'undefined') return null;
+  if (!provider) {
+    provider = new GoogleAuthProvider();
+    provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
+    provider.addScope("https://www.googleapis.com/auth/webmasters");
+    provider.addScope("https://www.googleapis.com/auth/indexing");
+    provider.setCustomParameters({
+      'access_type': 'offline',
+      'prompt': 'consent'
+    });
+  }
+  return provider;
+}
+
 export { getFirebaseApp, getAuthInstance, getProvider, getFirestoreInstance };
