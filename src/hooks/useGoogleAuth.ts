@@ -11,6 +11,7 @@ export const useGoogleAuth = () => {
     properties: [],
     indexStatuses: []
   });
+  const [debug, setDebug] = useState<any>(null);
 
   function getApiBaseUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -32,13 +33,13 @@ export const useGoogleAuth = () => {
   const checkAuthStatus = async (userId: string): Promise<AuthState> => {
     try {
       const apiUrl = getApiBaseUrl();
+      console.log('[useGoogleAuth] Checking auth status for userId:', userId);
       const response = await fetch(`${apiUrl}/api/status/${userId}`);
-      
+      const data = await response.json();
+      setDebug({ userId, statusResponse: data });
       if (!response.ok) {
         throw new Error('Failed to check auth status');
       }
-      
-      const data = await response.json();
       return {
         isAuthenticated: data.is_authenticated,
         properties: data.properties || [],
@@ -47,6 +48,7 @@ export const useGoogleAuth = () => {
       };
     } catch (err) {
       console.error('Failed to check auth status:', err);
+      setDebug({ userId, error: err });
       throw err;
     }
   };
@@ -153,6 +155,7 @@ export const useGoogleAuth = () => {
     initiateGoogleAuth,
     revokeAccess,
     refreshAuthStatus,
-    setError
+    setError,
+    debug
   };
 };

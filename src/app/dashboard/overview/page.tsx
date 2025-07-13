@@ -134,7 +134,7 @@ function formatSessionDuration(seconds: number) {
 }
 
 const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
-  const { loading: authLoading, error: authError, authState, refreshAuthStatus } = useGoogleAuth();
+  const { loading: authLoading, error: authError, authState, refreshAuthStatus, debug } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [dateRange, setDateRange] = useState({ from: "2025-01-01", to: "2025-01-31" });
@@ -341,6 +341,11 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
             >
               Go to Login
             </a>
+            {debug && (
+              <pre className="mt-4 text-xs text-left bg-gray-100 dark:bg-gray-800 p-2 rounded max-w-xl overflow-x-auto">
+                {JSON.stringify(debug, null, 2)}
+              </pre>
+            )}
           </div>
         ) : loadingProperties ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
