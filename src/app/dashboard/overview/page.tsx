@@ -134,7 +134,7 @@ function formatSessionDuration(seconds: number) {
 }
 
 const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
-  const { loading: authLoading, error: authError, authState, refreshAuthStatus, debug } = useGoogleAuth();
+  const { loading: authLoading, error: authError, authState, refreshAuthStatus, debug, retryAuth, authReady } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [dateRange, setDateRange] = useState({ from: "2025-01-01", to: "2025-01-31" });
@@ -330,7 +330,7 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
         </div>
 
         {/* Auth/Property/Data State Handling */}
-        {authLoading ? (
+        {(!authReady || authLoading) ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Checking authentication...</div>
         ) : !authState?.isAuthenticated ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-4">
@@ -341,6 +341,8 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
             >
               Go to Login
             </a>
+            {error && <div className="text-red-600 dark:text-red-400 mt-2">{error}</div>}
+            <button onClick={retryAuth} className="mt-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded">Retry</button>
             {debug && (
               <pre className="mt-4 text-xs text-left bg-gray-100 dark:bg-gray-800 p-2 rounded max-w-xl overflow-x-auto">
                 {JSON.stringify(debug, null, 2)}
