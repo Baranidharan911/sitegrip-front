@@ -180,6 +180,10 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
   useEffect(() => {
     if (authState?.isAuthenticated) {
       fetchAnalyticsProperties();
+    } else {
+      setAnalyticsProperties([]); // Clear properties if not authenticated
+      setSelectedProperty("");
+      setAnalyticsData(null);
     }
   }, [authState?.isAuthenticated]);
 

@@ -5,6 +5,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 
 export default function AuthCallback() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -14,6 +15,7 @@ export default function AuthCallback() {
   const [manualInput, setManualInput] = useState('');
   const [processed, setProcessed] = useState(false);
   const router = useRouter();
+  const { refreshAuthStatus } = useGoogleAuth();
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
 
@@ -66,6 +68,7 @@ export default function AuthCallback() {
 
               setMessage('Authentication successful! Redirecting...');
               toast.success('Signed in successfully');
+              await refreshAuthStatus();
               setTimeout(() => router.push('/dashboard/overview'), 1500);
             } else {
               throw new Error('Invalid user data received');
@@ -121,6 +124,7 @@ export default function AuthCallback() {
               setStatus('success');
               setMessage('Signed in successfully. Redirecting...');
               toast.success('Signed in successfully');
+              await refreshAuthStatus();
               setTimeout(() => router.push('/dashboard/overview'), 1500);
             } else {
               throw new Error(data.message || 'Google auth failed');
@@ -139,7 +143,7 @@ export default function AuthCallback() {
     };
 
     handleAuthCallback();
-  }, [API_URL, processed, router]);
+  }, [API_URL, processed, router, refreshAuthStatus]);
 
   const processManualData = () => {
     try {
