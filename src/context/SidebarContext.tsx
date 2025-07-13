@@ -1,7 +1,14 @@
 'use client';
 import { createContext, useContext, useState, useEffect } from 'react';
 
-const SidebarContext = createContext<any>(null);
+interface SidebarContextType {
+  isOpen: boolean;
+  toggleSidebar: () => void;
+  closeSidebar: () => void;
+  setIsOpen: (value: boolean) => void;
+}
+
+const SidebarContext = createContext<SidebarContextType | undefined>(undefined);
 
 export const SidebarProvider = ({ children }: { children: React.ReactNode }) => {
   // Persist sidebar state in localStorage
@@ -29,4 +36,10 @@ export const SidebarProvider = ({ children }: { children: React.ReactNode }) => 
   );
 };
 
-export const useSidebar = () => useContext(SidebarContext);
+export const useSidebar = () => {
+  const context = useContext(SidebarContext);
+  if (context === undefined) {
+    throw new Error('useSidebar must be used within a SidebarProvider');
+  }
+  return context;
+};

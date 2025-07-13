@@ -9,7 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 const AppSidebar = memo(() => {
   const pathname = usePathname();
-  const { isOpen, toggleSidebar, setIsOpen } = useSidebar();
+  const { isOpen, toggleSidebar } = useSidebar();
   const { signOut } = useAuth();
 
   // Memoize the sidebar items to prevent unnecessary re-renders
@@ -26,11 +26,6 @@ const AppSidebar = memo(() => {
   const isActive = useCallback((path: string) => {
     return pathname === path || pathname.startsWith(path + '/');
   }, [pathname]);
-
-  // Sidebar expand/collapse toggle (persistent)
-  const handleSidebarToggle = useCallback(() => {
-    setIsOpen((prev: boolean) => !prev);
-  }, [setIsOpen]);
 
   // Memoize the sidebar content
   const sidebarContent = useMemo(() => (
@@ -87,7 +82,7 @@ const AppSidebar = memo(() => {
         </div>
       </div>
     </div>
-  ), [memoizedSidebarItems, isActive, handleClose, toggleSidebar, isOpen, handleSidebarToggle, setIsOpen, signOut]);
+  ), [memoizedSidebarItems, isActive, handleClose, toggleSidebar, isOpen, signOut]);
 
   return sidebarContent;
 });

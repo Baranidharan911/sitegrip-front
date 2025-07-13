@@ -4,18 +4,10 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 const nextConfig = withBundleAnalyzer({
   enabled: process.env.BUNDLE_ANALYZE === 'both',
 })({
-  // Performance optimizations
+  // Performance optimizations for 50+ concurrent users
   experimental: {
-    optimizeCss: true,
-    optimizePackageImports: ['lucide-react', 'react-hot-toast'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+    optimizePackageImports: ['lucide-react', 'react-hot-toast', 'framer-motion'],
+    serverComponentsExternalPackages: ['firebase'],
   },
   
   // Image optimization
@@ -26,6 +18,7 @@ const nextConfig = withBundleAnalyzer({
     minimumCacheTTL: 31536000, // 1 year
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+    unoptimized: false,
   },
 
   // Compression and caching
@@ -36,11 +29,12 @@ const nextConfig = withBundleAnalyzer({
   webpack: (config, { dev, isServer }) => {
     // Production optimizations
     if (!dev && !isServer) {
+      // Enhanced chunk splitting for better caching
       config.optimization.splitChunks = {
         chunks: 'all',
         cacheGroups: {
           vendor: {
-            test: /[\\\\/]node_modules[\\\\/]/,
+            test: /[\\/]node_modules[\\/]/,
             name: 'vendors',
             chunks: 'all',
             priority: 10,
@@ -54,16 +48,43 @@ const nextConfig = withBundleAnalyzer({
             reuseExistingChunk: true,
           },
           firebase: {
-            test: /[\\\\/]node_modules[\\\\/]firebase/,
+            test: /[\\/]node_modules[\\/]firebase/,
             name: 'firebase',
             chunks: 'all',
             priority: 20,
           },
           react: {
-            test: /[\\\\/]node_modules[\\\\/]react/,
+            test: /[\\/]node_modules[\\/]react/,
             name: 'react',
             chunks: 'all',
             priority: 20,
+          },
+          // Separate large libraries
+          framer: {
+            test: /[\\/]node_modules[\\/]framer-motion/,
+            name: 'framer',
+            chunks: 'all',
+            priority: 15,
+          },
+          recharts: {
+            test: /[\\/]node_modules[\\/]recharts/,
+            name: 'recharts',
+            chunks: 'all',
+            priority: 15,
+          },
+          // Separate utilities
+          utils: {
+            test: /[\\/]src[\\/]utils[\\/]/,
+            name: 'utils',
+            chunks: 'all',
+            priority: 8,
+          },
+          // Separate components
+          components: {
+            test: /[\\/]src[\\/]components[\\/]/,
+            name: 'components',
+            chunks: 'all',
+            priority: 8,
           },
         },
       };
@@ -74,6 +95,12 @@ const nextConfig = withBundleAnalyzer({
       
       // Optimize bundle size
       config.optimization.minimize = true;
+      
+      // Enable module concatenation
+      config.optimization.concatenateModules = true;
+      
+      // Optimize runtime
+      config.optimization.runtimeChunk = 'single';
     }
 
     // Development optimizations
@@ -83,6 +110,22 @@ const nextConfig = withBundleAnalyzer({
         poll: 1000,
         aggregateTimeout: 300,
         ignored: ['**/node_modules', '**/.next'],
+      };
+      
+      // Enable hot module replacement
+      config.optimization.removeAvailableModules = false;
+      config.optimization.removeEmptyChunks = false;
+      config.optimization.splitChunks = false;
+    }
+
+    // Optimize for both server and client
+    if (!isServer) {
+      // Client-side optimizations
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
       };
     }
 
@@ -110,6 +153,19 @@ const nextConfig = withBundleAnalyzer({
           {
             key: 'Cache-Control',
             value: 'public, max-age=3600, s-maxage=86400',
+          },
+          // Performance headers
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+          {
+            key: 'X-Permitted-Cross-Domain-Policies',
+            value: 'none',
+          },
+          {
+            key: 'Referrer-Policy',
+            value: 'strict-origin-when-cross-origin',
           },
         ],
       },
@@ -140,19 +196,72 @@ const nextConfig = withBundleAnalyzer({
           },
         ],
       },
-    ];
-  },
-
-  // Redirects for better UX
-  async redirects() {
-    return [
+      // API routes caching
       {
-        source: '/dashboard',
-        destination: '/dashboard/overview',
-        permanent: false,
+        source: '/api/(.*)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=300, s-maxage=600',
+          },
+        ],
+      },
+      // Static assets
+      {
+        source: '/:path*.(js|css|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
       },
     ];
   },
+
+  // Redirects for performance
+  async redirects() {
+    return [
+      // Redirect www to non-www for better caching
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.sitegrip.io',
+          },
+        ],
+        destination: 'https://sitegrip.io/:path*',
+        permanent: true,
+      },
+    ];
+  },
+
+  // Rewrites for performance
+  async rewrites() {
+    return [
+      // API rewrites for better performance
+      {
+        source: '/api/v1/:path*',
+        destination: '/api/:path*',
+      },
+    ];
+  },
+
+  // Environment variables for performance
+  env: {
+    // Performance monitoring
+    NEXT_PUBLIC_PERFORMANCE_MONITORING: process.env.NODE_ENV === 'production' ? 'true' : 'false',
+    NEXT_PUBLIC_ENABLE_CACHING: 'true',
+    NEXT_PUBLIC_ENABLE_BATCHING: 'true',
+    NEXT_PUBLIC_ENABLE_RATE_LIMITING: 'true',
+  },
+
+  // Output configuration
+  output: 'standalone',
+  
+  // Enable SWC minification for better performance
+  swcMinify: true,
 });
 
 export default nextConfig;
