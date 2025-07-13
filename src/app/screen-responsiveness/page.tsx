@@ -139,32 +139,30 @@ export default function ScreenResponsivenessPage() {
           <p className="text-gray-800 dark:text-gray-400 max-w-xl mx-auto text-lg">Enter any public URL, choose a device, and instantly preview how the site looks on different screens.</p>
         </div>
 
-        {/* URL input with floating label and clear button */}
+        {/* URL input with standard label and clear button */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-3xl mx-auto">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={inputUrl}
-              onChange={(e) => setInputUrl(e.target.value)}
-              placeholder=" "
-              className="peer w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary text-base shadow-lg text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
-            />
-            <label className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 dark:text-gray-500 pointer-events-none transition-all duration-200
-              peer-focus:-top-3 peer-focus:text-xs peer-focus:text-primary
-              peer-placeholder-shown:top-1/2 peer-placeholder-shown:text-base peer-placeholder-shown:text-gray-600
-              peer-not-placeholder-shown:-top-3 peer-not-placeholder-shown:text-xs peer-not-placeholder-shown:text-primary
-            ">
+          <div className="flex-1">
+            <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">
               Website URL
             </label>
-            {inputUrl && (
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-red-500"
-                onClick={() => setInputUrl('')}
-                aria-label="Clear URL"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            )}
+            <div className="relative">
+              <input
+                type="text"
+                value={inputUrl}
+                onChange={(e) => setInputUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="w-full px-4 py-3 rounded-xl border border-gray-300 dark:border-gray-700 bg-white/80 dark:bg-gray-900/60 backdrop-blur-md focus:outline-none focus:ring-2 focus:ring-primary text-base shadow-lg text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
+              />
+              {inputUrl && (
+                <button
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-600 hover:text-red-500"
+                  onClick={() => setInputUrl('')}
+                  aria-label="Clear URL"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              )}
+            </div>
           </div>
           <button
             onClick={handlePreview}
