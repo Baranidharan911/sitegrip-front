@@ -126,6 +126,13 @@ interface GoalCompletions {
 
 const COLORS = ['#6366f1', '#10b981', '#f59e42'];
 
+// Utility function to format session duration from seconds to 'Xm Ys'
+function formatSessionDuration(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
 export default function DashboardOverviewPage() {
   const { loading: authLoading, error: authError, authState, refreshAuthStatus } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
@@ -265,122 +272,71 @@ export default function DashboardOverviewPage() {
     }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="animate-spin" />
-          <span>Loading authentication...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (authError || !authState?.isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold mb-4">Authentication Required</h2>
-          <p className="text-gray-600 mb-4">Please log in with Google to access your analytics data.</p>
-          <a href="/login" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            Go to Login
-          </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Helper function to format session duration
-  const formatSessionDuration = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = Math.floor(seconds % 60);
-    return `${minutes}m ${remainingSeconds}s`;
-  };
-
+  // UI always shows selectors
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Dashboard Overview
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            View your website analytics and performance data
-          </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col md:flex-row gap-4 items-center mb-8">
+          {/* Property Selector */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Google Analytics Property</label>
+            <select
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
+              value={selectedProperty}
+              onChange={e => setSelectedProperty(e.target.value)}
+              disabled={loadingProperties || !analyticsProperties.length}
+            >
+              <option value="">{loadingProperties ? 'Loading properties...' : 'Select a property'}</option>
+              {analyticsProperties.map((prop) => (
+                <option key={prop.property} value={prop.property}>{prop.displayName}</option>
+              ))}
+            </select>
+          </div>
+          {/* Date Range Picker */}
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
+            <div className="flex gap-2">
+              <input
+                type="date"
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
+                value={dateRange.from}
+                onChange={e => setDateRange({ ...dateRange, from: e.target.value })}
+              />
+              <span className="text-gray-500 dark:text-gray-400 self-center">to</span>
+              <input
+                type="date"
+                className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100"
+                value={dateRange.to}
+                onChange={e => setDateRange({ ...dateRange, to: e.target.value })}
+              />
+            </div>
+          </div>
         </div>
 
-        {/* Property Selection */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Select Website
-          </h2>
-          
-          {loadingProperties ? (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="animate-spin" />
-              <span>Loading your websites...</span>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Google Analytics Property
-                </label>
-                <select
-                  value={selectedProperty}
-                  onChange={(e) => setSelectedProperty(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                >
-                  <option value="">Select a website</option>
-                  {analyticsProperties.map((property) => (
-                    <option key={property.property} value={property.property}>
-                      {property.displayName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {error && (
-                <div className="text-red-600 text-sm">{error}</div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Date Range and Dashboard */}
-        {selectedProperty && (
+        {/* Auth/Property/Data State Handling */}
+        {authLoading ? (
+          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Checking authentication...</div>
+        ) : !authState?.isAuthenticated ? (
+          <div className="flex flex-col items-center justify-center py-24">
+            <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
+            <p className="mb-4 text-gray-600 dark:text-gray-400">Please log in with Google to access your analytics data.</p>
+            <a href="/login" className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Go to Login</a>
+          </div>
+        ) : loadingProperties ? (
+          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
+        ) : !analyticsProperties.length ? (
+          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">No Google Analytics properties found for your account.</div>
+        ) : !selectedProperty ? (
+          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Please select a property to view analytics data.</div>
+        ) : loading ? (
+          <div className="text-center py-16 text-lg text-purple-600 dark:text-purple-400">Loading analytics data...</div>
+        ) : error ? (
+          <div className="text-center py-16 text-lg text-red-600 dark:text-red-400">{error}</div>
+        ) : !analyticsData ? (
+          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">No data available for the selected date range.</div>
+        ) : (
+          // ... existing dashboard charts and tables ...
           <>
-            {/* Date Range Selector */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                Date Range
-              </h2>
-              <div className="flex space-x-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    From
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.from}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    To
-                  </label>
-                  <input
-                    type="date"
-                    value={dateRange.to}
-                    onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                    className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Total Users */}
