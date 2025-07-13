@@ -328,28 +328,28 @@ export default function CustomDashboardPage() {
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/60 dark:bg-gray-900/60 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/30 dark:border-gray-700/40 px-8 py-6 mb-4">
           <div className="flex items-center gap-2">
             <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl shadow-lg">
               <Grid3X3 className="text-white" size={28} />
             </div>
             <div>
-              <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg">Custom Dashboard</h1>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">Build your personalized analytics dashboard</p>
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg mb-1">Custom Dashboard</h1>
+              <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">Build your personalized analytics dashboard</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <ThemeToggle />
-            <button onClick={() => setRefreshKey(k => k + 1)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-xl text-base">
+            <button onClick={() => setRefreshKey(k => k + 1)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full font-semibold hover:from-blue-600 hover:to-cyan-600 transition-all shadow-2xl text-base focus:ring-2 focus:ring-blue-300 active:scale-95">
               <RotateCcw size={20} /> Refresh Data
             </button>
-            <button onClick={() => setShowWidgetSelector(!showWidgetSelector)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-xl text-base">
+            <button onClick={() => setShowWidgetSelector(!showWidgetSelector)} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full font-semibold hover:from-purple-600 hover:to-pink-600 transition-all shadow-2xl text-base focus:ring-2 focus:ring-purple-300 active:scale-95">
               <Plus size={20} /> Add Widget
             </button>
-            <button onClick={saveDashboard} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full font-semibold hover:from-green-600 hover:to-emerald-600 transition-all shadow-xl text-base">
+            <button onClick={saveDashboard} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-full font-semibold hover:from-green-600 hover:to-emerald-600 transition-all shadow-2xl text-base focus:ring-2 focus:ring-green-300 active:scale-95">
               <Save size={20} /> Save
             </button>
-            <button onClick={resetDashboard} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-semibold hover:from-red-600 hover:to-pink-600 transition-all shadow-xl text-base">
+            <button onClick={resetDashboard} className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-full font-semibold hover:from-red-600 hover:to-pink-600 transition-all shadow-2xl text-base focus:ring-2 focus:ring-red-300 active:scale-95">
               <RotateCcw size={20} /> Reset
             </button>
           </div>
