@@ -4,11 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
 import { sidebarItems } from '@/lib/sidebarConfig';
-import { X, ChevronDown, ChevronRight, Menu } from 'lucide-react';
+import { X, ChevronDown, ChevronRight, Menu, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const AppSidebar = memo(() => {
   const pathname = usePathname();
   const { isOpen, toggleSidebar, setIsOpen } = useSidebar();
+  const { signOut } = useAuth();
 
   // Memoize the sidebar items to prevent unnecessary re-renders
   const memoizedSidebarItems = useMemo(() => sidebarItems, []);
@@ -75,6 +77,16 @@ const AppSidebar = memo(() => {
         </div>
       </nav>
 
+      {/* Sign Out Button */}
+      <div className="px-4 pb-2">
+        <button
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 rounded-lg font-semibold hover:bg-red-100 dark:hover:bg-red-800 transition-colors"
+        >
+          <LogOut className="w-5 h-5" />
+          <span className="hidden md:inline">Sign Out</span>
+        </button>
+      </div>
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
@@ -82,7 +94,7 @@ const AppSidebar = memo(() => {
         </div>
       </div>
     </div>
-  ), [memoizedSidebarItems, isActive, handleClose, toggleSidebar, isOpen, handleSidebarToggle, setIsOpen]);
+  ), [memoizedSidebarItems, isActive, handleClose, toggleSidebar, isOpen, handleSidebarToggle, setIsOpen, signOut]);
 
   return sidebarContent;
 });
