@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AuthResponse, AuthState, GSCProperty } from '@/types/indexing';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -194,6 +194,22 @@ export const useGoogleAuth = () => {
     }
   };
 
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const auth = getAuth();
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      await refreshAuthStatus();
+    } catch (err) {
+      setError('Google sign-in failed');
+      setDebug({ error: err });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Auto-check auth status on mount, but only after authReady
   useEffect(() => {
     if (authReady) {
@@ -211,6 +227,7 @@ export const useGoogleAuth = () => {
     setError,
     debug,
     retryAuth,
-    authReady
+    authReady,
+    signInWithGoogle
   };
 };
