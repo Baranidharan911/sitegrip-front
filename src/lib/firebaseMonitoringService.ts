@@ -16,7 +16,7 @@ import {
   writeBatch,
   addDoc
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { getFirestoreInstance } from './firebase';
 import { 
   Monitor, 
   CheckResult, 
@@ -45,8 +45,9 @@ export class FirebaseMonitoringService {
   // ============================
 
   async createMonitor(userId: string, monitorData: Omit<Monitor, 'id' | 'createdAt' | 'updatedAt' | 'userId'>): Promise<Monitor> {
-    const monitorRef = db ? doc(collection(db, 'monitors')) : undefined;
-    if (!monitorRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorRef = doc(collection(db, 'monitors'));
     const monitor: Monitor = {
       id: monitorRef.id,
       ...monitorData,
@@ -65,8 +66,9 @@ export class FirebaseMonitoringService {
   }
 
   async getAllMonitors(userId: string): Promise<Monitor[]> {
-    const monitorsRef = db ? collection(db, 'monitors') : undefined;
-    if (!monitorsRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorsRef = collection(db, 'monitors');
     const q = query(monitorsRef, where('userId', '==', userId), orderBy('createdAt', 'desc'));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
@@ -76,8 +78,9 @@ export class FirebaseMonitoringService {
   }
 
   async getMonitorById(userId: string, id: string): Promise<Monitor | null> {
-    const monitorRef = db ? doc(db, 'monitors', id) : undefined;
-    if (!monitorRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorRef = doc(db, 'monitors', id);
     const snapshot = await getDoc(monitorRef);
     if (snapshot.exists() && snapshot.data().userId === userId) {
       return { id: snapshot.id, ...snapshot.data() } as Monitor;
@@ -86,8 +89,9 @@ export class FirebaseMonitoringService {
   }
 
   async updateMonitor(userId: string, id: string, updates: Partial<Monitor>): Promise<Monitor> {
-    const monitorRef = db ? doc(db, 'monitors', id) : undefined;
-    if (!monitorRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorRef = doc(db, 'monitors', id);
     const docSnap = await getDoc(monitorRef);
     if (!docSnap.exists() || docSnap.data().userId !== userId) {
       throw new Error('Monitor not found or access denied');
@@ -102,8 +106,9 @@ export class FirebaseMonitoringService {
   }
 
   async deleteMonitor(userId: string, id: string): Promise<void> {
-    const monitorRef = db ? doc(db, 'monitors', id) : undefined;
-    if (!monitorRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorRef = doc(db, 'monitors', id);
     const docSnap = await getDoc(monitorRef);
     if (!docSnap.exists() || docSnap.data().userId !== userId) {
       throw new Error('Monitor not found or access denied');
@@ -116,8 +121,9 @@ export class FirebaseMonitoringService {
   // ============================
 
   async saveCheckResult(userId: string, checkResult: Omit<CheckResult, 'id' | 'timestamp' | 'userId'>): Promise<CheckResult> {
-    const checkRef = db ? doc(collection(db, 'checkResults')) : undefined;
-    if (!checkRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const checkRef = doc(collection(db, 'checkResults'));
     const check: CheckResult = {
       id: checkRef.id,
       ...checkResult,
@@ -126,8 +132,7 @@ export class FirebaseMonitoringService {
     };
     await setDoc(checkRef, check);
     // Update monitor with latest check info
-    const monitorRef = db ? doc(db, 'monitors', checkResult.monitorId) : undefined;
-    if (!monitorRef) throw new Error('Firestore not initialized');
+    const monitorRef = doc(db, 'monitors', checkResult.monitorId);
     const docSnap = await getDoc(monitorRef);
     if (docSnap.exists() && docSnap.data().userId === userId) {
       await updateDoc(monitorRef, {
@@ -141,8 +146,9 @@ export class FirebaseMonitoringService {
   }
 
   async getMonitorChecks(userId: string, monitorId: string, limitCount: number = 100): Promise<CheckResult[]> {
-    const checksRef = db ? collection(db, 'checkResults') : undefined;
-    if (!checksRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const checksRef = collection(db, 'checkResults');
     const q = query(
       checksRef,
       where('userId', '==', userId),
@@ -158,9 +164,10 @@ export class FirebaseMonitoringService {
   }
 
   async saveBrowserCheckResult(result: Omit<BrowserCheckResult, 'id' | 'timestamp'> & { monitorId: string }): Promise<BrowserCheckResult> {
-    const browserRef = db ? doc(collection(db, 'browserChecks')) : undefined;
-    if (!browserRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
     const { monitorId, ...browserResult } = result;
+    const browserRef = doc(collection(db, 'browserChecks'));
     const browserCheck: BrowserCheckResult = {
       id: browserRef.id,
       ...browserResult,
@@ -176,8 +183,9 @@ export class FirebaseMonitoringService {
   // ============================
 
   async createIncident(incidentData: Omit<Incident, 'id' | 'createdAt' | 'updatedAt'>): Promise<Incident> {
-    const incidentRef = db ? doc(collection(db, 'incidents')) : undefined;
-    if (!incidentRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const incidentRef = doc(collection(db, 'incidents'));
     const incident: Incident = {
       id: incidentRef.id,
       ...incidentData,
@@ -191,8 +199,9 @@ export class FirebaseMonitoringService {
   }
 
   async getIncidents(monitorId?: string, userId?: string): Promise<Incident[]> {
-    const incidentsRef = db ? collection(db, 'incidents') : undefined;
-    if (!incidentsRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const incidentsRef = collection(db, 'incidents');
     let q = query(incidentsRef, orderBy('createdAt', 'desc'));
     
     if (monitorId && userId) {
@@ -211,8 +220,9 @@ export class FirebaseMonitoringService {
   }
 
   async getIncidentById(id: string): Promise<Incident | null> {
-    const incidentRef = db ? doc(db, 'incidents', id) : undefined;
-    if (!incidentRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const incidentRef = doc(db, 'incidents', id);
     const snapshot = await getDoc(incidentRef);
     
     if (snapshot.exists()) {
@@ -222,8 +232,9 @@ export class FirebaseMonitoringService {
   }
 
   async updateIncident(id: string, updates: Partial<Incident>): Promise<Incident> {
-    const incidentRef = db ? doc(db, 'incidents', id) : undefined;
-    if (!incidentRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const incidentRef = doc(db, 'incidents', id);
     const updateData = {
       ...updates,
       updatedAt: serverTimestamp()
@@ -254,6 +265,8 @@ export class FirebaseMonitoringService {
   // ============================
 
   async getMonitorSummary(userId: string): Promise<MonitorSummary> {
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
     const monitors = await this.getAllMonitors(userId);
     const incidents = await this.getIncidents(undefined, userId); // Pass userId here
     
@@ -312,8 +325,9 @@ export class FirebaseMonitoringService {
   // ============================
 
   subscribeToMonitors(userId: string, callback: (monitors: Monitor[]) => void): () => void {
-    const monitorsRef = db ? collection(db, 'monitors') : undefined;
-    if (!monitorsRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const monitorsRef = collection(db, 'monitors');
     const q = query(monitorsRef, where('userId', '==', userId), orderBy('updatedAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -329,8 +343,9 @@ export class FirebaseMonitoringService {
   }
 
   subscribeToIncidents(userId: string, callback: (incidents: Incident[]) => void): () => void {
-    const incidentsRef = db ? collection(db, 'incidents') : undefined;
-    if (!incidentsRef) throw new Error('Firestore not initialized');
+    const db = getFirestoreInstance();
+    if (!db) throw new Error('Firestore not initialized');
+    const incidentsRef = collection(db, 'incidents');
     const q = query(incidentsRef, where('userId', '==', userId), where('status', '==', 'open'), orderBy('createdAt', 'desc'));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {

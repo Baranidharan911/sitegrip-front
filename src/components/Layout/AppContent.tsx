@@ -1,5 +1,5 @@
 'use client';
-import React, { memo, useMemo, Suspense, lazy, useCallback } from 'react';
+import React, { memo, useMemo, Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { useSidebar } from '@/context/SidebarContext';
 import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
@@ -15,6 +15,12 @@ interface AppContentProps {
 
 const AppContent = memo(({ children }: AppContentProps) => {
   const { isOpen } = useSidebar();
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure client-side rendering
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // Memoize the sidebar component to prevent unnecessary re-renders
   const sidebarComponent = useMemo(() => <AppSidebar />, []);
@@ -41,6 +47,36 @@ const AppContent = memo(({ children }: AppContentProps) => {
     </div>
   ), []);
 
+  // Memoize the main content wrapper
+  const mainContent = useMemo(() => (
+    <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
+      <Suspense fallback={loadingFallback()}>
+        <PageTransition>
+          {children}
+        </PageTransition>
+      </Suspense>
+    </main>
+  ), [children, loadingFallback]);
+
+  // Memoize the content area
+  const contentArea = useMemo(() => (
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {headerComponent}
+      {mainContent}
+    </div>
+  ), [headerComponent, mainContent]);
+
+  // Don't render until client-side
+  if (!isClient) {
+    return (
+      <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+        <div className="flex-1 flex items-center justify-center">
+          <Loader size="lg" color="primary" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
       {/* Sidebar */}
@@ -52,18 +88,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
       {backdropComponent}
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {headerComponent}
-        
-        {/* Main content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar">
-          <Suspense fallback={loadingFallback()}>
-            <PageTransition>
-              {children}
-            </PageTransition>
-          </Suspense>
-        </main>
-      </div>
+      {contentArea}
     </div>
   );
 });

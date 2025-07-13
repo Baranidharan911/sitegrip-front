@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 
 interface CurrentKeywords {
   primary_keywords: string[];
@@ -44,6 +44,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
       setError(null);
       try {
         // Get authentication token
+        const auth = getAuthInstance();
         if (!auth) throw new Error('Authentication not available');
         const user = auth.currentUser;
         if (!user) {
@@ -103,6 +104,7 @@ export default function KeywordRecommendationPanel({ url, bodyText }: { url: str
     setLoading(true);
     setError(null);
     try {
+      const auth = getAuthInstance();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       const res = await fetch(`${apiUrl}/api/keywords/recommend`, {
         method: 'POST',

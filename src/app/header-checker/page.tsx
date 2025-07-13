@@ -6,7 +6,7 @@ import { Loader2, Globe, Shield, Copy, Check, AlertCircle, CheckCircle, ChevronD
 import { Tooltip } from 'react-tooltip';
 
 // Import Firebase and export utilities
-import { db, auth } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';
@@ -94,6 +94,7 @@ export default function HeaderCheckerPage() {
 
   // On mount, listen for auth state and load saved reports
   useEffect(() => {
+    const auth = getAuthInstance();
     if (!auth) return;
     
     const unsub = onAuthStateChanged(auth, (u) => {
@@ -105,6 +106,7 @@ export default function HeaderCheckerPage() {
   }, []);
 
   const loadReports = async (uid: string) => {
+    const db = getFirestoreInstance();
     if (!db) return;
     const q = query(collection(db, 'headerReports'), where('uid', '==', uid), orderBy('created', 'desc'), limit(10));
     const snap = await getDocs(q);
@@ -112,6 +114,7 @@ export default function HeaderCheckerPage() {
   };
 
   const saveReport = async (data: any) => {
+    const db = getFirestoreInstance();
     if (!db) return;
     try {
       const result = await addDoc(collection(db, 'headerReports'), data);
@@ -128,6 +131,7 @@ export default function HeaderCheckerPage() {
   useEffect(() => {
     if (result && url) {
       const save = async () => {
+        const db = getFirestoreInstance();
         if (!db) return;
         try {
           const firebaseResult = await addDoc(collection(db, 'headerReports'), {

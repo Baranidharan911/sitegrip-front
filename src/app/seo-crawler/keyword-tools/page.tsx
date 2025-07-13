@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import KeywordToolsTabs from '@/components/seo-crawler/KeywordToolsTabs';
 import { Search, Database, Globe, History } from 'lucide-react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirestoreInstance } from '@/lib/firebase';
 
 interface PageData {
   url: string;
@@ -48,8 +48,9 @@ function KeywordToolsContent() {
   useEffect(() => {
     if (!selectedCrawlId) return;
 
-    const q = db ? collection(db, `crawls/${selectedCrawlId}/keywordAnalysis`) : null;
-    if (!q) return;
+    const db = getFirestoreInstance();
+    if (!db) return;
+    const q = collection(db, `crawls/${selectedCrawlId}/keywordAnalysis`);
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const analysisResults = snapshot.docs.map((doc) => {

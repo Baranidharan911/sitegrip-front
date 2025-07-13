@@ -62,7 +62,7 @@ export default function TestUptimePage() {
     try {
       const firebaseModule = await import('@/lib/firebase');
       const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
-      const db = firebaseModule.db;
+      const db = firebaseModule.getFirestoreInstance ? firebaseModule.getFirestoreInstance() : null;
       
       // First check if Firestore is available
       if (typeof isFirestoreAvailable === 'function' && isFirestoreAvailable() && db) {
@@ -98,7 +98,8 @@ export default function TestUptimePage() {
     try {
       const firebaseModule = await import('@/lib/firebase');
       const { signInWithPopup } = await import('firebase/auth');
-      const { auth, provider } = firebaseModule;
+      const auth = firebaseModule.getAuthInstance ? firebaseModule.getAuthInstance() : null;
+      const provider = firebaseModule.getProvider ? firebaseModule.getProvider() : null;
       
       if (auth && provider) {
         await signInWithPopup(auth, provider);

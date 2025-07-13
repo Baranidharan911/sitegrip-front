@@ -120,4 +120,29 @@ export function isFirebaseAvailable() {
   return isClient && !!app;
 }
 
-export { app, auth, provider, db };
+// Add getFirestoreInstance implementation (ported from firebase.ts)
+function getFirestoreInstance() {
+  if (typeof window === 'undefined') return null;
+  if (!db) {
+    if (!app) {
+      // Try to initialize app if not already done
+      try {
+        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      } catch (error) {
+        console.error('❌ Firebase app initialization failed:', error);
+        return null;
+      }
+    }
+    try {
+      db = getFirestore(app, "indexing-sitegrip");
+      firestoreAvailable = true;
+    } catch (error) {
+      console.error('❌ Firestore initialization failed:', error);
+      firestoreAvailable = false;
+      return null;
+    }
+  }
+  return db;
+}
+
+export { getFirebaseApp, getAuthInstance, getProvider, getFirestoreInstance };

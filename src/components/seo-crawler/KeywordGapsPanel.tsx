@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 
 interface KeywordGap {
   keyword: string;
@@ -28,6 +28,7 @@ export default function KeywordGapsPanel({ url }: { url: string }) {
 
     try {
       // Get authentication token
+      const auth = getAuthInstance();
       if (!auth) throw new Error('Authentication not available');
       const user = auth.currentUser;
       if (!user) {

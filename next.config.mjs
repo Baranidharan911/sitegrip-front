@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
+import withBundleAnalyzer from '@next/bundle-analyzer';
+
+const nextConfig = withBundleAnalyzer({
+  enabled: process.env.BUNDLE_ANALYZE === 'both',
+})({
   // Performance optimizations
   experimental: {
     optimizeCss: true,
@@ -67,6 +71,9 @@ const nextConfig = {
       // Enable tree shaking
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
+      
+      // Optimize bundle size
+      config.optimization.minimize = true;
     }
 
     // Development optimizations
@@ -146,6 +153,6 @@ const nextConfig = {
       },
     ];
   },
-};
+});
 
 export default nextConfig;
