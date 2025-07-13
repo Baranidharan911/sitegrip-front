@@ -2,7 +2,7 @@
 
 // Force rebuild - production API configured
 import { useState, useEffect, useRef } from 'react';
-import { auth, provider } from '@/lib/firebase';
+import { getAuthInstance, getProvider } from '@/lib/firebase';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -235,7 +235,7 @@ export const useAuth = (): UseAuthReturn => {
     console.log('🔄 Initializing auth state...');
     
     // Check if Firebase is available
-    if (!auth) {
+    if (!getAuthInstance()) {
       console.warn('⚠️ Firebase not available, skipping auth initialization');
       setLoading(false);
       return;
@@ -274,7 +274,9 @@ export const useAuth = (): UseAuthReturn => {
     };
 
     // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    const authInstance = getAuthInstance();
+    if (!authInstance) throw new Error('Authentication not available');
+    const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser) => {
       try {
         if (firebaseUser) {
           console.log('✅ User authenticated:', firebaseUser.email);
@@ -293,7 +295,7 @@ export const useAuth = (): UseAuthReturn => {
           const success = await verifyTokenWithBackend(firebaseUser, false);
           if (!success) {
             // Sign out if verification failed
-            await firebaseSignOut(auth!);
+            await firebaseSignOut(authInstance);
             setUser(null);
             clearUserData();
           }
@@ -321,14 +323,13 @@ export const useAuth = (): UseAuthReturn => {
 
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
-      if (!auth) {
-        throw new Error('Authentication not available');
-      }
+      const authInstance = getAuthInstance();
+      if (!authInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
       console.log('🔐 Signing in user:', email);
       
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign in successful');
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
@@ -341,14 +342,13 @@ export const useAuth = (): UseAuthReturn => {
 
   const signUp = async (email: string, password: string): Promise<void> => {
     try {
-      if (!auth) {
-        throw new Error('Authentication not available');
-      }
+      const authInstance = getAuthInstance();
+      if (!authInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
       console.log('🔐 Creating user account:', email);
       
-      await createUserWithEmailAndPassword(auth, email, password);
+      await createUserWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign up successful');
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
@@ -361,15 +361,15 @@ export const useAuth = (): UseAuthReturn => {
 
   const signInWithGoogle = async (): Promise<void> => {
     try {
-      if (!auth || !provider) {
-        throw new Error('Authentication not available');
-      }
+      const authInstance = getAuthInstance();
+      const providerInstance = getProvider();
+      if (!authInstance || !providerInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
       console.log('🔐 Signing in with Google (with GSC scopes)...');
       
       // Use pre-configured provider with GSC scopes from firebase.js
-      const result = await signInWithPopup(auth, provider);
+      const result = await signInWithPopup(authInstance, providerInstance);
       console.log('✅ Google sign in successful');
       
       // Extract Google tokens
@@ -384,7 +384,7 @@ export const useAuth = (): UseAuthReturn => {
         router.push('/profile');
       } else {
         // Sign out from Firebase if backend verification failed
-        await firebaseSignOut(auth);
+        await firebaseSignOut(authInstance);
         toast.error('Google authentication verification failed');
         throw new Error('Backend verification failed');
       }
@@ -399,11 +399,10 @@ export const useAuth = (): UseAuthReturn => {
 
   const signOut = async (): Promise<void> => {
     try {
-      if (!auth) {
-        throw new Error('Authentication not available');
-      }
+      const authInstance = getAuthInstance();
+      if (!authInstance) throw new Error('Authentication not available');
       console.log('🔐 Signing out user...');
-      await firebaseSignOut(auth);
+      await firebaseSignOut(authInstance);
       console.log('✅ Sign out successful');
     } catch (error: any) {
       console.error('❌ Sign out error:', error);

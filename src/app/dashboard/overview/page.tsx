@@ -34,8 +34,8 @@ export default function DashboardOverviewPage() {
   // Get Firebase ID token for authentication
   const getAuthToken = async (): Promise<string | null> => {
     try {
-      // Dynamic import to avoid Firebase initialization during build
-      const { auth } = await import('@/lib/firebase');
+      const { getAuthInstance } = await import('@/lib/firebase');
+      const auth = getAuthInstance();
       if (auth && auth.currentUser) {
         const token = await auth.currentUser.getIdToken();
         return token;

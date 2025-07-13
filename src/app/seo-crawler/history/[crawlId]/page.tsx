@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Firestore } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirestoreInstance } from '@/lib/firebase';
 import { Loader2, ArrowLeft, Globe, Calendar, BarChart3, Share2 } from 'lucide-react';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';
@@ -21,8 +21,8 @@ export default function CrawlDetailsPage() {
       if (!crawlId) return;
 
       try {
-        if (!db) return;
-        const dbInstance = db as unknown as Firestore;
+        if (!getFirestoreInstance()) return;
+        const dbInstance = getFirestoreInstance() as unknown as Firestore;
         const docRef = doc(dbInstance, 'crawls', crawlId);
         const docSnap = await getDoc(docRef);
 

@@ -31,8 +31,8 @@ const getUserId = (): string | null => {
 // Helper function to get auth token from Firebase
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    // Import Firebase auth and ensure app is initialized
-    const { auth } = await import('../lib/firebase');
+    const { getAuthInstance } = await import('../lib/firebase');
+    const auth = getAuthInstance();
     
     // Wait for auth state to be ready
     await new Promise((resolve) => {

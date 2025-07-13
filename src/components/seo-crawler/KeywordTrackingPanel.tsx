@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 
 interface TrackingResponse {
   success: boolean;
@@ -44,6 +44,7 @@ export default function KeywordTrackingPanel({ url }: { url: string }) {
 
     try {
       // Get authentication token
+      const auth = getAuthInstance();
       if (!auth) throw new Error('Authentication not available');
       const user = auth.currentUser;
       if (!user) {

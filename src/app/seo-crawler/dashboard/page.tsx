@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { FileText, Search, Download, Share2, Printer, Globe, BarChart3 } from 'lucide-react';
 
 // Import Firebase and export utilities
-import { db, auth } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';
@@ -99,9 +99,9 @@ export default function SeoCrawlerDashboardPage() {
 
   // On mount, listen for auth state and load saved reports
   useEffect(() => {
-    if (!auth) return;
+    if (!getAuthInstance()) return;
     
-    const unsub = onAuthStateChanged(auth, (u) => {
+    const unsub = onAuthStateChanged(getAuthInstance()!, (u) => {
       setUser(u);
       if (u) loadReports(u.uid);
       else setSavedReports([]);
@@ -110,9 +110,9 @@ export default function SeoCrawlerDashboardPage() {
   }, []);
 
   const loadReports = async (uid: string) => {
-    if (!db) return;
+    if (!getFirestoreInstance()) return;
     const q = query(
-      collection(db!, 'seoCrawlReports'),
+      collection(getFirestoreInstance()!, 'seoCrawlReports'),
       where('uid', '==', uid),
       orderBy('created', 'desc'),
       limit(10)
@@ -122,15 +122,15 @@ export default function SeoCrawlerDashboardPage() {
   };
 
   const saveReport = async (data: any) => {
-    if (!db) return;
-    await addDoc(collection(db!, 'seoCrawlReports'), data);
+    if (!getFirestoreInstance()) return;
+    await addDoc(collection(getFirestoreInstance()!, 'seoCrawlReports'), data);
   };
 
   // On successful result, save to Firestore
   useEffect(() => {
     if (crawlResult && url) {
       const save = async () => {
-        await addDoc(collection(db!, 'seoCrawlReports'), {
+        await addDoc(collection(getFirestoreInstance()!, 'seoCrawlReports'), {
           uid: user?.uid || null,
           url,
           crawlResult,
@@ -182,7 +182,8 @@ export default function SeoCrawlerDashboardPage() {
     setCrawlResult(null);
 
     try {
-      const { auth } = await import('@/lib/firebase');
+      const { getAuthInstance } = await import('@/lib/firebase');
+      const auth = getAuthInstance();
       if (!auth) {
         throw new Error('Authentication not available. Please refresh the page.');
       }

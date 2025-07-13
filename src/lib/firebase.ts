@@ -34,61 +34,76 @@ let provider: GoogleAuthProvider | null = null;
 let db: Firestore | null = null;
 let firestoreAvailable = false;
 
-if (isClient) {
-  try {
-    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    console.log('✅ Firebase app initialized successfully');
-    
-    // Firebase Auth
-    auth = getAuth(app);
-    provider = new GoogleAuthProvider();
+function getFirebaseApp(): FirebaseApp | null {
+  if (typeof window === 'undefined') return null;
+  if (!app) {
+    try {
+      app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      console.log('✅ Firebase app initialized successfully');
+    } catch (error) {
+      console.error('❌ Firebase app initialization failed:', error);
+      return null;
+    }
+  }
+  return app;
+}
 
-    // Add scopes for Search Console API and Indexing API during login
+function getAuthInstance(): Auth | null {
+  if (typeof window === 'undefined') return null;
+  if (!auth) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) return null;
+    auth = getAuth(firebaseApp);
+  }
+  return auth;
+}
+
+function getProvider(): GoogleAuthProvider | null {
+  if (typeof window === 'undefined') return null;
+  if (!provider) {
+    provider = new GoogleAuthProvider();
     provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
     provider.addScope("https://www.googleapis.com/auth/webmasters");
     provider.addScope("https://www.googleapis.com/auth/indexing");
-
-    // Request offline access to get refresh tokens
     provider.setCustomParameters({
       'access_type': 'offline',
       'prompt': 'consent'
     });
+  }
+  return provider;
+}
 
-    // Firestore (for saving user data) - with error handling
+function getFirestoreInstance(): Firestore | null {
+  if (typeof window === 'undefined') return null;
+  if (!db) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) return null;
     try {
-      db = getFirestore(app);
-      console.log('✅ Firestore initialized successfully');
+      db = getFirestore(firebaseApp);
       firestoreAvailable = true;
     } catch (error) {
       console.error('❌ Firestore initialization failed:', error);
-      console.warn('⚠️ Firestore will not be available - some features may not work');
       firestoreAvailable = false;
-    }
-  } catch (error) {
-    console.error('❌ Firebase app initialization failed:', error);
-    // Don't throw error during prerendering
-    if (isClient) {
-      console.warn('⚠️ Firebase will not be available - some features may not work');
+      return null;
     }
   }
+  return db;
 }
 
 // Save data to a Firestore collection
 export async function saveToFirebase(collectionName: string, data: any) {
-  if (!isClient) {
+  if (typeof window === 'undefined') {
     console.warn('⚠️ Not in client environment, skipping save operation');
     throw new Error('Not in client environment');
   }
-  
-  if (!firestoreAvailable || !db) {
+  const dbInstance = getFirestoreInstance();
+  if (!dbInstance) {
     console.warn('⚠️ Firestore not available, skipping save operation');
     throw new Error('Firestore is not available');
   }
-  
   try {
     console.log(`💾 Attempting to save to Firestore collection: ${collectionName}`);
-    if (!db) return null;
-    const result = await addDoc(collection(db, collectionName), data);
+    const result = await addDoc(collection(dbInstance, collectionName), data);
     console.log('✅ Data saved to Firestore successfully:', result.id);
     return result;
   } catch (error) {
@@ -97,15 +112,13 @@ export async function saveToFirebase(collectionName: string, data: any) {
   }
 }
 
-// Check if Firestore is available
 export function isFirestoreAvailable(): boolean {
-  return isClient && firestoreAvailable;
+  return typeof window !== 'undefined' && !!getFirestoreInstance();
 }
 
-// Check if Firebase is available
 export function isFirebaseAvailable(): boolean {
-  return isClient && !!app;
+  return typeof window !== 'undefined' && !!getFirebaseApp();
 }
 
 // IMPORTANT: For production, update your Firestore rules to restrict access to authenticated users only.
-export { app, auth, provider, db };
+export { getFirebaseApp, getAuthInstance, getProvider, getFirestoreInstance };

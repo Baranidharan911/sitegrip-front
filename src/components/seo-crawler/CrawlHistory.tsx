@@ -9,7 +9,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
 import { Loader2, RefreshCw } from 'lucide-react';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';
@@ -20,8 +20,9 @@ export default function CrawlHistory() {
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const crawlCollection = db ? collection(db, 'crawls') : null;
-  if (!crawlCollection) return;
+  const db = getFirestoreInstance();
+  if (!db) return null;
+  const crawlCollection = collection(db, 'crawls');
 
   const fetchCrawls = async (userId: string) => {
     try {
@@ -53,7 +54,12 @@ export default function CrawlHistory() {
   };
 
   useEffect(() => {
-    if (!auth) return;
+    const auth = getAuthInstance();
+    if (!auth) {
+      setError('Please log in to see crawl history.');
+      setLoading(false);
+      return;
+    }
     
     onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -66,8 +72,9 @@ export default function CrawlHistory() {
   }, []);
 
   const handleRefresh = async () => {
+    const auth = getAuthInstance();
     if (!auth) return;
-    const user = auth.currentUser;
+    const user = auth?.currentUser;
     if (!user) return;
     setRefreshing(true);
     await fetchCrawls(user.uid);

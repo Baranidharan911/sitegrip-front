@@ -124,8 +124,8 @@ export default function WebVitalsCheckerPage() {
       const firebaseModule = await import('@/lib/firebase');
       console.log('firebaseModule:', firebaseModule); // DEBUG
       const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
-      const db = firebaseModule.db;
-      const auth = firebaseModule.auth;
+      const db = firebaseModule.getFirestoreInstance ? firebaseModule.getFirestoreInstance() : null;
+      const auth = firebaseModule.getAuthInstance ? firebaseModule.getAuthInstance() : null;
       if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db || !auth) return;
       const { onAuthStateChanged } = await import('firebase/auth');
       unsub = onAuthStateChanged(auth, (u) => {
@@ -142,7 +142,7 @@ export default function WebVitalsCheckerPage() {
     const firebaseModule = await import('@/lib/firebase');
     console.log('firebaseModule:', firebaseModule); // DEBUG
     const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
-    const db = firebaseModule.db;
+    const db = firebaseModule.getFirestoreInstance ? firebaseModule.getFirestoreInstance() : null;
     if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db) return;
     const firestoreDb = db as import('firebase/firestore').Firestore;
     const { collection, query, where, orderBy, limit, getDocs } = await import('firebase/firestore');
@@ -158,7 +158,7 @@ export default function WebVitalsCheckerPage() {
       const firebaseModule = await import('@/lib/firebase');
       console.log('firebaseModule:', firebaseModule); // DEBUG
       const isFirestoreAvailable = firebaseModule.isFirestoreAvailable;
-      const db = firebaseModule.db;
+      const db = firebaseModule.getFirestoreInstance ? firebaseModule.getFirestoreInstance() : null;
       if (typeof isFirestoreAvailable !== 'function' || !isFirestoreAvailable() || !db) return;
       const firestoreDb = db as import('firebase/firestore').Firestore;
       const { collection, addDoc, serverTimestamp } = await import('firebase/firestore');

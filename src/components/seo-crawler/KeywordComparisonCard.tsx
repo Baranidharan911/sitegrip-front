@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { auth } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase';
 
 interface ComparisonResult {
   success: boolean;
@@ -40,6 +40,7 @@ export default function KeywordComparisonCard({ current, proposed }: { current: 
       setError(null);
       try {
         // Get authentication token
+        const auth = getAuthInstance();
         if (!auth) throw new Error('Authentication not available');
         const user = auth.currentUser;
         if (!user) {

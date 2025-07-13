@@ -14,30 +14,60 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase App (only once)
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Initialize Firebase App (only once and only in client)
+let app = null;
+let auth = null;
+let provider = null;
+let db = null;
 
-// Firebase Auth
-const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+function getFirebaseApp() {
+  if (typeof window === 'undefined') return null;
+  if (!app) {
+    app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  }
+  return app;
+}
 
-// Add scopes for Search Console API and Indexing API during login
-provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
-provider.addScope("https://www.googleapis.com/auth/webmasters");
-provider.addScope("https://www.googleapis.com/auth/indexing");
+function getAuthInstance() {
+  if (typeof window === 'undefined') return null;
+  if (!auth) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) return null;
+    auth = getAuth(firebaseApp);
+  }
+  return auth;
+}
 
-// Request offline access to get refresh tokens
-provider.setCustomParameters({
-  'access_type': 'offline',
-  'prompt': 'consent'
-});
+function getProvider() {
+  if (typeof window === 'undefined') return null;
+  if (!provider) {
+    provider = new GoogleAuthProvider();
+    provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
+    provider.addScope("https://www.googleapis.com/auth/webmasters");
+    provider.addScope("https://www.googleapis.com/auth/indexing");
+    provider.setCustomParameters({
+      'access_type': 'offline',
+      'prompt': 'consent'
+    });
+  }
+  return provider;
+}
 
-// Firestore (for saving user data)
-const db = getFirestore(app);
+function getFirestoreInstance() {
+  if (typeof window === 'undefined') return null;
+  if (!db) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) return null;
+    db = getFirestore(firebaseApp);
+  }
+  return db;
+}
 
 // Save data to a Firestore collection
 export async function saveToFirebase(collectionName, data) {
-  return await addDoc(collection(db, collectionName), data);
+  const dbInstance = getFirestoreInstance();
+  if (!dbInstance) throw new Error('Firestore is not available');
+  return await addDoc(collection(dbInstance, collectionName), data);
 }
 
-export { app, auth, provider, db };
+export { getFirebaseApp, getAuthInstance, getProvider, getFirestoreInstance };

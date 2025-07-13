@@ -1,7 +1,10 @@
+'use client';
+
 export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
+import { getAuthInstance, getProvider } from '@/lib/firebase';
 
 export default function TestAuthPage() {
   const [loading, setLoading] = useState(false);
@@ -17,8 +20,8 @@ export default function TestAuthPage() {
     addLog('Testing popup method...');
     
     try {
-      // Firebase imports are now local
-      const { auth, provider } = require('@/lib/firebase');
+      const auth = getAuthInstance();
+      const provider = getProvider();
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
@@ -39,8 +42,8 @@ export default function TestAuthPage() {
     addLog('Testing redirect method...');
     
     try {
-      // Firebase imports are now local
-      const { auth, provider } = require('@/lib/firebase');
+      const auth = getAuthInstance();
+      const provider = getProvider();
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
@@ -59,8 +62,7 @@ export default function TestAuthPage() {
     addLog('Checking for redirect result...');
     
     try {
-      // Firebase imports are now local
-      const { auth } = require('@/lib/firebase');
+      const auth = getAuthInstance();
       if (!auth) {
         throw new Error('Authentication not available');
       }
@@ -83,8 +85,8 @@ export default function TestAuthPage() {
     addLog('Testing delayed popup method...');
     
     try {
-      // Firebase imports are now local
-      const { auth, provider } = require('@/lib/firebase');
+      const auth = getAuthInstance();
+      const provider = getProvider();
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
