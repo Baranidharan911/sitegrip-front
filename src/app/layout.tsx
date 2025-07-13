@@ -95,12 +95,9 @@ export default function RootLayout({
         
         {/* Security headers */}
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
-        <meta httpEquiv="X-Frame-Options" content="DENY" />
         <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
         
         {/* Resource hints for faster loading */}
-        <link rel="preload" href="/api/monitoring" as="fetch" crossOrigin="anonymous" />
-        <link rel="preload" href="/api/web-vitals" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className={inter.className}>
         <ThemeProvider>
@@ -123,13 +120,6 @@ export default function RootLayout({
                       console.log('DOM Content Loaded:', perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart, 'ms');
                     }
                   }, 0);
-                });
-              }
-              
-              // Service Worker registration for caching
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(console.error);
                 });
               }
             `,

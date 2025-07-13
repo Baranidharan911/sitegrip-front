@@ -50,14 +50,20 @@ export default function InternalLinkCheckerPage() {
       // Save to Firebase if user is logged in
       if (user) {
         try {
-          await saveToFirebase('internalLinkAnalysis', {
+          const result = await saveToFirebase('internalLinkAnalysis', {
             userId: user.uid,
             url: data.url,
             analysis: data,
             timestamp: new Date().toISOString()
           });
+          if (result) {
+            console.log('✅ Analysis saved to Firebase');
+          } else {
+            console.warn('⚠️ Analysis not saved (Firebase unavailable)');
+          }
         } catch (firebaseError) {
           console.error('Failed to save to Firebase:', firebaseError);
+          // Don't show error to user - Firebase is optional
         }
       }
     } catch (err: any) {
@@ -136,7 +142,7 @@ export default function InternalLinkCheckerPage() {
                   value={url}
                   onChange={e => setUrl(e.target.value)}
                   placeholder="Enter website URL (e.g., https://example.com)"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
                   onKeyPress={e => e.key === 'Enter' && analyzeLinks()}
                 />
               </div>

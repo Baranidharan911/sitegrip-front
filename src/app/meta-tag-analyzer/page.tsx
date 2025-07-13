@@ -52,14 +52,20 @@ export default function MetaTagAnalyzerPage() {
 
       if (user) {
         try {
-          await saveToFirebase('metaTagAnalysis', {
+          const result = await saveToFirebase('metaTagAnalysis', {
             userId: user.uid,
             url: data.url,
             analysis: data,
             timestamp: new Date().toISOString()
           });
+          if (result) {
+            console.log('✅ Analysis saved to Firebase');
+          } else {
+            console.warn('⚠️ Analysis not saved (Firebase unavailable)');
+          }
         } catch (firebaseError) {
           console.error('Failed to save to Firebase:', firebaseError);
+          // Don't show error to user - Firebase is optional
         }
       }
     } catch (err: any) {

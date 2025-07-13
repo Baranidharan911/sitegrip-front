@@ -113,7 +113,15 @@ export default function HeaderCheckerPage() {
 
   const saveReport = async (data: any) => {
     if (!db) return;
-    await addDoc(collection(db, 'headerReports'), data);
+    try {
+      const result = await addDoc(collection(db, 'headerReports'), data);
+      console.log('✅ Report saved to Firebase');
+      return result;
+    } catch (error) {
+      console.error('❌ Failed to save report to Firebase:', error);
+      // Don't show error to user - Firebase is optional
+      return null;
+    }
   };
 
   // On successful result, save to Firestore
@@ -121,13 +129,23 @@ export default function HeaderCheckerPage() {
     if (result && url) {
       const save = async () => {
         if (!db) return;
-        await addDoc(collection(db, 'headerReports'), {
+        try {
+          const firebaseResult = await addDoc(collection(db, 'headerReports'), {
           uid: user?.uid || null,
           url,
           result,
           created: serverTimestamp(),
         });
+          if (firebaseResult) {
+            console.log('✅ Report saved to Firebase');
         if (user) loadReports(user.uid);
+          } else {
+            console.warn('⚠️ Report not saved (Firebase unavailable)');
+          }
+        } catch (error) {
+          console.error('❌ Failed to save report to Firebase:', error);
+          // Don't show error to user - Firebase is optional
+        }
       };
       save();
     }

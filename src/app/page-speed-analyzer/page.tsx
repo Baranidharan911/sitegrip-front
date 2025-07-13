@@ -51,14 +51,20 @@ export default function PageSpeedAnalyzerPage() {
       // Save to Firebase if user is logged in
       if (user) {
         try {
-          await saveToFirebase('pageSpeedAnalysis', {
+          const result = await saveToFirebase('pageSpeedAnalysis', {
             userId: user.uid,
             url: data.url,
             analysis: data,
             timestamp: new Date().toISOString()
           });
+          if (result) {
+            console.log('✅ Analysis saved to Firebase');
+          } else {
+            console.warn('⚠️ Analysis not saved (Firebase unavailable)');
+          }
         } catch (firebaseError) {
           console.error('Failed to save to Firebase:', firebaseError);
+          // Don't show error to user - Firebase is optional
         }
       }
     } catch (err: any) {

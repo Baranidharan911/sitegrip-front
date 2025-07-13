@@ -87,15 +87,21 @@ export default function SchemaMarkupGeneratorPage() {
         // Save to Firebase if user is logged in
         if (user) {
           try {
-            await saveToFirebase('schemaMarkupGeneration', {
+            const result = await saveToFirebase('schemaMarkupGeneration', {
               userId: user.uid,
               type: type,
               fields: sendFields,
               schema: data.schema,
               timestamp: new Date().toISOString()
             });
+            if (result) {
+              console.log('✅ Schema saved to Firebase');
+            } else {
+              console.warn('⚠️ Schema not saved (Firebase unavailable)');
+            }
           } catch (firebaseError) {
             console.error('Failed to save to Firebase:', firebaseError);
+            // Don't show error to user - Firebase is optional
           }
         }
       }
@@ -129,15 +135,21 @@ export default function SchemaMarkupGeneratorPage() {
         // Save validation to Firebase if user is logged in
         if (user) {
           try {
-            await saveToFirebase('schemaMarkupValidation', {
+            const result = await saveToFirebase('schemaMarkupValidation', {
               userId: user.uid,
               pastedJson: pastedJson,
               schema: data.schema,
               valid: true,
               timestamp: new Date().toISOString()
             });
+            if (result) {
+              console.log('✅ Validation saved to Firebase');
+            } else {
+              console.warn('⚠️ Validation not saved (Firebase unavailable)');
+            }
           } catch (firebaseError) {
             console.error('Failed to save to Firebase:', firebaseError);
+            // Don't show error to user - Firebase is optional
           }
         }
       }
@@ -191,7 +203,7 @@ export default function SchemaMarkupGeneratorPage() {
               <select
                 value={type}
                 onChange={e => { setType(e.target.value); setFields({}); setResult(null); setError(''); setValid(null); }}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 mb-3"
               >
                 {schemaTypes.map(st => (
                   <option key={st.value} value={st.value}>{st.label}</option>
@@ -207,8 +219,8 @@ export default function SchemaMarkupGeneratorPage() {
                     name={field.name}
                     value={fields[field.name] || ''}
                     onChange={handleFieldChange}
-                    placeholder={field.placeholder || ''}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400"
+                    placeholder={field.placeholder || field.label}
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-700 rounded-lg bg-white/80 dark:bg-gray-900/70 focus:outline-none focus:ring-2 focus:ring-purple-400 text-base text-gray-900 dark:text-gray-100 placeholder-gray-700 dark:placeholder-gray-400 mb-3"
                   />
                 </div>
               ))}
