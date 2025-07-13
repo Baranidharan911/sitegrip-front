@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AuthResponse, AuthState, GSCProperty } from '@/types/indexing';
+import { getAuth } from 'firebase/auth';
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -34,7 +35,21 @@ export const useGoogleAuth = () => {
     try {
       const apiUrl = getApiBaseUrl();
       console.log('[useGoogleAuth] Checking auth status for userId:', userId);
-      const response = await fetch(`${apiUrl}/api/status/${userId}`);
+      // Get Firebase ID token if available
+      let idToken = null;
+      try {
+        const auth = getAuth();
+        if (auth && auth.currentUser) {
+          idToken = await auth.currentUser.getIdToken();
+        }
+      } catch (e) {
+        console.warn('Could not get Firebase ID token:', e);
+      }
+      const headers: Record<string, string> = {};
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      const response = await fetch(`${apiUrl}/api/status/${userId}`, { headers });
       const data = await response.json();
       setDebug({ userId, statusResponse: data });
       if (!response.ok) {
