@@ -20,6 +20,7 @@ interface AnalyticsData {
   sessions: number;
   screenPageViews: number;
   bounceRate: number;
+  averageSessionDuration?: number; // <-- add this line
 }
 
 interface NewUsersData {
@@ -711,7 +712,7 @@ export default function DashboardOverviewPage() {
                             {item.bounceRate.toFixed(1)}%
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                            {formatSessionDuration(item.averageSessionDuration)}
+                            {formatSessionDuration(item.averageSessionDuration ?? 0)}
                           </td>
                         </tr>
                       ))}
