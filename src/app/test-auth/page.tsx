@@ -1,8 +1,6 @@
-'use client';
+export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { auth, provider } from '@/lib/firebase';
-import { signInWithPopup, signInWithRedirect, getRedirectResult } from 'firebase/auth';
+import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
 
 export default function TestAuthPage() {
@@ -19,11 +17,13 @@ export default function TestAuthPage() {
     addLog('Testing popup method...');
     
     try {
+      // Firebase imports are now local
+      const { auth, provider } = require('@/lib/firebase');
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
       addLog('Opening Google sign-in popup...');
-      const result = await signInWithPopup(auth, provider);
+      const result = await require('firebase/auth').signInWithPopup(auth, provider);
       addLog(`✅ Popup success! User: ${result.user.email}`);
       toast.success('Popup method worked!');
     } catch (error: any) {
@@ -39,11 +39,13 @@ export default function TestAuthPage() {
     addLog('Testing redirect method...');
     
     try {
+      // Firebase imports are now local
+      const { auth, provider } = require('@/lib/firebase');
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
       addLog('Redirecting to Google sign-in...');
-      await signInWithRedirect(auth, provider);
+      await require('firebase/auth').signInWithRedirect(auth, provider);
       // User will be redirected
     } catch (error: any) {
       addLog(`❌ Redirect error: ${error.code} - ${error.message}`);
@@ -57,10 +59,12 @@ export default function TestAuthPage() {
     addLog('Checking for redirect result...');
     
     try {
+      // Firebase imports are now local
+      const { auth } = require('@/lib/firebase');
       if (!auth) {
         throw new Error('Authentication not available');
       }
-      const result = await getRedirectResult(auth);
+      const result = await require('firebase/auth').getRedirectResult(auth);
       if (result) {
         addLog(`✅ Redirect result found! User: ${result.user?.email}`);
         toast.success('Redirect result retrieved!');
@@ -79,6 +83,8 @@ export default function TestAuthPage() {
     addLog('Testing delayed popup method...');
     
     try {
+      // Firebase imports are now local
+      const { auth, provider } = require('@/lib/firebase');
       if (!auth || !provider) {
         throw new Error('Authentication not available');
       }
@@ -86,7 +92,7 @@ export default function TestAuthPage() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       addLog('Opening Google sign-in popup...');
-      const result = await signInWithPopup(auth, provider);
+      const result = await require('firebase/auth').signInWithPopup(auth, provider);
       addLog(`✅ Delayed popup success! User: ${result.user.email}`);
       toast.success('Delayed popup method worked!');
     } catch (error: any) {
