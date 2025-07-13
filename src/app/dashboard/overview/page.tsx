@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Loader2, BarChart3, Globe, Users, Eye, MousePointer, TrendingUp } from "lucide-react";
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend } from 'recharts';
 
 // Force dynamic rendering to prevent Firebase initialization issues during build
 export const dynamic = 'force-dynamic';
@@ -21,15 +22,123 @@ interface AnalyticsData {
   bounceRate: number;
 }
 
+interface NewUsersData {
+  date: string;
+  newUsers: number;
+  totalUsers: number;
+  returningUsers: number;
+}
+
+interface SessionDurationData {
+  date: string;
+  avgSessionDuration: number;
+}
+
+interface TrafficSourceData {
+  source: string;
+  value: number;
+  users: number;
+}
+
+interface GeoData {
+  country: string;
+  users: number;
+  sessions: number;
+}
+
+interface TopPageData {
+  page: string;
+  users: number;
+  sessions: number;
+  pageviews: number;
+  bounceRate: number;
+}
+
+interface SearchConsoleData {
+  topQueries: Array<{
+    query: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+  searchTrends: Array<{
+    date: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+}
+
+interface DerivedMetrics {
+  totalUsers: number;
+  totalSessions: number;
+  totalPageViews: number;
+  avgBounceRate: number;
+  totalNewUsers: number;
+  totalReturningUsers: number;
+  avgSessionDuration: number;
+  conversionRate: number;
+}
+
+interface CombinedAnalyticsData {
+  basicMetrics: AnalyticsData[];
+  newUsersData: NewUsersData[];
+  sessionDurationData: SessionDurationData[];
+  trafficSourcesData: TrafficSourceData[];
+  geoData: GeoData[];
+  topPagesData: TopPageData[];
+  searchConsoleData: SearchConsoleData;
+  deviceData: DeviceData[];
+  derivedMetrics: DerivedMetrics;
+}
+
+interface DeviceData {
+  name: string;
+  value: number;
+  sessions: number;
+}
+
+interface TopQueries {
+  query: string;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+}
+
+interface TopReferrers {
+  referrer: string;
+  sessions: number;
+}
+
+interface ConversionFunnel {
+  step: string;
+  value: number;
+}
+
+interface GoalCompletions {
+  goal: string;
+  completions: number;
+}
+
+const COLORS = ['#6366f1', '#10b981', '#f59e42'];
+
 export default function DashboardOverviewPage() {
-  const { loading: authLoading, error: authError, authState } = useGoogleAuth();
+  const { loading: authLoading, error: authError, authState, refreshAuthStatus } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [dateRange, setDateRange] = useState({ from: "2025-01-01", to: "2025-01-31" });
   const [loading, setLoading] = useState(false);
   const [loadingProperties, setLoadingProperties] = useState(false);
-  const [analyticsData, setAnalyticsData] = useState<AnalyticsData[]>([]);
+  const [analyticsData, setAnalyticsData] = useState<CombinedAnalyticsData | null>(null);
   const [error, setError] = useState("");
+
+  // Refresh auth state on mount and after login redirect
+  useEffect(() => {
+    refreshAuthStatus();
+  }, []);
 
   // Get Firebase ID token for authentication
   const getAuthToken = async (): Promise<string | null> => {
@@ -101,35 +210,52 @@ export default function DashboardOverviewPage() {
         throw new Error('Authentication token not available');
       }
 
-      const response = await fetch('/api/analytics/data', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          propertyId: selectedProperty,
-          startDate: dateRange.from,
-          endDate: dateRange.to,
+      // Fetch all analytics data in parallel
+      const [analyticsResponse, deviceResponse] = await Promise.all([
+        fetch('/api/analytics/data', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: selectedProperty,
+            startDate: dateRange.from,
+            endDate: dateRange.to,
+          }),
         }),
-      });
+        fetch('/api/analytics/devices', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: selectedProperty,
+            startDate: dateRange.from,
+            endDate: dateRange.to,
+          }),
+        })
+      ]);
 
-      if (!response.ok) {
+      if (!analyticsResponse.ok) {
         throw new Error('Failed to fetch analytics data');
       }
 
-      const data = await response.json();
-      
-      // Transform the data to match our interface
-      const transformedData = data.data.rows?.map((row: any) => ({
-        date: row.dimensionValues[0].value,
-        totalUsers: parseInt(row.metricValues[0].value),
-        sessions: parseInt(row.metricValues[1].value),
-        screenPageViews: parseInt(row.metricValues[2].value),
-        bounceRate: parseFloat(row.metricValues[3].value),
-      })) || [];
+      if (!deviceResponse.ok) {
+        throw new Error('Failed to fetch device data');
+      }
 
-      setAnalyticsData(transformedData);
+      const analyticsResult = await analyticsResponse.json();
+      const deviceResult = await deviceResponse.json();
+
+      // Combine the data
+      const combinedData = {
+        ...analyticsResult.data,
+        deviceData: deviceResult.data
+      };
+
+      setAnalyticsData(combinedData);
     } catch (err) {
       setError('Failed to fetch analytics data');
       console.error('Error fetching data:', err);
@@ -162,6 +288,13 @@ export default function DashboardOverviewPage() {
       </div>
     );
   }
+
+  // Helper function to format session duration
+  const formatSessionDuration = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = Math.floor(seconds % 60);
+    return `${minutes}m ${remainingSeconds}s`;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -247,76 +380,279 @@ export default function DashboardOverviewPage() {
               </div>
             </div>
 
-            {/* Analytics Dashboard */}
+            {/* Metric Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {/* Total Users */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {loading ? (
-                        <Loader2 className="animate-spin h-6 w-6" />
-                      ) : (
-                        analyticsData.reduce((sum, item) => sum + item.totalUsers, 0).toLocaleString()
-                      )}
-                    </p>
-                  </div>
-                  <Users className="h-8 w-8 text-blue-600" />
-                </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <Users className="h-8 w-8 text-blue-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.totalUsers?.toLocaleString() || '0'}
+                </span>
               </div>
-
               {/* Sessions */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Sessions</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {loading ? (
-                        <Loader2 className="animate-spin h-6 w-6" />
-                      ) : (
-                        analyticsData.reduce((sum, item) => sum + item.sessions, 0).toLocaleString()
-                      )}
-                    </p>
-                  </div>
-                  <BarChart3 className="h-8 w-8 text-green-600" />
-                </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <BarChart3 className="h-8 w-8 text-green-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Sessions</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.totalSessions?.toLocaleString() || '0'}
+                </span>
               </div>
-
               {/* Page Views */}
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Page Views</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {loading ? (
-                        <Loader2 className="animate-spin h-6 w-6" />
-                      ) : (
-                        analyticsData.reduce((sum, item) => sum + item.screenPageViews, 0).toLocaleString()
-                      )}
-                    </p>
-                  </div>
-                  <Eye className="h-8 w-8 text-purple-600" />
-                </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <Eye className="h-8 w-8 text-purple-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Page Views</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.totalPageViews?.toLocaleString() || '0'}
+                </span>
               </div>
-
               {/* Bounce Rate */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <TrendingUp className="h-8 w-8 text-orange-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Bounce Rate</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.avgBounceRate?.toFixed(1) + '%' || '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* --- ADDITIONAL METRIC CARDS --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* New Users */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <Users className="h-8 w-8 text-cyan-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">New Users</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.totalNewUsers?.toLocaleString() || '0'}
+                </span>
+              </div>
+              {/* Returning Users */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <Users className="h-8 w-8 text-pink-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Returning Users</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.totalReturningUsers?.toLocaleString() || '0'}
+                </span>
+              </div>
+              {/* Avg. Session Duration */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <BarChart3 className="h-8 w-8 text-yellow-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg. Session Duration</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.avgSessionDuration ? formatSessionDuration(analyticsData.derivedMetrics.avgSessionDuration) : '0m 0s'}
+                </span>
+              </div>
+              {/* Conversion Rate */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 flex flex-col items-center">
+                <TrendingUp className="h-8 w-8 text-lime-600 mb-2" />
+                <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Conversion Rate</span>
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {loading ? <Loader2 className="animate-spin h-6 w-6" /> : analyticsData?.derivedMetrics?.conversionRate?.toFixed(1) + '%' || '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* --- EXPORT/SHARE BUTTONS --- */}
+            <div className="flex justify-end gap-4 mb-8">
+              <button onClick={() => alert('Export feature coming soon!')} className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" /> Export
+              </button>
+              <button onClick={() => alert('Share feature coming soon!')} className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                <Users className="h-5 w-5" /> Share
+              </button>
+            </div>
+
+            {/* --- NEW CHARTS AND TABLES --- */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* New vs Returning Users Line Chart */}
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Bounce Rate</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {loading ? (
-                        <Loader2 className="animate-spin h-6 w-6" />
-                      ) : (
-                        analyticsData.length > 0
-                          ? `${(analyticsData.reduce((sum, item) => sum + item.bounceRate, 0) / analyticsData.length).toFixed(1)}%`
-                          : "0%"
-                      )}
-                    </p>
-                  </div>
-                  <TrendingUp className="h-8 w-8 text-orange-600" />
-                </div>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">New vs Returning Users</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <LineChart data={analyticsData?.newUsersData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line type="monotone" dataKey="newUsers" stroke="#6366f1" name="New Users" />
+                    <Line type="monotone" dataKey="returningUsers" stroke="#f59e42" name="Returning Users" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Avg. Session Duration Bar Chart */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Avg. Session Duration</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={analyticsData?.sessionDurationData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="avgSessionDuration" fill="#10b981" name="Avg. Duration (s)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Traffic Sources Pie Chart */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Traffic Sources</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie data={analyticsData?.trafficSourcesData || []} dataKey="value" nameKey="source" cx="50%" cy="50%" outerRadius={80} label>
+                      {(analyticsData?.trafficSourcesData || []).map((entry, index) => (
+                        <Cell key={`cell-source-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Legend />
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              {/* Users by Country Bar Chart */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Users by Country</h2>
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={analyticsData?.geoData || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="country" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="users" fill="#6366f1" name="Users" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Traffic Trend Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Traffic Trends</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={analyticsData?.basicMetrics || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="totalUsers" stroke="#6366f1" name="Users" />
+                  <Line type="monotone" dataKey="sessions" stroke="#10b981" name="Sessions" />
+                  <Line type="monotone" dataKey="screenPageViews" stroke="#f59e42" name="Page Views" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Device Breakdown Pie Chart */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Device Breakdown</h2>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={analyticsData?.deviceData || []} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label>
+                    {(analyticsData?.deviceData || []).map((entry, index) => (
+                      <Cell key={`cell-device-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Legend />
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Top Pages Table */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Pages</h2>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Page</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Users</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sessions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Pageviews</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Bounce Rate</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {(analyticsData?.topPagesData || []).map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.page}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.users.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.sessions.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.pageviews.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.bounceRate.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Search Console Section */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Google Search Console Overview</h2>
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={analyticsData?.searchConsoleData?.searchTrends || []} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line type="monotone" dataKey="clicks" stroke="#6366f1" name="Clicks" />
+                  <Line type="monotone" dataKey="impressions" stroke="#10b981" name="Impressions" />
+                  <Line type="monotone" dataKey="ctr" stroke="#f59e42" name="CTR (%)" />
+                  <Line type="monotone" dataKey="position" stroke="#ef4444" name="Avg. Position" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+              {/* Top Queries Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 overflow-x-auto">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Search Queries</h2>
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Query</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Clicks</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Impressions</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">CTR</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Position</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {(analyticsData?.searchConsoleData?.topQueries || []).map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.query}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.clicks}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.impressions}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.ctr}%</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.position}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {/* Top Referrers Table */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 overflow-x-auto">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Top Referrers</h2>
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead className="bg-gray-50 dark:bg-gray-700">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Referrer</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Sessions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    {(analyticsData?.trafficSourcesData || []).map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.source}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.value.toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
 
@@ -331,7 +667,7 @@ export default function DashboardOverviewPage() {
                   <Loader2 className="animate-spin h-8 w-8" />
                   <span className="ml-2">Loading data...</span>
                 </div>
-              ) : analyticsData.length > 0 ? (
+              ) : analyticsData?.basicMetrics && analyticsData.basicMetrics.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                     <thead className="bg-gray-50 dark:bg-gray-700">
@@ -351,10 +687,13 @@ export default function DashboardOverviewPage() {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Bounce Rate
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Session Duration
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                      {analyticsData.map((item, index) => (
+                      {analyticsData.basicMetrics.map((item, index) => (
                         <tr key={index}>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {new Date(item.date).toLocaleDateString()}
@@ -370,6 +709,9 @@ export default function DashboardOverviewPage() {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                             {item.bounceRate.toFixed(1)}%
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                            {formatSessionDuration(item.averageSessionDuration)}
                           </td>
                         </tr>
                       ))}
