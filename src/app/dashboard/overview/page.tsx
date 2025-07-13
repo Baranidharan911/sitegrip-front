@@ -148,6 +148,13 @@ export default function DashboardOverviewPage() {
     refreshAuthStatus();
   }, []);
 
+  // Auto-select first property if authenticated and properties are loaded
+  useEffect(() => {
+    if (authState?.isAuthenticated && analyticsProperties.length > 0 && !selectedProperty) {
+      setSelectedProperty(analyticsProperties[0].property);
+    }
+  }, [authState?.isAuthenticated, analyticsProperties]);
+
   // Get Firebase ID token for authentication
   const getAuthToken = async (): Promise<string | null> => {
     try {
@@ -317,8 +324,14 @@ export default function DashboardOverviewPage() {
         {authLoading ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Checking authentication...</div>
         ) : !authState?.isAuthenticated ? (
-          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-            Please log in with Google to view your analytics data.
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-4">
+            <span>Please log in with Google to view your analytics data.</span>
+            <a
+              href="/login"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Go to Login
+            </a>
           </div>
         ) : loadingProperties ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
