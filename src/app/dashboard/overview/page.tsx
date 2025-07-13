@@ -133,7 +133,7 @@ function formatSessionDuration(seconds: number) {
   return `${minutes}m ${remainingSeconds}s`;
 }
 
-export default function DashboardOverviewPage() {
+const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
   const { loading: authLoading, error: authError, authState, refreshAuthStatus } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
@@ -142,6 +142,11 @@ export default function DashboardOverviewPage() {
   const [loadingProperties, setLoadingProperties] = useState(false);
   const [analyticsData, setAnalyticsData] = useState<CombinedAnalyticsData | null>(null);
   const [error, setError] = useState("");
+
+  // Memoize expensive calculations
+  const memoizedAnalyticsData = React.useMemo(() => analyticsData, [analyticsData]);
+  const memoizedProperties = React.useMemo(() => analyticsProperties, [analyticsProperties]);
+  const memoizedDateRange = React.useMemo(() => dateRange, [dateRange]);
 
   // Refresh auth state on mount and after login redirect
   useEffect(() => {
@@ -543,13 +548,13 @@ export default function DashboardOverviewPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {(analyticsData?.topPagesData || []).map((row, idx) => (
-                      <tr key={idx}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.page}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.users.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.sessions.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.pageviews.toLocaleString()}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.bounceRate.toFixed(1)}%</td>
+                    {(analyticsData?.topPagesData || []).map((page, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{page.page}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{page.users.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{page.sessions.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{page.pageviews.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{page.bounceRate.toFixed(1)}%</td>
                       </tr>
                     ))}
                   </tbody>
@@ -590,13 +595,13 @@ export default function DashboardOverviewPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                    {(analyticsData?.searchConsoleData?.topQueries || []).map((row, idx) => (
-                      <tr key={idx}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.query}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.clicks}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.impressions}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.ctr}%</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{row.position}</td>
+                    {(analyticsData?.searchConsoleData?.topQueries || []).map((query, index) => (
+                      <tr key={index}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{query.query}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{query.clicks.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{query.impressions.toLocaleString()}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{(query.ctr * 100).toFixed(1)}%</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{query.position.toFixed(1)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -697,4 +702,6 @@ export default function DashboardOverviewPage() {
       </div>
     </div>
   );
-} 
+});
+
+export default DashboardOverviewPage; 

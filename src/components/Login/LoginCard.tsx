@@ -23,7 +23,7 @@ export default function LoginCard() {
       try {
         const userData = JSON.parse(storedUser);
         if (userData && userData.uid) {
-          router.push('/profile');
+          router.push('/dashboard/overview');
         }
       } catch (err) {
         // Invalid stored data, clear it

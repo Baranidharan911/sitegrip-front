@@ -35,7 +35,7 @@ const AppSidebar = memo(() => {
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} overflow-x-hidden`}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <Link href="/dashboard" className="flex items-center space-x-2" onClick={handleClose}>
+        <Link href="/dashboard" prefetch={true} className="flex items-center space-x-2" onClick={handleClose}>
           <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-sm">SG</span>
           </div>
@@ -146,6 +146,7 @@ const SidebarSection = memo(({
             <Link
               key={item.path}
               href={item.path}
+              prefetch={true}
               onClick={handleItemClick}
               className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
                 isActive(item.path)
