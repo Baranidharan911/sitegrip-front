@@ -22,6 +22,7 @@
     "critters": "^0.0.25",
     "dagre": "^0.8.5",
     "date-fns": "^3.6.0",
+    "diff-dom": "^4.2.8",
     "file-saver": "^2.0.5",
     "firebase": "^11.9.1",
     "framer-motion": "^11.18.2",

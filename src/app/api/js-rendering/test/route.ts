@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
       message: 'Playwright JS rendering test passed',
       loadTime: result.loadTime,
       renderedHtmlLength: result.renderedHtml.length,
-      initialHtmlLength: result.initialHtml.length
+      initialHtmlLength: result.initialHtml.length,
+      renderedScreenshot: result.renderedScreenshot,
+      initialScreenshot: result.initialScreenshot
     });
 
   } catch (err: any) {

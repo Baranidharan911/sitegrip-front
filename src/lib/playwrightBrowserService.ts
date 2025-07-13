@@ -40,6 +40,8 @@ export interface JSRenderingResult {
   renderedHtml: string;
   initialHtml: string;
   loadTime: number;
+  renderedScreenshot?: string;
+  initialScreenshot?: string;
   error?: string;
 }
 
@@ -90,36 +92,25 @@ export class PlaywrightBrowserService {
     console.log(`🖥️ Performing JS rendering for: ${url}`);
 
     let page: Page | null = null;
+    let initialPage: Page | null = null;
     const startTime = Date.now();
 
     try {
-      // Create new page
+      // JS-rendered page
       page = await this.browser.newPage();
-      
-      // Set viewport
       await page.setViewportSize({ width: 1920, height: 1080 });
-
-      // Navigate to URL with proper timeout and wait conditions
-      await page.goto(url, { 
-        waitUntil: 'networkidle',
-        timeout: timeout 
-      });
-
-      // Wait for any additional dynamic content
+      await page.goto(url, { waitUntil: 'networkidle', timeout });
       await page.waitForTimeout(2000);
-
-      // Get rendered HTML after JS execution
       const renderedHtml = await page.content();
+      const renderedScreenshot = await page.screenshot({ type: 'png', fullPage: true }).then(buf => buf.toString('base64'));
       const loadTime = Date.now() - startTime;
 
-      // Fetch raw HTML without JS execution for comparison
-      const rawRes = await fetch(url, { 
-        method: 'GET', 
-        headers: { 
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-        } 
-      });
-      const initialHtml = await rawRes.text();
+      // Raw HTML (JS disabled)
+      initialPage = await this.browser.newPage({ javaScriptEnabled: false });
+      await initialPage.setViewportSize({ width: 1920, height: 1080 });
+      await initialPage.goto(url, { waitUntil: 'domcontentloaded', timeout });
+      const initialHtml = await initialPage.content();
+      const initialScreenshot = await initialPage.screenshot({ type: 'png', fullPage: true }).then(buf => buf.toString('base64'));
 
       console.log(`✅ JS rendering completed in ${loadTime}ms`);
 
@@ -127,12 +118,13 @@ export class PlaywrightBrowserService {
         success: true,
         renderedHtml,
         initialHtml,
-        loadTime
+        loadTime,
+        renderedScreenshot,
+        initialScreenshot
       };
 
     } catch (error) {
       console.error('❌ JS rendering failed:', error);
-      
       return {
         success: false,
         renderedHtml: '',
@@ -141,9 +133,8 @@ export class PlaywrightBrowserService {
         error: error instanceof Error ? error.message : 'Unknown error'
       };
     } finally {
-      if (page) {
-        await page.close();
-      }
+      if (page) await page.close();
+      if (initialPage) await initialPage.close();
     }
   }
 
