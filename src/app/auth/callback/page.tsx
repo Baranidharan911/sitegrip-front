@@ -69,7 +69,7 @@ export default function AuthCallback() {
               setMessage('Authentication successful! Redirecting...');
               toast.success('Signed in successfully');
               await refreshAuthStatus();
-              setTimeout(() => router.push('/dashboard/overview'), 1500);
+              window.location.replace('/dashboard/overview');
             } else {
               throw new Error('Invalid user data received');
             }
@@ -125,7 +125,7 @@ export default function AuthCallback() {
               setMessage('Signed in successfully. Redirecting...');
               toast.success('Signed in successfully');
               await refreshAuthStatus();
-              setTimeout(() => router.push('/dashboard/overview'), 1500);
+              window.location.replace('/dashboard/overview');
             } else {
               throw new Error(data.message || 'Google auth failed');
             }
