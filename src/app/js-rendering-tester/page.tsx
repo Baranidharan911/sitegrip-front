@@ -2,9 +2,9 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe, Eye, EyeOff, Maximize2, Minimize2, Tooltip } from 'lucide-react';
+import { Loader2, Code2, FileText, Zap, ChevronDown, ChevronRight, Copy, Check, Globe, Eye, EyeOff, Maximize2, Minimize2 } from 'lucide-react';
 import { Tab } from '@headlessui/react';
-import DiffDOM from 'diff-dom';
+import * as DiffDOM from 'diff-dom';
 import jsPDF from 'jspdf';
 import { Sparkles, FileText as FileTextIcon, Zap as ZapIcon, Eye as EyeIcon, Image as ImageIcon, Accessibility, Code2 as Code2Icon, Link as LinkIcon, Shield, BarChart3, CheckCircle, Star, TrendingUp, Globe as GlobeIcon, FileDown, Share2, Download, SlidersHorizontal } from 'lucide-react';
 
@@ -23,11 +23,11 @@ const getDomDiffSummary = (initialHtml: string, renderedHtml: string) => {
     const parser = new window.DOMParser();
     const initialDoc = parser.parseFromString(initialHtml, 'text/html');
     const renderedDoc = parser.parseFromString(renderedHtml, 'text/html');
-    const dd = new DiffDOM();
+    const dd = new DiffDOM.DiffDOM();
     const diffs = dd.diff(initialDoc.body, renderedDoc.body);
     // Summarize changes
     let added = 0, removed = 0, changed = 0, attrChanged = 0;
-    diffs.forEach(diff => {
+    diffs.forEach((diff: any) => {
       if (diff.action === 'addElement') added++;
       else if (diff.action === 'removeElement') removed++;
       else if (diff.action === 'modifyElement') changed++;
@@ -397,7 +397,7 @@ export default function JsRenderingTesterPage() {
       .map(line => line.trim())
       .filter(line => line.length > 0);
 
-    return lines.map((line, index) => {
+    return lines.map((line: string, index: number) => {
       if (line.startsWith('</')) depth = Math.max(0, depth - 1);
       const indentedLine = '  '.repeat(depth) + line;
       if (line.startsWith('<') && !line.startsWith('</') && !line.endsWith('/>')) {
@@ -500,7 +500,7 @@ export default function JsRenderingTesterPage() {
         <div className={`relative bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden`}>
           <div className="overflow-auto max-h-[60vh]">
             <pre className="text-xs font-mono leading-relaxed">
-              {formattedLines.map((lineData, index) => (
+              {formattedLines.map((lineData: any, index: number) => (
                 <div key={index} className="flex hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                   {showLineNumbers && (
                     <span className="select-none text-gray-600 dark:text-gray-600 bg-gray-100 dark:bg-gray-800 px-3 py-1 text-right min-w-[60px] border-r border-gray-200 dark:border-gray-700">
@@ -745,7 +745,7 @@ export default function JsRenderingTesterPage() {
             {/* Tabbed Interface */}
             <Tab.Group>
                               <Tab.List className="flex flex-wrap gap-2 bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl p-2 shadow-inner">
-                {tabList.map((tab) => (
+                {tabList.map((tab: any) => (
                   <Tab
                     key={tab.key}
                     className={({ selected }) =>
@@ -816,7 +816,7 @@ export default function JsRenderingTesterPage() {
                       <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }} className="bg-gradient-to-r from-yellow-50 to-pink-50 dark:from-yellow-900/20 dark:to-pink-900/20 rounded-2xl p-6 border border-yellow-200 dark:border-yellow-800 mb-4 shadow-xl backdrop-blur-xl animate-fade-in">
                         <h4 className="font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center gap-2"><Star size={18} className="text-yellow-400" /> SEO Tag Differences</h4>
                         <div className="space-y-2">
-                          {seoDiffs.map((diff, idx) => (
+                          {seoDiffs.map((diff: any, idx: number) => (
                             <div key={idx} className="flex flex-col sm:flex-row gap-2 text-xs sm:text-sm">
                               <span className="font-semibold text-purple-700 dark:text-purple-400 w-32">{diff.tag}</span>
                               <span className="flex-1 text-gray-700 dark:text-gray-300"><span className="font-semibold">Initial:</span> {diff.initial || <span className='italic text-gray-400'>None</span>}</span>
@@ -835,7 +835,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-red-700 dark:text-red-400">Text only in Initial (raw HTML, not visible after JS):</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {visibleDiff.onlyInInitial.slice(0, 10).map((t, i) => <li key={i}>{t}</li>)}
+                              {visibleDiff.onlyInInitial.slice(0, 10).map((t: string, i: number) => <li key={i}>{t}</li>)}
                               {visibleDiff.onlyInInitial.length > 10 && <li>...and {visibleDiff.onlyInInitial.length - 10} more</li>}
                             </ul>
                           </div>
@@ -844,7 +844,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-green-700 dark:text-green-400">Text only in Rendered (added by JS, not in raw HTML):</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {visibleDiff.onlyInRendered.slice(0, 10).map((t, i) => <li key={i}>{t}</li>)}
+                              {visibleDiff.onlyInRendered.slice(0, 10).map((t: string, i: number) => <li key={i}>{t}</li>)}
                               {visibleDiff.onlyInRendered.length > 10 && <li>...and {visibleDiff.onlyInRendered.length - 10} more</li>}
                             </ul>
                           </div>
@@ -863,24 +863,24 @@ export default function JsRenderingTesterPage() {
                           <div>
                             <span className="font-semibold text-blue-700 dark:text-blue-400">Scripts Added by JS:</span>
                             <ul className="list-disc ml-6">
-                              {resourcesDiff.scriptsAdded.slice(0, 5).map((src, i) => <li key={i}>{src}</li>)}
+                              {resourcesDiff.scriptsAdded.slice(0, 5).map((src: string, i: number) => <li key={i}>{src}</li>)}
                               {resourcesDiff.scriptsAdded.length > 5 && <li>...and {resourcesDiff.scriptsAdded.length - 5} more</li>}
                             </ul>
                             <span className="font-semibold text-red-700 dark:text-red-400">Scripts Removed after JS:</span>
                             <ul className="list-disc ml-6">
-                              {resourcesDiff.scriptsRemoved.slice(0, 5).map((src, i) => <li key={i}>{src}</li>)}
+                              {resourcesDiff.scriptsRemoved.slice(0, 5).map((src: string, i: number) => <li key={i}>{src}</li>)}
                               {resourcesDiff.scriptsRemoved.length > 5 && <li>...and {resourcesDiff.scriptsRemoved.length - 5} more</li>}
                             </ul>
                           </div>
                           <div>
                             <span className="font-semibold text-green-700 dark:text-green-400">Images Added by JS:</span>
                             <ul className="list-disc ml-6">
-                              {resourcesDiff.imagesAdded.slice(0, 5).map((src, i) => <li key={i}>{src}</li>)}
+                              {resourcesDiff.imagesAdded.slice(0, 5).map((src: string, i: number) => <li key={i}>{src}</li>)}
                               {resourcesDiff.imagesAdded.length > 5 && <li>...and {resourcesDiff.imagesAdded.length - 5} more</li>}
                             </ul>
                             <span className="font-semibold text-red-700 dark:text-red-400">Images Removed after JS:</span>
                             <ul className="list-disc ml-6">
-                              {resourcesDiff.imagesRemoved.slice(0, 5).map((src, i) => <li key={i}>{src}</li>)}
+                              {resourcesDiff.imagesRemoved.slice(0, 5).map((src: string, i: number) => <li key={i}>{src}</li>)}
                               {resourcesDiff.imagesRemoved.length > 5 && <li>...and {resourcesDiff.imagesRemoved.length - 5} more</li>}
                             </ul>
                           </div>
@@ -901,7 +901,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-red-700 dark:text-red-400">Images missing alt after JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {accessibilityDiff.imagesNewlyMissingAlt.slice(0, 10).map((src, i) => <li key={i}>{src}</li>)}
+                              {accessibilityDiff.imagesNewlyMissingAlt.slice(0, 10).map((src: string, i: number) => <li key={i}>{src}</li>)}
                               {accessibilityDiff.imagesNewlyMissingAlt.length > 10 && <li>...and {accessibilityDiff.imagesNewlyMissingAlt.length - 10} more</li>}
                             </ul>
                           </div>
@@ -910,7 +910,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-yellow-700 dark:text-yellow-400">ARIA/role attributes lost after JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {accessibilityDiff.ariaLost.slice(0, 10).map((el, i) => <li key={i}>{JSON.stringify(el)}</li>)}
+                              {accessibilityDiff.ariaLost.slice(0, 10).map((el: any, i: number) => <li key={i}>{JSON.stringify(el)}</li>)}
                               {accessibilityDiff.ariaLost.length > 10 && <li>...and {accessibilityDiff.ariaLost.length - 10} more</li>}
                             </ul>
                           </div>
@@ -929,7 +929,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-green-700 dark:text-green-400">JSON-LD Added by JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.jsonLdAdded.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.jsonLdAdded.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.jsonLdAdded.length > 3 && <li>...and {structuredDiff.jsonLdAdded.length - 3} more</li>}
                             </ul>
                           </div>
@@ -938,7 +938,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-red-700 dark:text-red-400">JSON-LD Removed after JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.jsonLdRemoved.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.jsonLdRemoved.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.jsonLdRemoved.length > 3 && <li>...and {structuredDiff.jsonLdRemoved.length - 3} more</li>}
                             </ul>
                           </div>
@@ -947,7 +947,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-green-700 dark:text-green-400">Microdata Added by JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.microdataAdded.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.microdataAdded.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.microdataAdded.length > 3 && <li>...and {structuredDiff.microdataAdded.length - 3} more</li>}
                             </ul>
                           </div>
@@ -956,7 +956,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-red-700 dark:text-red-400">Microdata Removed after JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.microdataRemoved.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.microdataRemoved.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.microdataRemoved.length > 3 && <li>...and {structuredDiff.microdataRemoved.length - 3} more</li>}
                             </ul>
                           </div>
@@ -965,7 +965,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-green-700 dark:text-green-400">RDFa Added by JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.rdfaAdded.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.rdfaAdded.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.rdfaAdded.length > 3 && <li>...and {structuredDiff.rdfaAdded.length - 3} more</li>}
                             </ul>
                           </div>
@@ -974,7 +974,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2">
                             <span className="font-semibold text-red-700 dark:text-red-400">RDFa Removed after JS:</span>
                             <ul className="list-disc ml-6 text-xs text-gray-700 dark:text-gray-300">
-                              {structuredDiff.rdfaRemoved.slice(0, 3).map((d, i) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
+                              {structuredDiff.rdfaRemoved.slice(0, 3).map((d: any, i: number) => <li key={i}><pre>{JSON.stringify(d, null, 2)}</pre></li>)}
                               {structuredDiff.rdfaRemoved.length > 3 && <li>...and {structuredDiff.rdfaRemoved.length - 3} more</li>}
                             </ul>
                           </div>
@@ -997,7 +997,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2 text-xs">
                             <span className="font-semibold text-red-700 dark:text-red-400">Internal links missing after JS:</span>
                             <ul className="list-disc ml-6">
-                              {crawlDiff.internalLost.slice(0, 10).map((l, i) => <li key={i}>{l}</li>)}
+                              {crawlDiff.internalLost.slice(0, 10).map((l: string, i: number) => <li key={i}>{l}</li>)}
                               {crawlDiff.internalLost.length > 10 && <li>...and {crawlDiff.internalLost.length - 10} more</li>}
                             </ul>
                           </div>
@@ -1006,7 +1006,7 @@ export default function JsRenderingTesterPage() {
                           <div className="mb-2 text-xs">
                             <span className="font-semibold text-red-700 dark:text-red-400">External links missing after JS:</span>
                             <ul className="list-disc ml-6">
-                              {crawlDiff.externalLost.slice(0, 10).map((l, i) => <li key={i}>{l}</li>)}
+                              {crawlDiff.externalLost.slice(0, 10).map((l: string, i: number) => <li key={i}>{l}</li>)}
                               {crawlDiff.externalLost.length > 10 && <li>...and {crawlDiff.externalLost.length - 10} more</li>}
                             </ul>
                           </div>
@@ -1075,7 +1075,7 @@ export default function JsRenderingTesterPage() {
                         <div className="p-4">
                           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
                             <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
-                              {result.initialHtml.split('\n').slice(0, 100).map((line, index) => (
+                              {result.initialHtml.split('\n').slice(0, 100).map((line: string, index: number) => (
                                 <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
                                   <span className="text-gray-600 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
                                     {index + 1}
@@ -1116,7 +1116,7 @@ export default function JsRenderingTesterPage() {
                         <div className="p-4">
                           <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
                             <pre className="text-xs font-mono text-gray-700 dark:text-gray-300 overflow-auto max-h-80 p-4 leading-relaxed whitespace-pre-wrap">
-                              {result.renderedHtml.split('\n').slice(0, 100).map((line, index) => (
+                              {result.renderedHtml.split('\n').slice(0, 100).map((line: string, index: number) => (
                                 <div key={index} className="hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors rounded px-1">
                                   <span className="text-gray-600 dark:text-gray-600 select-none mr-3 inline-block w-8 text-right">
                                     {index + 1}
@@ -1141,7 +1141,7 @@ export default function JsRenderingTesterPage() {
                         {displayedDiffs.length === 0 && (
                           <div className="text-gray-600 text-center py-4">No significant differences found.</div>
                         )}
-                        {displayedDiffs.map((diff, idx) => (
+                        {displayedDiffs.map((diff: any, idx: number) => (
                           <div key={idx} className={`flex items-start gap-2 py-1 px-2 rounded transition-colors ${diff.type === 'added' ? 'bg-green-50 dark:bg-green-900/20' : diff.type === 'removed' ? 'bg-red-50 dark:bg-red-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'}`}>
                             <span className="text-xs text-gray-600 w-10 text-right select-none">{diff.lineNumber}</span>
                             <span className="flex-1 font-mono text-xs text-gray-700 dark:text-gray-300 break-all">
