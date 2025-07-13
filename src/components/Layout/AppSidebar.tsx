@@ -37,29 +37,22 @@ const AppSidebar = memo(() => {
     <div className={`flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} overflow-x-hidden`}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <Link href="/dashboard" prefetch={true} className="flex items-center space-x-2" onClick={handleClose}>
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-sm">SG</span>
-          </div>
-          {isOpen && <span className="text-xl font-bold text-gray-900 dark:text-white">SiteGrip</span>}
-        </Link>
-        <button
-          onClick={toggleSidebar}
-          className="lg:hidden p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-        >
-          <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-        </button>
-      </div>
-
-      {/* Sidebar toggle button (always visible) */}
-      <div className="flex items-center justify-end px-4 py-2">
-        <button
-          onClick={handleSidebarToggle}
-          className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        >
-          <Menu className="w-5 h-5 text-gray-500 dark:text-gray-400" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }} />
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard" prefetch={true} className="flex items-center space-x-2" onClick={handleClose}>
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">SG</span>
+            </div>
+            {isOpen && <span className="text-xl font-bold text-gray-900 dark:text-white">SiteGrip</span>}
+          </Link>
+          {/* Hamburger menu button attached to sidebar */}
+          <button
+            onClick={toggleSidebar}
+            className="ml-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors lg:hidden"
+            aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+          >
+            <Menu className="w-5 h-5 text-gray-500 dark:text-gray-400" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }} />
+          </button>
+        </div>
       </div>
 
       {/* Navigation */}
