@@ -187,6 +187,14 @@ async function performAdditionalChecks(url: string) {
   }
 }
 
+export async function GET(request: NextRequest) {
+  return NextResponse.json({ 
+    message: 'Web Vitals API - Use POST method with URL parameter',
+    method: 'GET',
+    status: 'info'
+  }, { status: 200 });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { url } = await request.json();
@@ -250,8 +258,11 @@ export async function POST(request: NextRequest) {
     console.log('✅ Comprehensive web vitals analysis completed');
 
     return NextResponse.json(result);
-  } catch (err: any) {
-    console.error('❌ Web Vitals API error:', err);
-    return NextResponse.json({ error: 'Failed to fetch web vitals data.' }, { status: 500 });
+  } catch (error) {
+    console.error('❌ Web vitals analysis failed:', error);
+    return NextResponse.json({ 
+      error: 'Analysis failed', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    }, { status: 500 });
   }
 } 

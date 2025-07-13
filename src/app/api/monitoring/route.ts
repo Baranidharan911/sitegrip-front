@@ -42,6 +42,15 @@ export async function GET(request: NextRequest) {
 
     console.log(`🔍 Monitoring API request: ${action}`);
 
+    // If no action is provided, return available actions
+    if (!action) {
+      return NextResponse.json({ 
+        message: 'Monitoring API - Available actions: monitors, get, summary',
+        availableActions: ['monitors', 'get', 'summary'],
+        example: '/api/monitoring?action=monitors'
+      }, { status: 200 });
+    }
+
     switch (action) {
       case 'monitors': {
         const data = await callUptimeRobot('getMonitors', {});
