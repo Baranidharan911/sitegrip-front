@@ -160,12 +160,12 @@ const NewFooter: React.FC = () => {
         <div className="pt-8 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col md:flex-row justify-between items-center">
           <div className="flex items-center gap-6 mb-4 md:mb-0">
             <p className="text-slate-600 dark:text-slate-400">
-              © 2024 SiteGrip. All rights reserved.
+              © 2025 SiteGrip. All rights reserved.
             </p>
             <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-500">
               <span>Made with</span>
               <span className="text-red-500">❤️</span>
-              <span>for local businesses</span>
+              <span>by SiteGrip</span>
             </div>
           </div>
           <div className="flex items-center gap-6">
