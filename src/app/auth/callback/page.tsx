@@ -66,7 +66,7 @@ export default function AuthCallback() {
 
               setMessage('Authentication successful! Redirecting...');
               toast.success('Signed in successfully');
-              setTimeout(() => router.push('/profile'), 1500);
+              setTimeout(() => router.push('/dashboard/overview'), 1500);
             } else {
               throw new Error('Invalid user data received');
             }
@@ -121,7 +121,7 @@ export default function AuthCallback() {
               setStatus('success');
               setMessage('Signed in successfully. Redirecting...');
               toast.success('Signed in successfully');
-              setTimeout(() => router.push('/profile'), 1500);
+              setTimeout(() => router.push('/dashboard/overview'), 1500);
             } else {
               throw new Error(data.message || 'Google auth failed');
             }
@@ -161,7 +161,7 @@ export default function AuthCallback() {
       setStatus('success');
       setMessage('Manual data processed. Redirecting...');
       toast.success('Signed in manually');
-      setTimeout(() => router.push('/profile'), 1500);
+      setTimeout(() => router.push('/dashboard/overview'), 1500);
     } catch (e) {
       toast.error('Failed to process manual data');
     }
