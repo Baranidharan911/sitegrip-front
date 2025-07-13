@@ -187,14 +187,14 @@ export default function DashboardOverviewPage() {
         },
       });
 
+      const data = await response.json();
       if (!response.ok) {
-        throw new Error('Failed to fetch analytics properties');
+        throw new Error(data.error || 'Failed to fetch analytics properties');
       }
 
-      const data = await response.json();
       setAnalyticsProperties(data.properties || []);
-    } catch (err) {
-      setError('Failed to fetch Google Analytics properties');
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch Google Analytics properties');
       console.error('Error fetching properties:', err);
     } finally {
       setLoadingProperties(false);
@@ -323,7 +323,7 @@ export default function DashboardOverviewPage() {
         ) : loadingProperties ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
         ) : !analyticsProperties.length ? (
-          <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">No Google Analytics properties found for your account.</div>
+          <div className="text-center py-16 text-lg text-red-600 dark:text-red-400">{error || 'No Google Analytics properties found for your account.'}</div>
         ) : !selectedProperty ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Please select a property to view analytics data.</div>
         ) : loading ? (
