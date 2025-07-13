@@ -197,7 +197,6 @@ export const sidebarItems: SidebarSection[] = [
     description: 'Website testing and validation',
     subItems: [
       { name: 'Responsive Preview', path: '/screen-responsiveness', icon: MonitorSmartphone, description: 'Test responsiveness', pro: false },
-      { name: 'JS Rendering Tester', path: '/js-rendering-tester', icon: Braces, description: 'Test JavaScript rendering', pro: false },
       { name: 'Header Checker', path: '/header-checker', icon: Shield, description: 'Check HTTP headers', pro: false },
       { name: 'OpenGraph Checker', path: '/opengraph-checker', icon: Link, description: 'Check social media tags', pro: false },
       { name: 'Broken Image Checker', path: '/broken-image-checker', icon: Image, description: 'Find broken images', pro: false },
