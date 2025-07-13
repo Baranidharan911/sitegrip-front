@@ -75,18 +75,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Preload critical resources */}
+        {/* Critical resource hints */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="//fonts.googleapis.com" />
-        <link rel="dns-prefetch" href="//fonts.gstatic.com" />
-        
-        {/* Preload critical pages */}
-        <link rel="prefetch" href="/dashboard" />
-        <link rel="prefetch" href="/seo-tools" />
-        
-        {/* Preload critical assets */}
-        <link rel="preload" href="/images/logo/logo.svg" as="image" type="image/svg+xml" />
         
         {/* Performance hints */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
@@ -97,10 +88,6 @@ export default function RootLayout({
         <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
         <meta httpEquiv="X-Frame-Options" content="DENY" />
         <meta httpEquiv="X-XSS-Protection" content="1; mode=block" />
-        
-        {/* Resource hints for faster loading */}
-        <link rel="preload" href="/api/monitoring" as="fetch" crossOrigin="anonymous" />
-        <link rel="preload" href="/api/web-vitals" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className={inter.className}>
         <ThemeProvider>
@@ -109,27 +96,22 @@ export default function RootLayout({
           </SidebarProvider>
         </ThemeProvider>
         
-        {/* Performance monitoring */}
-        <script
+        {/* Optimized performance monitoring */}
+        <Script
+          id="performance-monitoring"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{
             __html: `
-              // Performance monitoring
-              if ('performance' in window) {
+              // Performance monitoring - only run in production
+              if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
                 window.addEventListener('load', () => {
-                  setTimeout(() => {
+                  if ('performance' in window) {
                     const perfData = performance.getEntriesByType('navigation')[0];
                     if (perfData) {
-                      console.log('Page Load Time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
-                      console.log('DOM Content Loaded:', perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart, 'ms');
+                      console.log('🚀 Page Load Time:', perfData.loadEventEnd - perfData.loadEventStart, 'ms');
+                      console.log('📊 DOM Content Loaded:', perfData.domContentLoadedEventEnd - perfData.domContentLoadedEventStart, 'ms');
                     }
-                  }, 0);
-                });
-              }
-              
-              // Service Worker registration for caching
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                  navigator.serviceWorker.register('/sw.js').catch(console.error);
+                  }
                 });
               }
             `,

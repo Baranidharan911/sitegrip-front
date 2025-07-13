@@ -1,21 +1,31 @@
 "use client";
 
-import React, { useEffect, useState, Suspense, lazy, memo } from 'react';
+import React, { useEffect, useState, Suspense, lazy, memo, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Toaster } from 'react-hot-toast';
 
-// Lazy load components for better performance
+// Critical components - load immediately
+import NewHeader from '../components/Home/NewHeader';
+import NewHero from '../components/Home/NewHero';
+
+// Progressive loading - load in batches
 const AnimatedBackground = lazy(() => import('../components/Home/AnimatedBackground'));
-const NewHeader = lazy(() => import('../components/Home/NewHeader'));
-const NewHero = lazy(() => import('../components/Home/NewHero'));
+
+// Batch 1: Above the fold content
 const TrustedBy = lazy(() => import('../components/Home/TrustedBy'));
 const Process = lazy(() => import('../components/Home/Process'));
+
+// Batch 2: Main content (load after initial render)
 const NewFeatures = lazy(() => import('../components/Home/NewFeatures'));
 const GoogleIndexing = lazy(() => import('../components/Home/GoogleIndexing'));
 const SEOTools = lazy(() => import('../components/Home/SEOTools'));
+
+// Batch 3: Secondary content (load when needed)
 const Analytics = lazy(() => import('../components/Home/Analytics'));
 const Integrations = lazy(() => import('../components/Home/Integrations'));
 const NewPricing = lazy(() => import('../components/Home/NewPricing'));
+
+// Batch 4: Footer content (load last)
 const Roadmap = lazy(() => import('../components/Home/Roadmap'));
 const FAQ = lazy(() => import('../components/Home/FAQ'));
 const Contact = lazy(() => import('../components/Home/Contact'));
@@ -24,10 +34,10 @@ const Testimonials = lazy(() => import('../components/Home/Testimonials'));
 const NewFooter = lazy(() => import('../components/Home/NewFooter'));
 const CookieBanner = lazy(() => import('../components/Common/CookieBanner'));
 
-// Loading component
+// Optimized loading component
 const LoadingSpinner = memo(() => (
   <div className="flex items-center justify-center h-32">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-500"></div>
   </div>
 ));
 
@@ -37,19 +47,62 @@ export const dynamic = 'force-dynamic';
 
 const Home = memo(() => {
   const [mounted, setMounted] = useState(false);
+  const [loadBatch2, setLoadBatch2] = useState(false);
+  const [loadBatch3, setLoadBatch3] = useState(false);
+  const [loadBatch4, setLoadBatch4] = useState(false);
   const router = useRouter();
   
-  // Set mounted state after component mounts
+  // Progressive loading strategy
   useEffect(() => {
     setMounted(true);
+    
+    // Load batch 2 after initial render
+    const timer1 = setTimeout(() => setLoadBatch2(true), 100);
+    
+    // Load batch 3 when user scrolls or after 2 seconds
+    const timer2 = setTimeout(() => setLoadBatch3(true), 2000);
+    
+    // Load batch 4 when user scrolls near bottom or after 5 seconds
+    const timer3 = setTimeout(() => setLoadBatch4(true), 5000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, []);
   
+  // Intersection Observer for progressive loading
   useEffect(() => {
-    // Only access localStorage after component is mounted
     if (!mounted) return;
     
-    // Optional: Check if the user is authenticated and show different content
-    // For now, we'll let users browse the home page and interact with OAuth
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            if (entry.target.classList.contains('batch-2-trigger')) {
+              setLoadBatch2(true);
+            } else if (entry.target.classList.contains('batch-3-trigger')) {
+              setLoadBatch3(true);
+            } else if (entry.target.classList.contains('batch-4-trigger')) {
+              setLoadBatch4(true);
+            }
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '100px' }
+    );
+    
+    // Observe trigger elements
+    const triggers = document.querySelectorAll('.batch-2-trigger, .batch-3-trigger, .batch-4-trigger');
+    triggers.forEach(trigger => observer.observe(trigger));
+    
+    return () => observer.disconnect();
+  }, [mounted]);
+  
+  useEffect(() => {
+    if (!mounted) return;
+    
     const storedUser = localStorage.getItem('Sitegrip-user');
     if (storedUser) {
       console.log('User is authenticated, showing enhanced home page features');
@@ -58,79 +111,119 @@ const Home = memo(() => {
     }
   }, [mounted, router]);
 
+  // Memoize components to prevent unnecessary re-renders
+  const aboveTheFoldContent = useMemo(() => (
+    <>
+      <NewHeader />
+      <NewHero />
+    </>
+  ), []);
+
+  const batch1Content = useMemo(() => (
+    <>
+      <Suspense fallback={<LoadingSpinner />}>
+        <TrustedBy />
+      </Suspense>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Process />
+      </Suspense>
+    </>
+  ), []);
+
+  const batch2Content = useMemo(() => (
+    loadBatch2 ? (
+      <>
+        <Suspense fallback={<LoadingSpinner />}>
+          <NewFeatures />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <GoogleIndexing />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <SEOTools />
+        </Suspense>
+      </>
+    ) : (
+      <div className="batch-2-trigger h-32 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  ), [loadBatch2]);
+
+  const batch3Content = useMemo(() => (
+    loadBatch3 ? (
+      <>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Analytics />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Integrations />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <NewPricing />
+        </Suspense>
+      </>
+    ) : (
+      <div className="batch-3-trigger h-32 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  ), [loadBatch3]);
+
+  const batch4Content = useMemo(() => (
+    loadBatch4 ? (
+      <>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Roadmap />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <FAQ />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Contact />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <FinalCTA />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Testimonials />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <NewFooter />
+        </Suspense>
+      </>
+    ) : (
+      <div className="batch-4-trigger h-32 flex items-center justify-center">
+        <LoadingSpinner />
+      </div>
+    )
+  ), [loadBatch4]);
+
   return (
     <div className="min-h-screen relative overflow-x-hidden bg-gray-50 dark:bg-[#0a0b1e] transition-colors duration-300">
-      <Suspense fallback={<LoadingSpinner />}>
+      {/* Background - load immediately but with SSR disabled */}
+      <Suspense fallback={null}>
         <AnimatedBackground />
       </Suspense>
       
       <div className="relative z-10 pt-28">
-        <Suspense fallback={<LoadingSpinner />}>
-          <NewHeader />
-        </Suspense>
+        {/* Above the fold content - no Suspense */}
+        {aboveTheFoldContent}
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <NewHero />
-        </Suspense>
+        {/* Batch 1: Above the fold content */}
+        {batch1Content}
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <TrustedBy />
-        </Suspense>
+        {/* Batch 2: Main content */}
+        {batch2Content}
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <Process />
-        </Suspense>
+        {/* Batch 3: Secondary content */}
+        {batch3Content}
         
-        <Suspense fallback={<LoadingSpinner />}>
-          <NewFeatures />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <GoogleIndexing />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <SEOTools />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <Analytics />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <Integrations />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <NewPricing />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <Roadmap />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <FAQ />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <Contact />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <FinalCTA />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <Testimonials />
-        </Suspense>
-        
-        <Suspense fallback={<LoadingSpinner />}>
-          <NewFooter />
-        </Suspense>
+        {/* Batch 4: Footer content */}
+        {batch4Content}
       </div>
       
-      {/* GDPR Cookie Banner */}
+      {/* Cookie Banner - load last */}
       <Suspense fallback={null}>
         <CookieBanner />
       </Suspense>

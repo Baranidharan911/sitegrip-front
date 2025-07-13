@@ -67,6 +67,9 @@ const nextConfig = {
       // Enable tree shaking
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
+      
+      // Optimize bundle size
+      config.optimization.minimize = true;
     }
 
     // Development optimizations
