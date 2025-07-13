@@ -317,10 +317,8 @@ export default function DashboardOverviewPage() {
         {authLoading ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Checking authentication...</div>
         ) : !authState?.isAuthenticated ? (
-          <div className="flex flex-col items-center justify-center py-24">
-            <h2 className="text-xl font-bold mb-2">Authentication Required</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">Please log in with Google to access your analytics data.</p>
-            <a href="/login" className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Go to Login</a>
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            Please log in with Google to view your analytics data.
           </div>
         ) : loadingProperties ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
