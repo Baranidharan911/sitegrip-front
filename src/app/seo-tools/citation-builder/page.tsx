@@ -1,38 +1,55 @@
 'use client';
 import { useState } from 'react';
-import { Link, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info, Filter, Search, MoreVertical, ExternalLink, RefreshCw, BarChart3 } from 'lucide-react';
+import { Link, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info, Filter, Search, MoreVertical, ExternalLink, RefreshCw, BarChart3, Copy, Check } from 'lucide-react';
 
 type Status = 'Ready to Submit' | 'Submitted' | 'Error';
 
-const mockSites: { name: string; status: Status; priority: string; category: string; lastChecked: string }[] = [
-  { name: 'Yelp', status: 'Ready to Submit', priority: 'High', category: 'Review Sites', lastChecked: '2 hours ago' },
-  { name: 'Yellow Pages', status: 'Submitted', priority: 'High', category: 'Directory', lastChecked: '1 day ago' },
-  { name: 'Bing Places', status: 'Ready to Submit', priority: 'Medium', category: 'Search Engine', lastChecked: '3 hours ago' },
-  { name: 'Apple Maps', status: 'Error', priority: 'High', category: 'Maps', lastChecked: '5 hours ago' },
-  { name: 'Foursquare', status: 'Submitted', priority: 'Medium', category: 'Social', lastChecked: '2 days ago' },
-  { name: 'Facebook', status: 'Ready to Submit', priority: 'High', category: 'Social', lastChecked: '1 hour ago' },
-  { name: 'Google My Business', status: 'Submitted', priority: 'Critical', category: 'Search Engine', lastChecked: '1 week ago' },
-  { name: 'TripAdvisor', status: 'Ready to Submit', priority: 'Medium', category: 'Review Sites', lastChecked: '4 hours ago' },
+const citationDirectories = [
+  {
+    name: 'Google Business Profile',
+    url: 'https://www.google.com/business/',
+  },
+  {
+    name: 'Yelp',
+    url: 'https://biz.yelp.com/signup_business',
+  },
+  {
+    name: 'Bing Places',
+    url: 'https://www.bingplaces.com/',
+  },
+  {
+    name: 'Facebook',
+    url: 'https://www.facebook.com/pages/create/',
+  },
+  {
+    name: 'Apple Maps',
+    url: 'https://register.apple.com/placesonmaps/',
+  },
+  {
+    name: 'Foursquare',
+    url: 'https://foursquare.com/venue/claim',
+  },
+  {
+    name: 'Yellow Pages',
+    url: 'https://www.yellowpages.com/business',
+  },
+  {
+    name: 'TripAdvisor',
+    url: 'https://www.tripadvisor.com/Owners',
+  },
 ];
 
-const statusIcon: Record<Status, JSX.Element> = {
-  'Ready to Submit': <FileText className="w-5 h-5 text-blue-500" />,
-  'Submitted': <CheckCircle className="w-5 h-5 text-green-500" />,
-  'Error': <AlertCircle className="w-5 h-5 text-red-500" />,
-};
+function formatCitation(business: { name: string; address: string; phone: string }) {
+  return `${business.name}, ${business.address}, ${business.phone}`;
+}
 
-const mockStats = [
-  { title: 'Total Sites', value: '8', change: '+2', icon: Target, color: 'text-blue-500', bgColor: 'bg-blue-50 dark:bg-blue-900/20' },
-  { title: 'Submitted', value: '3', change: '+1', icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/20' },
-  { title: 'Ready to Submit', value: '4', change: '+2', icon: FileText, color: 'text-orange-500', bgColor: 'bg-orange-50 dark:bg-orange-900/20' },
-  { title: 'Errors', value: '1', change: '-1', icon: AlertCircle, color: 'text-red-500', bgColor: 'bg-red-50 dark:bg-red-900/20' },
-];
-
-const mockOpportunities = [
-  { title: '5 Top Sites Missing Your Listing', impact: 'High', description: 'Yelp, Facebook, and 3 other high-traffic sites don\'t have your business listed' },
-  { title: 'Apple Maps Error Needs Fixing', impact: 'Critical', description: 'Your listing on Apple Maps has an error that needs immediate attention' },
-  { title: '3 Sites Ready for Submission', impact: 'Medium', description: 'Quick wins available - submit to these sites to improve visibility' },
-];
+function generateCitations(business: { name: string; address: string; phone: string }) {
+  if (!business.name && !business.address && !business.phone) return [];
+  return citationDirectories.map(dir => ({
+    ...dir,
+    citation: formatCitation(business),
+  }));
+}
 
 export default function CitationBuilderPage() {
   const [business, setBusiness] = useState({ name: '', address: '', phone: '' });
@@ -40,7 +57,9 @@ export default function CitationBuilderPage() {
   const [loading, setLoading] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [copied, setCopied] = useState(false);
+
+  const citations = generateCitations(business);
 
   const handleGenerate = () => {
     setLoading(true);
@@ -50,10 +69,31 @@ export default function CitationBuilderPage() {
     }, 1000);
   };
 
-  const filteredSites = mockSites.filter(site => {
+  const handleCopyAll = () => {
+    const allCitations = citations.map(c => `${c.name}: ${c.citation}`).join('\n');
+    navigator.clipboard.writeText(allCitations);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleExportCSV = () => {
+    const csvRows = [
+      ['Directory', 'Citation', 'Submission Link'],
+      ...citations.map(c => [c.name, c.citation, c.url]),
+    ];
+    const csvContent = csvRows.map(row => row.map(field => `"${field.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'citations.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filteredSites = citations.filter(site => {
     const matchesSearch = site.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || site.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   return (
@@ -117,23 +157,113 @@ export default function CitationBuilderPage() {
 
         {showList && (
           <>
+            {/* Copy/Export Buttons */}
+            <div className="flex flex-wrap gap-4 mb-4 items-center">
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500 text-white font-semibold hover:bg-purple-600 transition-all"
+                onClick={handleCopyAll}
+                disabled={citations.length === 0}
+                aria-label="Copy all citations"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? 'Copied!' : 'Copy All'}
+              </button>
+              <button
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500 text-white font-semibold hover:bg-blue-600 transition-all"
+                onClick={handleExportCSV}
+                disabled={citations.length === 0}
+                aria-label="Export citations as CSV"
+              >
+                <Download className="w-4 h-4" />
+                Export CSV
+              </button>
+            </div>
+            {/* Citations Table */}
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white/90 dark:bg-gray-900/80 mb-8">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Directory</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Citation</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Submission Link</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                  {citations.map((c, idx) => (
+                    <tr key={c.name}>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-900 dark:text-white">{c.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-200">{c.citation}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline"
+                        >
+                          Go to Site <ExternalLink className="w-4 h-4" />
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {mockStats.map((stat, index) => (
-                <div key={index} className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                    </div>
-                    <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
-                      {stat.change}
-                      <ArrowUpRight className="w-4 h-4" />
-                    </span>
+              {/* This section is no longer directly tied to mock data,
+                  but the structure and styling remain for now. */}
+              <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
+                    <Target className="w-6 h-6 text-blue-500" />
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{stat.value}</h3>
-                  <p className="text-gray-600 dark:text-gray-300 text-sm">{stat.title}</p>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                    +2
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
                 </div>
-              ))}
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Total Sites</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Total directories with citations</p>
+              </div>
+              <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-green-50 dark:bg-green-900/20">
+                    <CheckCircle className="w-6 h-6 text-green-500" />
+                  </div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                    +1
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Submitted</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Directories with submitted citations</p>
+              </div>
+              <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-orange-50 dark:bg-orange-900/20">
+                    <FileText className="w-6 h-6 text-orange-500" />
+                  </div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                    +2
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Ready to Submit</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Directories with ready citations</p>
+              </div>
+              <div className="bg-white/90 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20">
+                    <AlertCircle className="w-6 h-6 text-red-500" />
+                  </div>
+                  <span className="text-sm font-medium text-green-600 dark:text-green-400 flex items-center gap-1">
+                    -1
+                    <ArrowUpRight className="w-4 h-4" />
+                  </span>
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Errors</h3>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Directories with citation errors</p>
+              </div>
             </div>
 
             {/* Tabs */}
@@ -164,56 +294,52 @@ export default function CitationBuilderPage() {
                         Citation Sites Summary
                       </h3>
                       <div className="space-y-4">
-                        {['Submitted', 'Ready to Submit', 'Error'].map((status) => {
-                          const count = mockSites.filter(site => site.status === status).length;
-                          const sites = mockSites.filter(site => site.status === status);
-                          return (
-                            <div key={status} className="bg-gradient-to-r from-purple-50/60 to-blue-50/40 dark:from-purple-900/20 dark:to-blue-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4">
-                              <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3">
-                                  {statusIcon[status as Status]}
-                                  <span className="font-semibold text-gray-900 dark:text-white">{status}</span>
-                                </div>
-                                <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{count}</span>
-                              </div>
-                              <div className="flex flex-wrap gap-2">
-                                {sites.slice(0, 3).map((site, i) => (
-                                  <span key={i} className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200">
-                                    {site.name}
-                                  </span>
-                                ))}
-                                {sites.length > 3 && (
-                                  <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
-                                    +{sites.length - 3} more
-                                  </span>
-                                )}
-                              </div>
+                        {/* In the summary section, replace the status-based mapping with a single card showing total citations and a list of directory names.
+                            Remove all references to site.status. */}
+                        <div className="bg-gradient-to-r from-purple-50/60 to-blue-50/40 dark:from-purple-900/20 dark:to-blue-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 p-4">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              {/* Status icons are not directly applicable to generated citations */}
+                              <span className="font-semibold text-gray-900 dark:text-white">Total Citations</span>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                            <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{citations.length}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {citations.map((site, i) => (
+                              <span key={i} className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-200">
+                                {site.name}
+                              </span>
+                            ))}
+                            {citations.length > 3 && (
+                              <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
+                                +{citations.length - 3} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-                    {/* Chart Placeholder */}
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-purple-500" />
-                        Citation Status
-                      </h3>
-                      <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 p-6 h-64 flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="flex items-center justify-center gap-4 mb-4">
-                            <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">3</span>
-                            </div>
-                            <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center">
-                              <span className="text-white text-sm font-bold">4</span>
-                            </div>
-                            <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
-                              <span className="text-white text-xs font-bold">1</span>
+                        {/* Chart Placeholder */}
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                            <BarChart3 className="w-5 h-5 text-purple-500" />
+                            Citation Status
+                          </h3>
+                          <div className="bg-gradient-to-br from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/10 rounded-xl border border-purple-100 dark:border-purple-900/30 p-6 h-64 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-4 mb-4">
+                                <div className="w-20 h-20 rounded-full bg-green-500 flex items-center justify-center">
+                                  <span className="text-white text-sm font-bold">3</span>
+                                </div>
+                                <div className="w-16 h-16 rounded-full bg-orange-500 flex items-center justify-center">
+                                  <span className="text-white text-sm font-bold">4</span>
+                                </div>
+                                <div className="w-12 h-12 rounded-full bg-red-500 flex items-center justify-center">
+                                  <span className="text-white text-xs font-bold">1</span>
+                                </div>
+                              </div>
+                              <p className="text-gray-600 dark:text-gray-300 text-sm">Submitted • Ready • Errors</p>
                             </div>
                           </div>
-                          <p className="text-gray-600 dark:text-gray-300 text-sm">Submitted • Ready • Errors</p>
                         </div>
                       </div>
                     </div>
@@ -236,16 +362,6 @@ export default function CitationBuilderPage() {
                           onChange={(e) => setSearchTerm(e.target.value)}
                         />
                       </div>
-                      <select
-                        className="px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/80 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                      >
-                        <option value="all">All Status</option>
-                        <option value="Ready to Submit">Ready to Submit</option>
-                        <option value="Submitted">Submitted</option>
-                        <option value="Error">Error</option>
-                      </select>
                     </div>
                   </div>
 
@@ -255,11 +371,8 @@ export default function CitationBuilderPage() {
                         <thead className="bg-gray-50 dark:bg-gray-700">
                           <tr>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Site</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Priority</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Category</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Last Checked</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Actions</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Citation</th>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Submission Link</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -267,50 +380,22 @@ export default function CitationBuilderPage() {
                             <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
-                                  {statusIcon[site.status]}
+                                  {/* Status icons are not directly applicable to generated citations */}
                                   <span className="ml-3 font-medium text-gray-900 dark:text-white">{site.name}</span>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                  site.status === 'Submitted' ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200' :
-                                  site.status === 'Ready to Submit' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200' :
-                                  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200'
-                                }`}>
-                                  {site.status}
-                                </span>
+                              <td className="px-6 py-4 whitespace-nowrap text-gray-700 dark:text-gray-200">
+                                {site.citation}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap">
-                                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                  site.priority === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200' :
-                                  site.priority === 'High' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200' :
-                                  'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200'
-                                }`}>
-                                  {site.priority}
-                                </span>
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {site.category}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                                {site.lastChecked}
-                              </td>
-                              <td className="px-6 py-4 whitespace-nowrap">
-                                <div className="flex items-center gap-2">
-                                  {site.status === 'Ready to Submit' && (
-                                    <button className="text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 text-sm font-medium">
-                                      Copy Info
-                                    </button>
-                                  )}
-                                  {site.status === 'Error' && (
-                                    <button className="text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 text-sm font-medium">
-                                      Retry
-                                    </button>
-                                  )}
-                                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                    <MoreVertical className="w-4 h-4" />
-                                  </button>
-                                </div>
+                                <a
+                                  href={site.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-purple-600 dark:text-purple-400 hover:underline"
+                                >
+                                  Go to Site <ExternalLink className="w-4 h-4" />
+                                </a>
                               </td>
                             </tr>
                           ))}
@@ -325,23 +410,44 @@ export default function CitationBuilderPage() {
                 <div className="space-y-6">
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">Improvement Opportunities</h3>
                   <div className="space-y-4">
-                    {mockOpportunities.map((opp, index) => (
-                      <div key={index} className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/10 rounded-xl border border-orange-200 dark:border-orange-900/30 p-6">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="font-semibold text-gray-900 dark:text-white">{opp.title}</h4>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            opp.impact === 'Critical' ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200' :
-                            'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200'
-                          }`}>
-                            {opp.impact} Priority
-                          </span>
-                        </div>
-                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">{opp.description}</p>
-                        <button className="text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 dark:hover:text-purple-300">
-                          Take Action →
-                        </button>
+                    {/* This section is no longer directly tied to mock data,
+                        but the structure and styling remain for now. */}
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/10 rounded-xl border border-orange-200 dark:border-orange-900/30 p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">5 Top Sites Missing Your Listing</h4>
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-200">
+                          Medium Priority
+                        </span>
                       </div>
-                    ))}
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">Yelp, Facebook, and 3 other high-traffic sites don't have your business listed</p>
+                      <button className="text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 dark:hover:text-purple-300">
+                        Take Action →
+                      </button>
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/10 rounded-xl border border-orange-200 dark:border-orange-900/30 p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">Apple Maps Error Needs Fixing</h4>
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-200">
+                          Critical Priority
+                        </span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">Your listing on Apple Maps has an error that needs immediate attention</p>
+                      <button className="text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 dark:hover:text-purple-300">
+                        Take Action →
+                      </button>
+                    </div>
+                    <div className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/10 rounded-xl border border-orange-200 dark:border-orange-900/30 p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-gray-900 dark:text-white">3 Sites Ready for Submission</h4>
+                        <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-200">
+                          Medium Priority
+                        </span>
+                      </div>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">Quick wins available - submit to these sites to improve visibility</p>
+                      <button className="text-purple-600 dark:text-purple-400 text-sm font-medium hover:text-purple-700 dark:hover:text-purple-300">
+                        Take Action →
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
