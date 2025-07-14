@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-hot-toast';
+import Image from 'next/image';
 
 export default function SignupCard() {
   const [email, setEmail] = useState('');
@@ -78,7 +79,7 @@ export default function SignupCard() {
               loading ? 'bg-gray-100' : 'bg-green-500 hover:bg-green-600'
             } border border-green-600 text-white focus:ring-green-500 font-semibold py-3 px-4 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50`}
           >
-            <img src="/google-logo.png" alt="Google" className="w-5 h-5 mr-3" />
+            <Image src="/google-logo.png" alt="Google" width={20} height={20} className="w-5 h-5 mr-3" />
             {loading ? (
               <span className="flex items-center">
                 <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Upload, Download, Eye, Settings, BarChart3, TrendingUp, Users, Globe } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import Image from 'next/image';
 
 interface Widget {
   id: string;
@@ -347,7 +348,7 @@ export default function PDFGeneratorPage() {
                     />
                     <label htmlFor="logo-upload" className="cursor-pointer">
                       {logo ? (
-                        <img src={logo} alt="Logo" className="max-h-16 mx-auto" />
+                        <Image src={logo} alt="Logo" width={64} height={64} className="max-h-16 mx-auto" />
                       ) : (
                         <div className="space-y-2">
                           <Upload className="mx-auto text-gray-400" size={28} />
@@ -445,7 +446,7 @@ export default function PDFGeneratorPage() {
                       <p className="text-sm text-gray-500">Report Date: {reportDate}</p>
                     </div>
                     {logo && (
-                      <img src={logo} alt="Company Logo" className="max-h-16 max-w-32 object-contain" />
+                      <Image src={logo} alt="Company Logo" width={128} height={64} className="max-h-16 max-w-32 object-contain" />
                     )}
                   </div>
                   {/* Report Content */}
