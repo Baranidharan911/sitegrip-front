@@ -102,6 +102,7 @@ export const sidebarItems: SidebarSection[] = [
     description: 'Local search optimization',
     badge: 'Popular',
     subItems: [
+      { name: 'Local SEO Dashboard', path: '/seo-tools/local-seo-dashboard', icon: Grid3X3, description: 'Comprehensive local SEO dashboard with maps', pro: false, badge: 'New' },
       { name: 'Local Keyword Finder', path: '/seo-tools/local-keyword-finder', icon: KeySquare, description: 'Discover local keywords', pro: false },
       { name: 'Local Rank Tracker', path: '/seo-tools/local-rank-tracker', icon: TrendingUp, description: 'Track local rankings', pro: false },
       { name: 'Google Business Profile', path: '/seo-tools/gbp-audit', icon: Building2, description: 'GBP audit & optimization', pro: false },
