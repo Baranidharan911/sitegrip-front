@@ -5,6 +5,7 @@ import {
   Building2, Users, Target, Globe, Grid3X3, Play, Pause, RefreshCw, FileText, Calendar, Clock, CheckCircle, AlertTriangle, XCircle,
   Pin, Navigation, Compass, Map, Minus
 } from 'lucide-react';
+import EnhancedMapView from '@/components/seo-crawler/EnhancedMapView';
 
 export default function LocalSEODashboardPage() {
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -328,13 +329,28 @@ export default function LocalSEODashboardPage() {
                 </h3>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2">
-                {/* Search Results List */}
-                <div className="p-4 border-r border-gray-200">
-                  <h4 className="font-semibold text-gray-900 mb-4">Search Results</h4>
-                  <div className="space-y-3">
+              {/* Enhanced Map View - Full Width */}
+              <div className="p-6">
+                <EnhancedMapView
+                  gridSize={9}
+                  distance={distance}
+                  distanceUnit={distanceUnit}
+                  coordinates={{ lat: 41.7294208, lng: -72.9845332 }}
+                  searchResults={searchResults}
+                  onLocationClick={(location) => {
+                    console.log('Location clicked:', location);
+                    // Handle location click - could open details modal, etc.
+                  }}
+                />
+              </div>
+
+              {/* Search Results - Below Map */}
+              <div className="border-t border-gray-200 p-6">
+                <h4 className="font-semibold text-gray-900 mb-4">Search Results</h4>
+                {searchResults.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {searchResults.map((result: any, index: number) => (
-                      <div key={result.id} className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                      <div key={result.id} className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="text-lg font-bold text-blue-600 w-6">{index + 1}</div>
                         <img src={result.image} alt={result.name} className="w-12 h-12 rounded object-cover" />
                         <div className="flex-1">
@@ -351,133 +367,15 @@ export default function LocalSEODashboardPage() {
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Map */}
-                <div className="p-4">
-                  <h4 className="font-semibold text-gray-900 mb-4">Map View</h4>
-                  <div className="bg-gray-100 rounded-lg h-64 relative overflow-hidden">
-                    {/* Interactive Map with Grid Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-green-50">
-                      {/* Grid Lines */}
-                      <svg className="w-full h-full" viewBox="0 0 300 240">
-                        {/* Grid lines */}
-                        {Array.from({ length: 10 }, (_, i) => (
-                          <g key={i}>
-                            <line
-                              x1={i * 30}
-                              y1="0"
-                              x2={i * 30}
-                              y2="240"
-                              stroke="#e5e7eb"
-                              strokeWidth="1"
-                            />
-                            <line
-                              x1="0"
-                              y1={i * 24}
-                              x2="300"
-                              y2={i * 24}
-                              stroke="#e5e7eb"
-                              strokeWidth="1"
-                            />
-                          </g>
-                        ))}
-                        
-                        {/* Grid markers with rankings */}
-                        {Array.from({ length: 9 }, (_, x) =>
-                          Array.from({ length: 9 }, (_, y) => {
-                            const rank = Math.floor(Math.random() * 10) + 1;
-                            let color = '#10b981'; // green
-                            if (rank > 6) color = '#ef4444'; // red
-                            else if (rank > 3) color = '#f59e0b'; // yellow
-                            
-                            return (
-                              <g key={`${x}-${y}`}>
-                                <circle
-                                  cx={x * 30 + 15}
-                                  cy={y * 24 + 12}
-                                  r="8"
-                                  fill={color}
-                                  opacity="0.8"
-                                />
-                                <text
-                                  x={x * 30 + 15}
-                                  y={y * 24 + 16}
-                                  textAnchor="middle"
-                                  fontSize="10"
-                                  fill="white"
-                                  fontWeight="bold"
-                                >
-                                  {rank}
-                                </text>
-                              </g>
-                            );
-                          })
-                        )}
-                        
-                        {/* Business location markers */}
-                        {searchResults.map((result: any, index: number) => (
-                          <g key={result.id}>
-                            <circle
-                              cx={result.gridPosition.x * 30 + 15}
-                              cy={result.gridPosition.y * 24 + 12}
-                              r="12"
-                              fill="#3b82f6"
-                              stroke="white"
-                              strokeWidth="2"
-                            />
-                            <text
-                              x={result.gridPosition.x * 30 + 15}
-                              y={result.gridPosition.y * 24 + 16}
-                              textAnchor="middle"
-                              fontSize="8"
-                              fill="white"
-                              fontWeight="bold"
-                            >
-                              {index + 1}
-                            </text>
-                          </g>
-                        ))}
-                      </svg>
-                      
-                      {/* Map controls */}
-                      <div className="absolute top-2 right-2 flex gap-1">
-                        <button className="w-8 h-8 bg-white rounded shadow-md flex items-center justify-center hover:bg-gray-50">
-                          <Plus className="w-4 h-4 text-gray-600" />
-                        </button>
-                        <button className="w-8 h-8 bg-white rounded shadow-md flex items-center justify-center hover:bg-gray-50">
-                          <Minus className="w-4 h-4 text-gray-600" />
-                        </button>
-                      </div>
-                      
-                      {/* Location info overlay */}
-                      <div className="absolute bottom-2 left-2 bg-white rounded-lg shadow-md p-2 max-w-48">
-                        <div className="text-xs text-gray-600">Coordinates: 41.7294208, -72.9845332</div>
-                        <div className="text-xs text-gray-600">Grid: 9 x 9 | Distance: 0.5 Miles</div>
-                      </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-6 h-6 text-gray-400" />
                     </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Search Results</h3>
+                    <p className="text-gray-600">Run a scan to see local search rankings and business listings</p>
                   </div>
-                  
-                  {/* Grid Legend */}
-                  <div className="mt-4 flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      <span>Rank 1-3</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-yellow-500 rounded-full"></div>
-                      <span>Rank 4-6</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                      <span>Rank 7+</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white"></div>
-                      <span>Your Business</span>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
