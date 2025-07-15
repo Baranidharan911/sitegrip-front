@@ -147,6 +147,7 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Internal Link Checker', path: '/internal-link-checker', icon: Link, description: 'Check internal links', pro: false },
       { name: 'Page Speed Analyzer', path: '/page-speed-analyzer', icon: Zap, description: 'Analyze page speed', pro: false },
       { name: 'Core Web Vitals', path: '/web-vitals-checker', icon: Gauge, description: 'Web vitals checker', pro: false },
+      { name: 'Chrome UX Report', path: '/chrome-user-experience-report', icon: BarChart3, description: 'Real user performance data', pro: false },
       { name: 'Hreflang Generator', path: '/hreflang-generator', icon: Globe2, description: 'Generate hreflang tags', pro: false },
     ],
   },
