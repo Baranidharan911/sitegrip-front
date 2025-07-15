@@ -89,6 +89,7 @@ interface CrUXData {
   };
   sampleCount: number;
   timestamp: string;
+  isMockData?: boolean; // Added for new logic
 }
 
 // Generate mock CrUX data
@@ -140,7 +141,8 @@ const generateMockCrUXData = (): CrUXData => {
       }
     },
     sampleCount: 15420,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    isMockData: true // Added for new logic
   };
 };
 
@@ -405,8 +407,10 @@ const FilterBar = ({
 };
 
 export default function ChromeUserExperienceReportPage() {
+  const [url, setUrl] = useState('https://www.sitegrip.com');
   const [cruxData, setCruxData] = useState<CrUXData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     path: 'crux',
     testname: 'performance-tools',
@@ -424,14 +428,46 @@ export default function ChromeUserExperienceReportPage() {
     inp: generateTimeSeriesData('INP', 180, 0.1)
   });
 
-  useEffect(() => {
-    // Simulate loading CrUX data
+  const [user, setUser] = useState<any>(null);
+  const [savedReports, setSavedReports] = useState<any[]>([]);
+
+  const fetchCruxData = async (targetUrl: string) => {
     setLoading(true);
-    setTimeout(() => {
-      setCruxData(generateMockCrUXData());
+    setError(null);
+    setCruxData(null);
+    
+    try {
+      const response = await fetch('/api/chrome-user-experience-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: targetUrl }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch CrUX data');
+      }
+
+      const data = await response.json();
+      setCruxData(data);
+      
+      if (data.isMockData) {
+        setError('Real data unavailable for this URL. Showing sample data.');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to fetch CrUX data');
+    } finally {
       setLoading(false);
-    }, 1000);
-  }, []);
+    }
+  };
+
+  const handleAnalyze = () => {
+    if (url.trim()) {
+      fetchCruxData(url.trim());
+    }
+  };
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -442,17 +478,6 @@ export default function ChromeUserExperienceReportPage() {
     if (p75 <= thresholds[1]) return 50;
     return 0;
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="flex items-center gap-3">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-          <span className="text-lg text-gray-600">Loading Chrome User Experience Report...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -480,6 +505,48 @@ export default function ChromeUserExperienceReportPage() {
       </div>
 
       <div className="p-6">
+        {/* URL Input Section */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Globe className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                  <input
+                    type="text"
+                    value={url}
+                    onChange={(e) => setUrl(e.target.value)}
+                    placeholder="Enter website URL to analyze (e.g., https://example.com)"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
+                  />
+                </div>
+              </div>
+              <button
+                onClick={handleAnalyze}
+                disabled={loading}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+                {loading ? 'Analyzing...' : 'Analyze'}
+              </button>
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              Enter any website URL to get real Chrome User Experience Report data from Google's CrUX API
+            </p>
+          </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-yellow-600" />
+              <p className="text-yellow-700">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Filters */}
         <FilterBar filters={filters} onFilterChange={handleFilterChange} />
 
@@ -494,6 +561,9 @@ export default function ChromeUserExperienceReportPage() {
                     Sample size: {cruxData.sampleCount.toLocaleString()} users • 
                     Form factor: {cruxData.formFactor} • 
                     Last updated: {new Date(cruxData.timestamp).toLocaleString()}
+                    {cruxData.isMockData && (
+                      <span className="ml-2 text-yellow-600 font-medium">(Sample Data)</span>
+                    )}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -682,6 +752,26 @@ export default function ChromeUserExperienceReportPage() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Initial State */}
+        {!cruxData && !loading && (
+          <div className="text-center py-12">
+            <BarChart3 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Analyze</h3>
+            <p className="text-gray-500 mb-6">
+              Enter a website URL above to get real Chrome User Experience Report data from Google's CrUX API.
+            </p>
+            <div className="bg-white rounded-lg border border-gray-200 p-6 max-w-md mx-auto">
+              <h4 className="font-medium text-gray-900 mb-2">What you'll get:</h4>
+              <ul className="text-sm text-gray-600 space-y-1">
+                <li>• Real Core Web Vitals data from actual users</li>
+                <li>• Performance distribution analysis</li>
+                <li>• User experience insights</li>
+                <li>• Performance trends and recommendations</li>
+              </ul>
             </div>
           </div>
         )}
