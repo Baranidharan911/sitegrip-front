@@ -72,17 +72,21 @@ export const useGoogleAuth = () => {
       if (idToken) {
         headers['Authorization'] = `Bearer ${idToken}`;
       }
-      const response = await fetch(`${apiUrl}/api/status/${userId}`, { headers });
+      
+      // Call the analytics properties endpoint directly instead of status endpoint
+      const response = await fetch(`${apiUrl}/api/analytics/properties`, { headers });
       const data = await response.json();
       setDebug({ userId, statusResponse: data });
+      
       if (!response.ok) {
-        setError(data.error || 'Failed to check auth status');
-        throw new Error(data.error || 'Failed to check auth status');
+        setError(data.message || 'Failed to check auth status');
+        throw new Error(data.message || 'Failed to check auth status');
       }
+      
       return {
-        isAuthenticated: data.is_authenticated,
+        isAuthenticated: data.success && data.properties && data.properties.length > 0,
         properties: data.properties || [],
-        indexStatuses: data.index_statuses || [],
+        indexStatuses: [],
         selectedProperty: data.properties?.[0]
       };
     } catch (err) {
