@@ -43,10 +43,12 @@ if (isClient) {
     auth = getAuth(app);
     provider = new GoogleAuthProvider();
 
-// Add scopes for Search Console API and Indexing API during login
+// Add scopes for Search Console API, Indexing API, and Google Analytics during login
 provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
 provider.addScope("https://www.googleapis.com/auth/webmasters");
 provider.addScope("https://www.googleapis.com/auth/indexing");
+provider.addScope("https://www.googleapis.com/auth/analytics.readonly");
+provider.addScope("https://www.googleapis.com/auth/analytics");
 
 // Request offline access to get refresh tokens
 provider.setCustomParameters({
@@ -176,6 +178,8 @@ function getProvider() {
     provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
     provider.addScope("https://www.googleapis.com/auth/webmasters");
     provider.addScope("https://www.googleapis.com/auth/indexing");
+    provider.addScope("https://www.googleapis.com/auth/analytics.readonly");
+    provider.addScope("https://www.googleapis.com/auth/analytics");
     provider.setCustomParameters({
       'access_type': 'offline',
       'prompt': 'consent'
