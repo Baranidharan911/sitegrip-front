@@ -198,7 +198,7 @@ const IndexingDashboard: React.FC = () => {
           
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-500 dark:text-gray-400">
-              {quotaInfo?.daily_limit - (quotaInfo?.total_used || 0)} URLs remaining today
+              {(quotaInfo?.daily_limit || 200) - (quotaInfo?.total_used || 0)} URLs remaining today
             </span>
             <span className="text-gray-500 dark:text-gray-400">
               Resets daily at midnight
@@ -208,7 +208,7 @@ const IndexingDashboard: React.FC = () => {
       </div>
 
       {/* Quota Alert */}
-      {quotaInfo && (quotaInfo.daily_limit - (quotaInfo.total_used || 0)) < 10 && (
+      {quotaInfo && ((quotaInfo.daily_limit || 200) - (quotaInfo.total_used || 0)) < 10 && (
         <div className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <div>
