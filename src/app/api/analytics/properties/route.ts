@@ -13,44 +13,22 @@ export async function GET(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     
-    // Fetch Google Analytics properties using the Google Analytics Management API
-    const response = await fetch(
-      'https://analyticsadmin.googleapis.com/v1beta/accounts',
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    // Call the backend API instead of Google Analytics directly
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const response = await fetch(`${backendUrl}/api/analytics/properties`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
     if (!response.ok) {
-      throw new Error(`Google Analytics API error: ${response.status}`);
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Backend API error: ${response.status}`);
     }
 
-    const accountsData = await response.json();
-    
-    // For each account, fetch its properties
-    const properties = [];
-    
-    for (const account of accountsData.accounts || []) {
-      const propertiesResponse = await fetch(
-        `https://analyticsadmin.googleapis.com/v1beta/${account.name}/properties`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      if (propertiesResponse.ok) {
-        const propertiesData = await propertiesResponse.json();
-        properties.push(...(propertiesData.properties || []));
-      }
-    }
-
-    return NextResponse.json({ properties });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching Google Analytics properties:', error);
     return NextResponse.json(

@@ -15,57 +15,33 @@ export async function POST(request: NextRequest) {
 
     const token = authHeader.split(' ')[1];
     
-    // Fetch device breakdown data from Google Analytics
-    const deviceData = await fetchDeviceData(propertyId, startDate, endDate, token);
-    
-    return NextResponse.json({ data: deviceData });
+    // Call the backend API instead of Google Analytics directly
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const response = await fetch(`${backendUrl}/api/analytics/data`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        propertyId,
+        startDate,
+        endDate
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Backend API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return NextResponse.json({ data: data.data.deviceData });
   } catch (error) {
     console.error('Error fetching device data:', error);
     return NextResponse.json(
       { error: 'Failed to fetch device data' },
       { status: 500 }
     );
-  }
-}
-
-async function fetchDeviceData(propertyId: string, startDate: string, endDate: string, token: string) {
-  try {
-    const response = await fetch(
-      `https://analyticsdata.googleapis.com/v1beta/properties/${propertyId}:runReport`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          dateRanges: [{ startDate, endDate }],
-          dimensions: [{ name: 'deviceCategory' }],
-          metrics: [
-            { name: 'totalUsers' },
-            { name: 'sessions' }
-          ],
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error(`Google Analytics Data API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data.data.rows?.map((row: any) => ({
-      name: row.dimensionValues[0].value,
-      value: parseInt(row.metricValues[0].value),
-      sessions: parseInt(row.metricValues[1].value)
-    })) || [];
-  } catch (error) {
-    console.warn('Device data not available:', error);
-    // Return mock data as fallback
-    return [
-      { name: 'Desktop', value: 65, sessions: 1300 },
-      { name: 'Mobile', value: 30, sessions: 600 },
-      { name: 'Tablet', value: 5, sessions: 100 },
-    ];
   }
 } 

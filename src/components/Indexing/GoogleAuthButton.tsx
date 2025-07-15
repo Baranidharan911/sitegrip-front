@@ -1,6 +1,7 @@
 'use client';
 
 import { GSCProperty } from '@/types/indexing';
+import Image from 'next/image';
 
 interface GoogleAuthButtonProps {
   isAuthenticated: boolean;
@@ -100,7 +101,7 @@ export default function GoogleAuthButton({
               </>
             ) : (
               <>
-                <img src="/google-logo.png" alt="Google" className="w-4 h-4" />
+                <Image src="/google-logo.png" alt="Google" width={16} height={16} className="w-4 h-4" />
                 Disconnect Google Search Console
               </>
             )}
@@ -111,7 +112,7 @@ export default function GoogleAuthButton({
           <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <img src="/google-logo.png" alt="Google" className="w-6 h-6" />
+                <Image src="/google-logo.png" alt="Google" width={24} height={24} className="w-6 h-6" />
               </div>
               <div>
                 <h4 className="font-semibold text-blue-800 dark:text-blue-200">
@@ -165,7 +166,7 @@ export default function GoogleAuthButton({
                 </>
               ) : (
                 <>
-                  <img src="/google-logo.png" alt="Google" className="w-5 h-5" />
+                  <Image src="/google-logo.png" alt="Google" width={20} height={20} className="w-5 h-5" />
                   Connect with Google Search Console
                 </>
               )}

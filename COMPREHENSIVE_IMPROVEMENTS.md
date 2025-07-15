@@ -130,7 +130,6 @@ src/
 ### **Monitoring & Testing**
 - Uptime Monitoring
 - Screen Responsiveness
-- JS Rendering Tester
 - Header Checker
 - OpenGraph Checker
 - Broken Image Checker

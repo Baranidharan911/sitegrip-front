@@ -13,7 +13,7 @@ export default function LoginScreen() {
       {/* Glassy login card */}
       <div className="relative z-10 w-full max-w-md mx-auto p-6 sm:p-10 rounded-3xl shadow-2xl border border-white/30 bg-white/60 dark:bg-gray-900/70 backdrop-blur-2xl flex flex-col items-center">
         <div className="mb-6 flex flex-col items-center">
-          <img src="/google-logo.png" alt="SiteGrip Logo" width={80} height={80} className="rounded-full shadow-lg mb-2" />
+          <Image src="/google-logo.png" alt="SiteGrip Logo" width={80} height={80} className="rounded-full shadow-lg mb-2" />
           <h1 className="text-3xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg mb-1">Welcome to SiteGrip</h1>
           <p className="text-gray-600 dark:text-gray-300 text-base text-center max-w-xs">Sign in to manage your website's SEO, uptime, and analytics in style.</p>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AuthResponse, AuthState, GSCProperty } from '@/types/indexing';
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 export const useGoogleAuth = () => {
   const [loading, setLoading] = useState(false);
@@ -11,6 +12,9 @@ export const useGoogleAuth = () => {
     properties: [],
     indexStatuses: []
   });
+  const [debug, setDebug] = useState<any>(null);
+  // Wait for Firebase auth to be ready before checking status
+  const [authReady, setAuthReady] = useState(false);
 
   function getApiBaseUrl(): string {
     return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
@@ -29,16 +33,52 @@ export const useGoogleAuth = () => {
     return null;
   };
 
+  useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthReady(true);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const checkAuthStatus = async (userId: string): Promise<AuthState> => {
     try {
       const apiUrl = getApiBaseUrl();
-      const response = await fetch(`${apiUrl}/api/status/${userId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to check auth status');
+      setLoading(true);
+      // Wait for authReady
+      if (!authReady) {
+        await new Promise((resolve) => {
+          const interval = setInterval(() => {
+            if (authReady) {
+              clearInterval(interval);
+              resolve(true);
+            }
+          }, 50);
+        });
       }
-      
+      // Get Firebase ID token if available, force refresh
+      let idToken = null;
+      try {
+        const auth = getAuth();
+        if (auth && auth.currentUser) {
+          idToken = await auth.currentUser.getIdToken(true); // force refresh
+        }
+      } catch (e) {
+        setError('Could not get Firebase ID token');
+        setDebug({ userId, error: e });
+        throw e;
+      }
+      const headers: Record<string, string> = {};
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      const response = await fetch(`${apiUrl}/api/status/${userId}`, { headers });
       const data = await response.json();
+      setDebug({ userId, statusResponse: data });
+      if (!response.ok) {
+        setError(data.error || 'Failed to check auth status');
+        throw new Error(data.error || 'Failed to check auth status');
+      }
       return {
         isAuthenticated: data.is_authenticated,
         properties: data.properties || [],
@@ -46,22 +86,25 @@ export const useGoogleAuth = () => {
         selectedProperty: data.properties?.[0]
       };
     } catch (err) {
-      console.error('Failed to check auth status:', err);
+      setError(err instanceof Error ? err.message : 'Unknown error');
+      setDebug({ userId, error: err });
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   const getGoogleAuthUrl = async (userId: string): Promise<string> => {
     try {
       const apiUrl = getApiBaseUrl();
-      const response = await fetch(`${apiUrl}/api/google/url?user_id=${userId}`);
+      const response = await fetch(`${apiUrl}/api/auth/google/url?user_id=${userId}`);
       
       if (!response.ok) {
         throw new Error('Failed to get auth URL');
       }
       
       const data = await response.json();
-      return data.auth_url;
+      return data.data.authUrl;
     } catch (err) {
       console.error('Failed to get auth URL:', err);
       throw err;
@@ -141,10 +184,38 @@ export const useGoogleAuth = () => {
     }
   };
 
-  // Auto-check auth status on mount
+  const retryAuth = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await refreshAuthStatus();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const auth = getAuth();
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      await refreshAuthStatus();
+    } catch (err) {
+      setError('Google sign-in failed');
+      setDebug({ error: err });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Auto-check auth status on mount, but only after authReady
   useEffect(() => {
-    refreshAuthStatus();
-  }, []);
+    if (authReady) {
+      refreshAuthStatus();
+    }
+  }, [authReady]);
 
   return {
     loading,
@@ -153,6 +224,10 @@ export const useGoogleAuth = () => {
     initiateGoogleAuth,
     revokeAccess,
     refreshAuthStatus,
-    setError
+    setError,
+    debug,
+    retryAuth,
+    authReady,
+    signInWithGoogle
   };
 };

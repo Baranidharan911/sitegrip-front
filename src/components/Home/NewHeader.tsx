@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Home, User, Search, BellRing, FileText, Gauge, Code, CheckCircle, TrendingUp, Grid, Users, Briefcase, Globe } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ThemeToggle from './ThemeToggle';
+import Image from 'next/image';
 
 const featuresDropdown = [
   {
@@ -106,9 +107,11 @@ const NewHeader: React.FC = () => {
           <div className="hidden sm:flex items-center space-x-2 text-gray-700 dark:text-gray-300">
             <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
               {currentUser.photoURL ? (
-                <img 
+                <Image 
                   src={currentUser.photoURL} 
                   alt="Profile" 
+                  width={32}
+                  height={32}
                   className="w-8 h-8 rounded-full"
                 />
               ) : (

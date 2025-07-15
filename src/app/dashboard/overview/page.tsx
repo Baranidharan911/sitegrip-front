@@ -134,7 +134,7 @@ function formatSessionDuration(seconds: number) {
 }
 
 const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
-  const { loading: authLoading, error: authError, authState, refreshAuthStatus } = useGoogleAuth();
+  const { loading: authLoading, error: authError, authState, refreshAuthStatus, debug, retryAuth, authReady, signInWithGoogle } = useGoogleAuth();
   const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState("");
   const [dateRange, setDateRange] = useState({ from: "2025-01-01", to: "2025-01-31" });
@@ -180,6 +180,10 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
   useEffect(() => {
     if (authState?.isAuthenticated) {
       fetchAnalyticsProperties();
+    } else {
+      setAnalyticsProperties([]); // Clear properties if not authenticated
+      setSelectedProperty("");
+      setAnalyticsData(null);
     }
   }, [authState?.isAuthenticated]);
 
@@ -230,52 +234,27 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
         throw new Error('Authentication token not available');
       }
 
-      // Fetch all analytics data in parallel
-      const [analyticsResponse, deviceResponse] = await Promise.all([
-        fetch('/api/analytics/data', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            propertyId: selectedProperty,
-            startDate: dateRange.from,
-            endDate: dateRange.to,
-          }),
+      // Fetch analytics data from backend
+      const analyticsResponse = await fetch('/api/analytics/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          propertyId: selectedProperty,
+          startDate: dateRange.from,
+          endDate: dateRange.to,
         }),
-        fetch('/api/analytics/devices', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            propertyId: selectedProperty,
-            startDate: dateRange.from,
-            endDate: dateRange.to,
-          }),
-        })
-      ]);
+      });
 
       if (!analyticsResponse.ok) {
-        throw new Error('Failed to fetch analytics data');
+        const errorData = await analyticsResponse.json();
+        throw new Error(errorData.message || 'Failed to fetch analytics data');
       }
 
-      if (!deviceResponse.ok) {
-        throw new Error('Failed to fetch device data');
-      }
-
-      const analyticsResult = await analyticsResponse.json();
-      const deviceResult = await deviceResponse.json();
-
-      // Combine the data
-      const combinedData = {
-        ...analyticsResult.data,
-        deviceData: deviceResult.data
-      };
-
-      setAnalyticsData(combinedData);
+      const result = await analyticsResponse.json();
+      setAnalyticsData(result.data);
     } catch (err) {
       setError('Failed to fetch analytics data');
       console.error('Error fetching data:', err);
@@ -326,17 +305,24 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
         </div>
 
         {/* Auth/Property/Data State Handling */}
-        {authLoading ? (
+        {(!authReady || authLoading) ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Checking authentication...</div>
         ) : !authState?.isAuthenticated ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400 flex flex-col items-center gap-4">
             <span>Please log in with Google to view your analytics data.</span>
-            <a
-              href="/login"
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            <button
+              onClick={signInWithGoogle}
+              disabled={authLoading}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-60"
             >
-              Go to Login
-            </a>
+              {authLoading ? 'Signing in...' : 'Sign in with Google'}
+            </button>
+            {error && <div className="text-red-600 dark:text-red-400 mt-2">{error}</div>}
+            {debug && (
+              <pre className="mt-4 text-xs text-left bg-gray-100 dark:bg-gray-800 p-2 rounded max-w-xl overflow-x-auto">
+                {JSON.stringify(debug, null, 2)}
+              </pre>
+            )}
           </div>
         ) : loadingProperties ? (
           <div className="text-center py-16 text-lg text-gray-500 dark:text-gray-300">Loading Google Analytics properties...</div>
