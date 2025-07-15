@@ -167,14 +167,24 @@ const AppHeader = () => {
               )}
             </button>
 
-            {/* Upgrade Button */}
-            <Link
-              href="/pricing"
-              className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl"
-            >
-              <Crown className="w-4 h-4" />
-              <span>Upgrade</span>
-            </Link>
+            {/* Tier Badge */}
+            {user?.tierName && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-sm font-medium">
+                <Crown className="w-4 h-4" />
+                <span>{user.tierName} Plan</span>
+              </div>
+            )}
+
+            {/* Upgrade Button - Only show if not on highest tier */}
+            {(!user?.tier || user.tier === 'basic') && (
+              <Link
+                href="/pricing"
+                className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium hover:from-purple-600 hover:to-pink-600 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>Upgrade</span>
+              </Link>
+            )}
 
             {/* Avatar Dropdown - Only render after mounted to prevent hydration mismatch */}
             {mounted && user && (

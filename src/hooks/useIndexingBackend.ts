@@ -4,6 +4,18 @@ import { indexingApi } from '@/lib/indexingApi';
 import { IndexingEntry, IndexingStats, QuotaInfo, DashboardData, AuthState } from '@/types/indexing';
 import { getStoredUserId } from '@/utils/auth';
 
+// Helper function to get user data from localStorage
+const getStoredUser = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const userData = localStorage.getItem('Sitegrip-user');
+    return userData ? JSON.parse(userData) : null;
+  } catch (error) {
+    console.error('Failed to parse user data:', error);
+    return null;
+  }
+};
+
 export const useIndexingBackend = () => {
   const [loading, setLoading] = useState(false);
   const [indexingEntries, setIndexingEntries] = useState<IndexingEntry[]>([]);
@@ -58,13 +70,14 @@ export const useIndexingBackend = () => {
     setLoading(true);
     try {
       const userId = getUserId();
+      const user = getStoredUser();
       toast.loading('Submitting URLs for indexing...', { id: 'submit' });
       
       let response;
       if (urls.length === 1) {
-        response = await indexingApi.submitSingleUrl(userId, urls[0], priority);
+        response = await indexingApi.submitSingleUrl(userId, urls[0], priority, user?.projectId, user?.tier);
       } else {
-        response = await indexingApi.submitBulkUrls(userId, urls, priority);
+        response = await indexingApi.submitBulkUrls(userId, urls, priority, user?.projectId, user?.tier);
       }
       
       if (response.success) {

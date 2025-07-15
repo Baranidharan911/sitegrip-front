@@ -24,6 +24,12 @@ interface User {
   displayName: string | null;
   photoURL: string | null;
   idToken?: string;
+  // New fields for tier and project management
+  tier?: string;
+  projectId?: string;
+  quotaLimit?: number;
+  quotaUsed?: number;
+  tierName?: string;
 }
 
 interface AuthResponse {
@@ -202,6 +208,42 @@ export const useAuth = (): UseAuthReturn => {
           photoURL: data.photo_url || firebaseUser.photoURL,
           idToken
         };
+
+        // Initialize user with tier and project assignment
+        try {
+          const userInitializationResponse = await fetch(`${API_BASE_URL}/api/auth/initialize-user`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ 
+              userId: data.uid || firebaseUser.uid,
+              email: data.email || firebaseUser.email,
+              displayName: data.display_name || firebaseUser.displayName
+            })
+          });
+
+          if (userInitializationResponse.ok) {
+            const initData = await userInitializationResponse.json();
+            console.log('✅ User initialized with tier and project:', initData);
+            
+            // Update user data with tier and project info
+            userData.tier = initData.data.tier || 'basic';
+            userData.projectId = initData.data.projectId || 'sitegrip-basic-1';
+            userData.quotaLimit = initData.data.quotaInfo.dailyLimit || 200;
+            userData.quotaUsed = initData.data.quotaInfo.dailyUsed || 0;
+            userData.tierName = initData.data.tierConfig.name || 'Basic';
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to initialize user tier/project:', error);
+          // Set default values if initialization fails
+          userData.tier = 'basic';
+          userData.projectId = 'sitegrip-basic-1';
+          userData.quotaLimit = 200;
+          userData.quotaUsed = 0;
+          userData.tierName = 'Basic';
+        }
 
         setUser(userData);
         storeUserData(userData);

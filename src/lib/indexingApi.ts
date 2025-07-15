@@ -191,13 +191,13 @@ class IndexingAPI {
   }
 
   // Indexing operations
-  async submitUrls(urls: string[], priority: 'low' | 'medium' | 'high' = 'medium'): Promise<IndexingResponse> {
+  async submitUrls(urls: string[], priority: 'low' | 'medium' | 'high' = 'medium', projectId?: string, tier?: string): Promise<IndexingResponse> {
     try {
-      console.log('📤 Submitting URLs for indexing:', urls);
+      console.log('📤 Submitting URLs for indexing:', urls, 'projectId:', projectId, 'tier:', tier);
       
       const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
         method: 'POST',
-        body: JSON.stringify({ urls, priority }),
+        body: JSON.stringify({ urls, priority, projectId, tier }),
       });
 
       if (!response.ok) {
@@ -243,16 +243,16 @@ class IndexingAPI {
   }
 
   // Legacy method for single URL submission (for backward compatibility)
-  async submitSingleUrl(userId: string, url: string, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): Promise<IndexingResponse> {
+  async submitSingleUrl(userId: string, url: string, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium', projectId?: string, tier?: string): Promise<IndexingResponse> {
     try {
-      console.log('📤 Submitting single URL for indexing:', url);
+      console.log('📤 Submitting single URL for indexing:', url, 'projectId:', projectId, 'tier:', tier);
       
       // Convert critical to high for API compatibility
       const apiPriority = priority === 'critical' ? 'high' : priority;
       
       const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
         method: 'POST',
-        body: JSON.stringify({ urls: [url], priority: apiPriority }),
+        body: JSON.stringify({ urls: [url], priority: apiPriority, projectId, tier }),
       });
 
       if (!response.ok) {
@@ -271,16 +271,16 @@ class IndexingAPI {
   }
 
   // Legacy method for bulk URL submission (for backward compatibility)
-  async submitBulkUrls(userId: string, urls: string[], priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): Promise<IndexingResponse> {
+  async submitBulkUrls(userId: string, urls: string[], priority: 'low' | 'medium' | 'high' | 'critical' = 'medium', projectId?: string, tier?: string): Promise<IndexingResponse> {
     try {
-      console.log('📤 Bulk submitting URLs for indexing:', urls);
+      console.log('📤 Bulk submitting URLs for indexing:', urls, 'projectId:', projectId, 'tier:', tier);
       
       // Convert critical to high for API compatibility
       const apiPriority = priority === 'critical' ? 'high' : priority;
       
       const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
         method: 'POST',
-        body: JSON.stringify({ urls, priority: apiPriority }),
+        body: JSON.stringify({ urls, priority: apiPriority, projectId, tier }),
       });
 
       if (!response.ok) {

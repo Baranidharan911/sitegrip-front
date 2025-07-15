@@ -22,16 +22,25 @@ import {
 } from 'lucide-react';
 import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import { IndexingStats, QuotaInfo } from '@/types/indexing';
+import { useAuth } from '@/hooks/useAuth';
 
 const IndexingDashboard: React.FC = () => {
   const { loading, statistics, quotaInfo, loadDashboardData } = useIndexingBackend();
+  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
+  const [tierName, setTierName] = useState('Basic');
 
   const handleRefresh = async () => {
     try {
       setRefreshing(true);
-      await loadDashboardData('default-project');
+      
+      // Update tier info from user data
+      if (user) {
+        setTierName(user.tierName || 'Basic');
+      }
+      
+      await loadDashboardData(user?.projectId || 'sitegrip-basic-1');
       
       const totalSubmitted = statistics?.total_submitted ?? statistics?.totalUrlsSubmitted ?? 0;
       const quotaUsed = quotaInfo?.total_used ?? quotaInfo?.totalUsed ?? 0;
@@ -49,6 +58,11 @@ const IndexingDashboard: React.FC = () => {
   };
 
   useEffect(() => {
+    // Update tier info when user data changes
+    if (user) {
+      setTierName(user.tierName || 'Basic');
+    }
+    
     const totalSubmitted = statistics?.total_submitted ?? statistics?.totalUrlsSubmitted ?? 0;
     const quotaUsed = quotaInfo?.total_used ?? quotaInfo?.totalUsed ?? 0;
     
@@ -57,7 +71,7 @@ const IndexingDashboard: React.FC = () => {
     } else {
       setIsNewUser(false);
     }
-  }, [statistics, quotaInfo]);
+  }, [statistics, quotaInfo, user]);
 
   if (loading && !statistics) {
     return (
@@ -151,6 +165,60 @@ const IndexingDashboard: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quota Information */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Daily Quota Usage</h3>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full"></div>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              {tierName} Plan - {quotaInfo?.daily_limit || 200} URLs/day
+            </span>
+          </div>
+        </div>
+        
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Used Today</span>
+            <span className="font-semibold text-gray-900 dark:text-white">
+              {quotaInfo?.total_used || 0} / {quotaInfo?.daily_limit || 200}
+            </span>
+          </div>
+          
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+            <div 
+              className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-300"
+              style={{ width: `${Math.min(((quotaInfo?.total_used || 0) / (quotaInfo?.daily_limit || 200)) * 100, 100)}%` }}
+            ></div>
+          </div>
+          
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500 dark:text-gray-400">
+              {quotaInfo?.daily_limit - (quotaInfo?.total_used || 0)} URLs remaining today
+            </span>
+            <span className="text-gray-500 dark:text-gray-400">
+              Resets daily at midnight
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Quota Alert */}
+      {quotaInfo && (quotaInfo.daily_limit - (quotaInfo.total_used || 0)) < 10 && (
+        <div className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Quota Limit Approaching</p>
+            <p className="text-sm">
+              You are nearing your daily quota limit. 
+              <a href="/pricing" className="ml-1 underline text-yellow-700 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">
+                Upgrade your plan
+              </a> for more capacity.
+            </p>
           </div>
         </div>
       )}
