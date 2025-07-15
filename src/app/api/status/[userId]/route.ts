@@ -7,48 +7,38 @@ export async function GET(request: NextRequest, { params }: { params: { userId: 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ is_authenticated: false, error: 'Unauthorized' }, { status: 401 });
     }
-    const token = authHeader.split(' ')[1];
 
-    // Fetch Google Analytics properties using the Google Analytics Management API
-    const response = await fetch(
-      'https://analyticsadmin.googleapis.com/v1beta/accounts',
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
+    const token = authHeader.split(' ')[1];
+    
+    // Call the backend API instead of Google Analytics directly
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+    const response = await fetch(`${backendUrl}/api/analytics/properties`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
 
     if (!response.ok) {
-      return NextResponse.json({ is_authenticated: false, error: 'Failed to fetch GA accounts' }, { status: 500 });
+      const errorData = await response.json();
+      throw new Error(errorData.message || `Backend API error: ${response.status}`);
     }
 
-    const accountsData = await response.json();
-    const properties = [];
-    for (const account of accountsData.accounts || []) {
-      const propertiesResponse = await fetch(
-        `https://analyticsadmin.googleapis.com/v1beta/${account.name}/properties`,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      if (propertiesResponse.ok) {
-        const propertiesData = await propertiesResponse.json();
-        properties.push(...(propertiesData.properties || []));
-      }
-    }
-
+    const data = await response.json();
+    
+    // Transform the response to match the expected format
     return NextResponse.json({
-      is_authenticated: properties.length > 0,
-      properties,
+      is_authenticated: data.success && data.properties && data.properties.length > 0,
+      properties: data.properties || [],
       index_statuses: []
     });
   } catch (error) {
     console.error('Error in /api/status/:userId:', error);
-    return NextResponse.json({ is_authenticated: false, error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ 
+      is_authenticated: false, 
+      error: 'Failed to fetch analytics properties',
+      properties: [],
+      index_statuses: []
+    }, { status: 500 });
   }
 } 

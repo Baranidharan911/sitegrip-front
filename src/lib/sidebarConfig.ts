@@ -88,7 +88,7 @@ export const sidebarItems: SidebarSection[] = [
     icon: BarChart3,
     description: 'Overview and analytics',
     subItems: [
-      { name: 'Overview', path: '/dashboard', icon: PieChart, description: 'Main dashboard view' },
+      { name: 'Overview', path: '/dashboard/overview', icon: PieChart, description: 'Main dashboard view' },
       { name: 'Analytics', path: '/reporting-analytics/dashboard', icon: LineChart, description: 'Detailed analytics' },
       { name: 'Performance', path: '/web-vitals-checker', icon: Gauge, description: 'Performance metrics' },
       { name: 'Performance Monitoring', path: '/performance-monitoring', icon: Activity, description: 'Real-time performance monitoring', badge: 'New' },
