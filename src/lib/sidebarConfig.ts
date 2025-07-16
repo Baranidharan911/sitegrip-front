@@ -102,6 +102,7 @@ export const sidebarItems: SidebarSection[] = [
     description: 'Local search optimization',
     badge: 'Popular',
     subItems: [
+      { name: 'Local SEO Dashboard', path: '/seo-tools/local-seo-dashboard', icon: Grid3X3, description: 'Comprehensive local SEO dashboard with maps', pro: false, badge: 'New' },
       { name: 'Local Keyword Finder', path: '/seo-tools/local-keyword-finder', icon: KeySquare, description: 'Discover local keywords', pro: false },
       { name: 'Local Rank Tracker', path: '/seo-tools/local-rank-tracker', icon: TrendingUp, description: 'Track local rankings', pro: false },
       { name: 'Google Business Profile', path: '/seo-tools/gbp-audit', icon: Building2, description: 'GBP audit & optimization', pro: false },
@@ -147,6 +148,7 @@ export const sidebarItems: SidebarSection[] = [
       { name: 'Internal Link Checker', path: '/internal-link-checker', icon: Link, description: 'Check internal links', pro: false },
       { name: 'Page Speed Analyzer', path: '/page-speed-analyzer', icon: Zap, description: 'Analyze page speed', pro: false },
       { name: 'Core Web Vitals', path: '/web-vitals-checker', icon: Gauge, description: 'Web vitals checker', pro: false },
+      { name: 'Chrome UX Report', path: '/chrome-user-experience-report', icon: BarChart3, description: 'Real user performance data', pro: false },
       { name: 'Hreflang Generator', path: '/hreflang-generator', icon: Globe2, description: 'Generate hreflang tags', pro: false },
     ],
   },

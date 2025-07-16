@@ -1,8 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Code, Download, Copy, CheckCircle, AlertCircle } from 'lucide-react';
+import { Code, Download, Copy, CheckCircle, AlertCircle, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { saveToFirebase } from '@/lib/firebase.js';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 export const dynamic = 'force-dynamic';
 
@@ -46,6 +47,7 @@ export default function SchemaMarkupGeneratorPage() {
   const [valid, setValid] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
   const { user } = useAuth();
 
   const handleFieldChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,11 +192,77 @@ export default function SchemaMarkupGeneratorPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Schema Markup Generator
             </h1>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="ml-4 flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Generate and validate JSON-LD schema markup for SEO. Supports Organization, Article, and Product types.
           </p>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Schema Markup Generator"
+            description="Generate structured data markup that helps search engines understand your content and display rich snippets in search results."
+            steps={[
+              {
+                title: "Choose schema type",
+                description: "Select the appropriate schema type (Organization, Article, Product, etc.)"
+              },
+              {
+                title: "Fill in the fields",
+                description: "Enter the required information for your chosen schema type"
+              },
+              {
+                title: "Generate markup",
+                description: "Click generate to create valid JSON-LD schema markup"
+              },
+              {
+                title: "Implement on your site",
+                description: "Copy the generated code and add it to your website's HTML"
+              }
+            ]}
+            examples={[
+              {
+                type: "Organization Schema",
+                example: "Company name, logo, website URL",
+                description: "For business websites and company information"
+              },
+              {
+                type: "Article Schema",
+                example: "Headline, author, publish date",
+                description: "For blog posts and news articles"
+              },
+              {
+                type: "Product Schema",
+                example: "Product name, price, availability",
+                description: "For e-commerce product pages"
+              }
+            ]}
+            tips={[
+              {
+                title: "Use Valid JSON",
+                content: "Ensure all JSON fields are properly formatted and valid"
+              },
+              {
+                title: "Include Required Fields",
+                content: "Fill in all required fields for your chosen schema type"
+              },
+              {
+                title: "Test Implementation",
+                content: "Use Google's Rich Results Test to validate your markup"
+              }
+            ]}
+            proTip="Start with Organization schema for your homepage, then add Article schema for blog posts and Product schema for e-commerce pages. This creates a comprehensive structured data foundation."
+          />
+        )}
+
         <div className="max-w-2xl mx-auto mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 mb-6">
             <h2 className="text-xl font-semibold mb-4">Generate Schema Markup</h2>

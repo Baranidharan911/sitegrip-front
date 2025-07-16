@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import {
-  TrendingUp, Search, MapPin, BarChart3, ArrowUpRight, Filter, Download, Share2, Settings, Info, Star, Eye, ChevronDown, ChevronUp, Plus
+  TrendingUp, Search, MapPin, BarChart3, ArrowUpRight, Filter, Download, Share2, Settings, Info, Star, Eye, ChevronDown, ChevronUp, Plus, HelpCircle
 } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 const mockResults = [
   { keyword: 'plumber near me', location: 'New York', rank: 2, lastChecked: '2024-06-01', trend: 1 },
@@ -19,6 +20,7 @@ export default function LocalRankTrackerPage() {
   const [filterRank, setFilterRank] = useState('All');
   const [sortBy, setSortBy] = useState<'rank' | 'trend'>('rank');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [showHelp, setShowHelp] = useState(false);
 
   const filteredResults = [...mockResults]
     .filter(r => filterRank === 'All' || (filterRank === 'Top 3' ? r.rank <= 3 : r.rank > 3))
@@ -71,6 +73,13 @@ export default function LocalRankTrackerPage() {
             <p className="text-gray-600 dark:text-gray-300 mt-2">Check your business ranking for any keyword and location. See how you stack up in local search results.</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow hover:from-blue-600 hover:to-indigo-600 transition-all">
               <Download className="w-4 h-4" /> Export CSV
             </button>
@@ -85,6 +94,72 @@ export default function LocalRankTrackerPage() {
             </button>
           </div>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Local Rank Tracker"
+            description="Monitor your business rankings for specific keywords in local search results. Track your performance over time and identify opportunities for improvement."
+            steps={[
+              {
+                title: "Enter a keyword",
+                description: "Type the keyword you want to track (e.g., 'plumber near me', 'best restaurant')"
+              },
+              {
+                title: "Add your location",
+                description: "Specify the location where you want to check rankings (city, state, or region)"
+              },
+              {
+                title: "Click 'Check Rank'",
+                description: "Our system will search Google and find your current ranking position"
+              },
+              {
+                title: "Monitor trends",
+                description: "Track your ranking changes over time to see if your SEO efforts are working"
+              }
+            ]}
+            examples={[
+              {
+                type: "Service Keywords",
+                example: "Keyword: 'plumber near me' | Location: 'New York'",
+                description: "Checks your ranking for local service searches in your target area"
+              },
+              {
+                type: "Branded Keywords",
+                example: "Keyword: 'Joe's Plumbing' | Location: 'Manhattan'",
+                description: "Tracks your ranking for your business name in specific locations"
+              },
+              {
+                type: "Long-tail Keywords",
+                example: "Keyword: 'emergency plumber 24 hours' | Location: 'Brooklyn'",
+                description: "Monitors specific, high-intent keywords that often convert better"
+              }
+            ]}
+            tips={[
+              {
+                title: "Real-time Rankings",
+                content: "Get current ranking positions as they appear in Google search results",
+                icon: TrendingUp
+              },
+              {
+                title: "Trend Analysis",
+                content: "See if your rankings are improving, declining, or staying stable",
+                icon: BarChart3
+              },
+              {
+                title: "Competitive Insights",
+                content: "Compare your rankings against competitors in your area",
+                icon: Star
+              },
+              {
+                title: "Location-specific Tracking",
+                content: "Monitor rankings in different cities or regions you serve",
+                icon: MapPin
+              }
+            ]}
+            proTip="Focus on tracking keywords that are most likely to bring in customers. Prioritize 'near me' searches and location-specific terms as they have the highest local intent."
+          />
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

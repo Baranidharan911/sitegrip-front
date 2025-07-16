@@ -1,4 +1,51 @@
-User-agent: *
-Disallow:
+# SiteGrip SEO & Performance Monitoring Platform - Robots.txt
+# Last updated: 2024-01-15
 
-Sitemap: https://www.sitegrip.com/sitemap.xml
+# Allow all crawlers
+User-agent: *
+Allow: /
+
+# Specific rules for Googlebot
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+# Specific rules for Bingbot
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+# Block access to sensitive areas
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+Disallow: /private/
+Disallow: /internal/
+
+# Block access to development and testing pages
+Disallow: /test-auth/
+Disallow: /test-uptime/
+
+# Block access to authentication callback pages (they're handled by Next.js)
+Disallow: /auth/callback
+
+# Block access to dynamic routes that shouldn't be indexed
+Disallow: /seo-crawler/history/*/
+Disallow: /api/status/*/
+
+# Allow access to important static resources
+Allow: /images/
+Allow: /public/
+Allow: /favicon.ico
+Allow: /robots.txt
+Allow: /sitemap.xml
+
+# Sitemap location
+Sitemap: https://sitegrip.io/sitemap.xml
+
+# Additional sitemaps (if you have them)
+# Sitemap: https://sitegrip.io/sitemap-pages.xml
+# Sitemap: https://sitegrip.io/sitemap-tools.xml
+
+# Host directive for canonical domain
+Host: https://sitegrip.io

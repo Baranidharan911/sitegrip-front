@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Search, BarChart3, Star, Image, MapPin, CheckCircle, AlertCircle, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info } from 'lucide-react';
+import { Search, BarChart3, Star, Image, MapPin, CheckCircle, AlertCircle, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info, HelpCircle } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 const mockAudit = [
   { section: 'Profile Completeness', score: 92, icon: CheckCircle, description: 'Your profile is almost complete. Add more business details for a perfect score.', status: 'Good', action: 'Add business hours and services' },
@@ -27,20 +28,96 @@ export default function GBPAuditPage() {
   const [input, setInput] = useState('');
   const [showAudit, setShowAudit] = useState(false);
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [showHelp, setShowHelp] = useState(false);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3 mb-2">
-            <BarChart3 className="w-8 h-8 text-purple-500" />
-            Google Business Profile Audit
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Comprehensive audit of your Google Business Profile for maximum local visibility
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3 mb-2">
+              <BarChart3 className="w-8 h-8 text-purple-500" />
+              Google Business Profile Audit
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300 text-lg">
+              Comprehensive audit of your Google Business Profile for maximum local visibility
+            </p>
+          </div>
+          <button
+            onClick={() => setShowHelp(!showHelp)}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+          >
+            <HelpCircle className="w-5 h-5" />
+            {showHelp ? 'Hide Help' : 'How to Use'}
+          </button>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Google Business Profile Audit"
+            description="Audit your Google Business Profile to identify optimization opportunities and ensure maximum local search visibility. This tool analyzes your profile completeness, reviews, photos, and more."
+            steps={[
+              {
+                title: "Enter your business information",
+                description: "Type your business name or paste your Google Business Profile URL"
+              },
+              {
+                title: "Click 'Run Audit'",
+                description: "Our system will analyze your GBP listing and identify areas for improvement"
+              },
+              {
+                title: "Review the results",
+                description: "Check your scores across different categories and see specific recommendations"
+              },
+              {
+                title: "Take action",
+                description: "Follow the suggested improvements to optimize your profile"
+              }
+            ]}
+            examples={[
+              {
+                type: "Business Name",
+                example: "Joe's Plumbing Service",
+                description: "Enter your exact business name as it appears on Google"
+              },
+              {
+                type: "GBP URL",
+                example: "https://business.google.com/dashboard/l/...",
+                description: "Paste your Google Business Profile dashboard URL"
+              },
+              {
+                type: "Business Website",
+                example: "https://joesplumbing.com",
+                description: "Enter your business website URL (we'll find your GBP listing)"
+              }
+            ]}
+            tips={[
+              {
+                title: "Profile Completeness",
+                content: "Get a detailed breakdown of how complete your business profile is",
+                icon: CheckCircle
+              },
+              {
+                title: "Review Analysis",
+                content: "See your review performance and response rate metrics",
+                icon: Star
+              },
+              {
+                title: "Photo Optimization",
+                content: "Learn how to improve your visual presence with better photos",
+                icon: Image
+              },
+              {
+                title: "NAP Consistency",
+                content: "Check if your business information is consistent across the web",
+                icon: MapPin
+              }
+            ]}
+            proTip="Regular audits help you maintain a strong Google Business Profile. Focus on responding to reviews quickly and keeping your business information up-to-date for the best local SEO results."
+          />
+        )}
 
         {/* Search Input */}
         <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-8">
