@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import React, { useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { getAuthInstance, getProvider } from '@/lib/firebase';
+import { getAuthInstance, getProvider } from '@/lib/firebase.js';
 
 export default function TestAuthPage() {
   const [loading, setLoading] = useState(false);

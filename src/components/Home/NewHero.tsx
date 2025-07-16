@@ -1,8 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Play, Sparkles, TrendingUp, Target, Zap } from 'lucide-react';
+import { isAuthenticated } from '@/utils/auth';
 
 const NewHero: React.FC = () => {
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    setIsUserAuthenticated(isAuthenticated());
+  }, []);
+
+  // Get appropriate button text based on authentication status
+  const getCtaText = () => {
+    if (!mounted) return 'Start Free Trial'; // Prevent hydration mismatch
+    return isUserAuthenticated ? 'Go to Dashboard' : 'Start Free Trial';
+  };
+
+  // Get appropriate href based on authentication status
+  const getCtaHref = () => {
+    return isUserAuthenticated ? '/dashboard/overview' : '/signup';
+  };
+
   return (
     <section className="relative z-10 px-6 py-24 md:py-32 text-center overflow-hidden">
       {/* Background accents */}
@@ -46,10 +66,10 @@ const NewHero: React.FC = () => {
         
         <div className="flex flex-col sm:flex-row gap-6 justify-center items-center max-w-lg mx-auto mb-16">
           <Link
-            href="/signup"
+            href={getCtaHref()}
             className="group w-full sm:w-auto bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
           >
-            <span>Start Free Trial</span>
+            <span>{getCtaText()}</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </Link>
           <button className="group w-full sm:w-auto border border-slate-300 dark:border-slate-600 hover:border-slate-400 dark:hover:border-slate-500 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-300 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-slate-800/90 flex items-center justify-center gap-2">

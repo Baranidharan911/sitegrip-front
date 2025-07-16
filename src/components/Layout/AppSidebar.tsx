@@ -15,8 +15,9 @@ const AppSidebar = memo(() => {
   // Memoize the sidebar items to prevent unnecessary re-renders
   const memoizedSidebarItems = useMemo(() => sidebarItems, []);
 
-  // Memoize the close handler (only close on mobile)
+  // Memoize the close handler
   const handleClose = useCallback(() => {
+    // Close sidebar on mobile when clicking links
     if (window.innerWidth < 1024) {
       toggleSidebar();
     }
@@ -39,10 +40,10 @@ const AppSidebar = memo(() => {
             </div>
             {isOpen && <span className="text-xl font-bold text-gray-900 dark:text-white">SiteGrip</span>}
           </Link>
-          {/* Hamburger menu button attached to sidebar */}
+          {/* Toggle button for sidebar */}
           <button
             onClick={toggleSidebar}
-            className="ml-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors lg:hidden"
+            className="ml-2 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
           >
             <Menu className="w-5 h-5 text-gray-500 dark:text-gray-400" style={{ transform: isOpen ? 'rotate(0deg)' : 'rotate(180deg)' }} />
@@ -105,7 +106,7 @@ const SidebarSection = memo(({
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // Only close sidebar on mobile when clicking a subitem
+  // Close sidebar on mobile when clicking a subitem
   const handleItemClick = useCallback(() => {
     if (window.innerWidth < 1024) {
       onItemClick();

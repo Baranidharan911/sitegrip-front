@@ -15,7 +15,11 @@ export const SidebarProvider = ({ children }: { children: React.ReactNode }) => 
   const [isOpen, setIsOpen] = useState(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('sitegrip-sidebar-open');
-      return stored === null ? true : stored === 'true';
+      if (stored !== null) {
+        return stored === 'true';
+      }
+      // Default to open on desktop, closed on mobile
+      return window.innerWidth >= 1024;
     }
     return true;
   });

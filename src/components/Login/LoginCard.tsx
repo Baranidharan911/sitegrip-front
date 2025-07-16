@@ -24,7 +24,14 @@ export default function LoginCard() {
       try {
         const userData = JSON.parse(storedUser);
         if (userData && userData.uid) {
+          // Check if there's a stored redirect path
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+            sessionStorage.removeItem('redirectAfterLogin');
+            router.push(redirectPath);
+          } else {
           router.push('/dashboard/overview');
+          }
         }
       } catch (err) {
         // Invalid stored data, clear it

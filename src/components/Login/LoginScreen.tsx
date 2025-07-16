@@ -1,9 +1,34 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import useAuth from '@/hooks/useAuth';
 import LoginCard from '@/components/Login/LoginCard';
 import Image from 'next/image';
 
 export default function LoginScreen() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  // Redirect authenticated users to their intended destination or dashboard
+  useEffect(() => {
+    if (!loading && user) {
+      // Check if there's a stored redirect path
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+        sessionStorage.removeItem('redirectAfterLogin');
+        router.push(redirectPath);
+      } else {
+        router.push('/dashboard/overview');
+      }
+    }
+  }, [user, loading, router]);
+
+  // Don't render login form if user is authenticated
+  if (!loading && user) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen w-full flex items-center justify-center relative overflow-hidden bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Animated background blobs */}

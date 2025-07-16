@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import dynamic from 'next/dynamic';
+import AuthGuard from '@/components/Common/AuthGuard';
 
 // Dynamically import components to avoid SSR issues
 const AccountHeader = dynamic(() => import('@/components/Profile/AccountHeader'), {
@@ -172,6 +173,7 @@ export default function ProfilePage() {
   }
 
   return (
+    <AuthGuard>
     <div className="max-w-4xl mx-auto mt-10 px-6 space-y-10">
       {/* Demo mode indicator */}
       <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
@@ -281,5 +283,6 @@ export default function ProfilePage() {
         </button>
       </div>
     </div>
+    </AuthGuard>
   );
 }

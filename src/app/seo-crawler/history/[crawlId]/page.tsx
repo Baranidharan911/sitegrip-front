@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getDoc, Firestore } from 'firebase/firestore';
-import { getFirestoreInstance } from '@/lib/firebase';
+import { getFirestoreInstance } from '@/lib/firebase.js';
 import { Loader2, ArrowLeft, Globe, Calendar, BarChart3, Share2 } from 'lucide-react';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';

@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import EnhancedIndexingForm from './EnhancedIndexingForm';
-import IndexingDashboard from './IndexingDashboard';
 import EnhancedIndexingTable from './EnhancedIndexingTable';
 import { Toaster } from 'react-hot-toast';
 import { Globe, Zap, TrendingUp, Shield } from 'lucide-react';
@@ -29,6 +28,7 @@ export default function EnhancedIndexingPage() {
     retryEntry,
     deleteEntry,
     loadDashboardData,
+    loadQuotaInfo,
     loadMoreEntries,
     checkStatus,
   } = useIndexingBackend();
@@ -90,9 +90,16 @@ export default function EnhancedIndexingPage() {
 
   useEffect(() => {
     if (mounted && currentUser && authToken && projectId && !hasLoadedData.current) {
-      console.log('Loading dashboard data for authenticated user...');
+      console.log('🔄 Loading dashboard data for authenticated user...');
       hasLoadedData.current = true;
-      loadDashboardData(projectId);
+      
+      // Load dashboard data immediately to get real quota information
+      loadDashboardData(projectId).then(() => {
+        console.log('✅ Dashboard data loaded successfully with quota info');
+      }).catch((error) => {
+        console.error('❌ Failed to load dashboard data:', error);
+        hasLoadedData.current = false; // Allow retry
+      });
     }
   }, [mounted, currentUser, authToken, projectId, loadDashboardData]);
 
@@ -169,11 +176,6 @@ export default function EnhancedIndexingPage() {
             </div>
           </div>
 
-          {/* Dashboard */}
-          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-            <IndexingDashboard />
-          </div>
-
           {/* Submission Form */}
           <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
             <EnhancedIndexingForm
@@ -186,6 +188,68 @@ export default function EnhancedIndexingPage() {
               authState={authState}
             />
           </div>
+
+          {/* Queue Status Section */}
+          {quotaInfo && quotaInfo.queueInfo && quotaInfo.queueInfo.totalQueued > 0 && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-2xl p-6 border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500 rounded-lg">
+                    <Globe className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      URLs in Queue
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {quotaInfo.queueInfo.totalQueued} URLs waiting for automatic processing
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {quotaInfo.queueInfo.totalQueued}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Queued URLs
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Estimated Wait Time</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {quotaInfo.queueInfo.avgWaitTime > 0 ? `${quotaInfo.queueInfo.avgWaitTime}h` : 'Next reset'}
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Next Processing</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Daily Reset
+                  </div>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Oldest in Queue</div>
+                  <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {quotaInfo.queueInfo.oldestQueuedAt 
+                      ? new Date(quotaInfo.queueInfo.oldestQueuedAt).toLocaleDateString()
+                      : 'N/A'
+                    }
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-4 p-3 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  <strong>ℹ️ Auto-Processing:</strong> Your queued URLs will be automatically submitted when your daily quota resets at midnight UTC. 
+                  You'll be notified when processing is complete.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Recent Entries Table */}
           <EnhancedIndexingTable

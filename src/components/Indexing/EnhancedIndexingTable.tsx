@@ -42,7 +42,7 @@ export default function EnhancedIndexingTable({
   onRefresh,
   onCheckStatus,
 }: EnhancedIndexingTableProps) {
-  const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error'>('all');
+  const [filter, setFilter] = useState<'all' | 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error' | 'queued'>('all');
   const [sortBy, setSortBy] = useState<'submittedAt' | 'status' | 'url'>('submittedAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [checkingStatus, setCheckingStatus] = useState<boolean>(false);
@@ -52,12 +52,61 @@ export default function EnhancedIndexingTable({
 
   // Helper function to get the submitted date with proper field mapping
   const getSubmittedDate = (entry: IndexingEntry): string => {
-    return entry.created_at || entry.submitted_at || entry.submittedAt || new Date().toISOString();
+    const dateValue = entry.created_at || entry.submitted_at || entry.submittedAt;
+    
+    // Handle various date formats
+    if (!dateValue) return new Date().toISOString();
+    
+    if (typeof dateValue === 'string') {
+      // Check if it's already a valid ISO string
+      if (dateValue.includes('T') || dateValue.includes('Z')) {
+        return dateValue;
+      }
+      // Try to parse it as a date
+      const parsed = new Date(dateValue);
+      return isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+    }
+    
+    if (typeof dateValue === 'object' && dateValue !== null) {
+      // Handle Firestore timestamp objects with proper type assertion
+      const timestampObj = dateValue as any;
+      if ('toDate' in timestampObj && typeof timestampObj.toDate === 'function') {
+        return timestampObj.toDate().toISOString();
+      }
+      if ('seconds' in timestampObj) {
+        return new Date(timestampObj.seconds * 1000).toISOString();
+      }
+    }
+    
+    return new Date().toISOString();
   };
 
   // Helper function to get the last checked date with proper field mapping
   const getLastCheckedDate = (entry: IndexingEntry): string | null => {
-    return entry.status_checked_at || entry.completed_at || entry.lastChecked || null;
+    const dateValue = entry.status_checked_at || entry.completed_at || entry.lastChecked;
+    
+    if (!dateValue) return null;
+    
+    if (typeof dateValue === 'string') {
+      if (dateValue.includes('T') || dateValue.includes('Z')) {
+        return dateValue;
+      }
+      const parsed = new Date(dateValue);
+      return isNaN(parsed.getTime()) ? null : parsed.toISOString();
+    }
+    
+    if (typeof dateValue === 'object' && dateValue !== null) {
+      // Handle Firestore timestamp objects with proper type assertion
+      const timestampObj = dateValue as any;
+      if ('toDate' in timestampObj && typeof timestampObj.toDate === 'function') {
+        return timestampObj.toDate().toISOString();
+      }
+      if ('seconds' in timestampObj) {
+        return new Date(timestampObj.seconds * 1000).toISOString();
+      }
+    }
+    
+    return null;
   };
 
   // Helper function to get error message with proper field mapping
@@ -81,6 +130,8 @@ export default function EnhancedIndexingTable({
         return <RotateCcw className="w-4 h-4" />;
       case 'quota_exceeded':
         return <AlertTriangle className="w-4 h-4" />;
+      case 'queued':
+        return <Calendar className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -103,6 +154,8 @@ export default function EnhancedIndexingTable({
         return `${baseClasses} bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/20 dark:text-purple-300 dark:border-purple-800`;
       case 'indexed':
         return `${baseClasses} bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800`;
+      case 'queued':
+        return `${baseClasses} bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/20 dark:text-indigo-300 dark:border-indigo-800`;
       case 'error':
         return `${baseClasses} bg-red-50 text-red-700 border border-red-200 dark:bg-red-900/20 dark:text-red-300 dark:border-red-800`;
       default:
@@ -127,9 +180,14 @@ export default function EnhancedIndexingTable({
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Invalid date';
+      }
       return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
@@ -139,9 +197,15 @@ export default function EnhancedIndexingTable({
     }
   };
 
-  const formatRelativeTime = (dateString: string) => {
+  const formatRelativeTime = (dateString: string | null) => {
+    if (!dateString) return 'Never';
+    
     try {
       const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        return 'Unknown';
+      }
+      
       const now = new Date();
       const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
       
@@ -607,29 +671,78 @@ export default function EnhancedIndexingTable({
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {entry.indexing_status === 'indexed' ? (
-                        <span className={getStatusBadge('success')}>
-                          {getStatusIcon('success')}
-                          Success
-                        </span>
-                      ) : (
-                        <>
+                      <div className="space-y-2">
+                        {/* Primary Status */}
                           <div className="flex items-center">
                             <span className={getStatusBadge(entry.status)}>
                               {getStatusIcon(entry.status)}
                               {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
                             </span>
                           </div>
+                        
+                        {/* Real-time Indexing Status */}
+                        {entry.indexing_status === 'indexed' && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-800">
+                              <CheckCircle className="w-3 h-3" />
+                              🚀 Successfully Indexed
+                            </span>
+                            {entry.coverage_state && (
+                              <div className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+                                {entry.coverage_state}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                           {entry.indexing_status === 'not_indexed' && (
                             <div className="mt-2">
                               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-800">
                                 <AlertTriangle className="w-3 h-3" />
                                 Not Indexed
                               </span>
+                            {entry.latest_gsc_status && (
+                              <div className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                                {entry.latest_gsc_status}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {entry.indexing_status === 'pending' && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800">
+                              <Clock className="w-3 h-3" />
+                              Pending Indexation
+                            </span>
+                            {entry.indexing_state && (
+                              <div className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                {entry.indexing_state}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Show human-readable status if available */}
+                        {entry.human_status && entry.indexing_status !== 'indexed' && entry.indexing_status !== 'not_indexed' && entry.indexing_status !== 'pending' && (
+                          <div className="mt-2">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-gray-50 text-gray-700 border border-gray-200 dark:bg-gray-900/20 dark:text-gray-300 dark:border-gray-800">
+                              {entry.human_status}
+                            </span>
                             </div>
                           )}
-                        </>
+                        
+                        {/* Show detailed Google info if available */}
+                        {entry.detailed_info && entry.detailed_info.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {entry.detailed_info.slice(0, 2).map((info: string, index: number) => (
+                              <div key={index} className="text-xs text-gray-500 dark:text-gray-400">
+                                {info}
+                              </div>
+                            ))}
+                          </div>
                       )}
+                      </div>
                       
                       {getErrorMessage(entry) && (
                         <div className="text-xs text-red-600 dark:text-red-400 mt-2 max-w-xs truncate">

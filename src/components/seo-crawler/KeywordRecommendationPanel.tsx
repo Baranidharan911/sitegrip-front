@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getAuthInstance } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase.js';
 
 interface CurrentKeywords {
   primary_keywords: string[];

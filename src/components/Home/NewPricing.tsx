@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { Check, X, Sparkles, Grid, BarChart2, FileText, Users, Layout, MessageCircle, PlusCircle, MonitorDot, ShieldCheck, Zap, Globe, LineChart, UserCheck, Star, Bot, Link2, PieChart, Activity, Cloud, AlertCircle } from 'lucide-react';
 
 const allFeatures = [
@@ -70,8 +71,8 @@ const planFeatures = [
 
 const planBlurbs = [
   'Start your SEO journey with essential tools and AI guidance. Perfect for individuals and small sites.',
-  'Unlock advanced features, automation, and integrations for serious growth. Best for businesses and pros.',
-  'Scale with unlimited power, collaboration, and priority support. Built for agencies and large teams.',
+  'Unlock advanced features, automation, and integrations for serious growth. Best for small businesses.',
+  'Scale with comprehensive tools, collaboration, and priority support. Built for growing businesses and agencies.',
 ];
 
 const plans = [
@@ -79,7 +80,7 @@ const plans = [
     name: 'Free',
     price: '$0',
     period: '/month',
-    description: 'Great for trying out the basics.',
+    description: 'Perfect for testing and small websites',
     blurb: planBlurbs[0],
     features: planFeatures[0],
     buttonText: 'Start Free',
@@ -87,24 +88,24 @@ const plans = [
     popular: false,
   },
   {
-    name: 'Pro',
-    price: '$29',
+    name: 'Basic',
+    price: '$20',
     period: '/month',
-    description: 'Ideal for growing websites.',
+    description: 'Ideal for small businesses and personal websites',
     blurb: planBlurbs[1],
     features: planFeatures[1],
-    buttonText: 'Choose Pro',
+    buttonText: 'Start Free Trial',
     buttonStyle: 'bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white',
     popular: true,
   },
   {
-    name: 'Agency',
-    price: '$99',
+    name: 'Professional',
+    price: '$38',
     period: '/month',
-    description: 'Perfect for agencies & clients.',
+    description: 'Perfect for growing businesses and agencies',
     blurb: planBlurbs[2],
     features: planFeatures[2],
-    buttonText: 'Contact Sales',
+    buttonText: 'Start Free Trial',
     buttonStyle: 'bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-900 dark:text-white',
     popular: false,
   },
@@ -169,11 +170,45 @@ const NewPricing: React.FC = () => {
                   );
                 })}
               </div>
-              <button className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 ${plan.buttonStyle}`}>
-                {plan.buttonText}
-              </button>
+              {plan.buttonText === 'Contact Sales' ? (
+                <Link
+                  href="/contact"
+                  className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 ${plan.buttonStyle} block text-center`}
+                >
+                  {plan.buttonText}
+                </Link>
+              ) : (
+                <Link
+                  href="/signup"
+                  className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all duration-200 transform hover:scale-105 ${plan.buttonStyle} block text-center`}
+                >
+                  {plan.buttonText}
+                </Link>
+              )}
             </div>
           ))}
+        </div>
+        
+        {/* See More Plans Section */}
+        <div className="text-center mt-16">
+          <div className="bg-gradient-to-r from-purple-500/10 to-blue-500/10 backdrop-blur-xl rounded-2xl p-8 border border-purple-200/20 dark:border-purple-800/20">
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+              Need More Power?
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
+              Explore our complete range of plans including Advanced, Premium, and Custom Enterprise solutions 
+              with higher quotas, priority support, and dedicated features.
+            </p>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-semibold rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+            >
+              <span>View All Plans & Pricing</span>
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
+          </div>
         </div>
       </div>
     </section>

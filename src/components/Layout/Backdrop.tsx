@@ -8,7 +8,7 @@ const Backdrop = () => {
   return isOpen ? (
     <div
       onClick={closeSidebar}
-      className="fixed inset-0 bg-black bg-opacity-40 z-30 md:hidden"
+      className="fixed inset-0 bg-black bg-opacity-40 z-30 lg:hidden"
     />
   ) : null;
 };

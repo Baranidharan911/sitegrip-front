@@ -10,8 +10,11 @@ import {
   IndexingHistoryResponse,
   BulkIndexingRequest
 } from '@/types/indexing';
+import { normalizeQuotaInfo, normalizeIndexingStats } from './dataUtils';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+console.log('🌐 [IndexingAPI] API_BASE_URL configured as:', API_BASE_URL);
 
 // Helper function to get user ID from localStorage
 const getUserId = (): string | null => {
@@ -31,29 +34,64 @@ const getUserId = (): string | null => {
 // Helper function to get auth token from Firebase
 const getAuthToken = async (): Promise<string | null> => {
   try {
+    // First try to get token from Firebase Auth
     const { getAuthInstance } = await import('../lib/firebase');
     const auth = getAuthInstance();
     
-    // Wait for auth state to be ready
-    await new Promise((resolve) => {
-      if (!auth) {
-        resolve(null);
-        return;
-      }
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        unsubscribe();
-        resolve(user);
-      });
-    });
-    
     if (auth && auth.currentUser) {
-      const token = await auth.currentUser.getIdToken();
-      return token;
-    } else {
-      return null;
+      try {
+        const token = await auth.currentUser.getIdToken();
+        console.log('✅ [Auth Token] Got token from Firebase Auth');
+        return token;
+      } catch (tokenError) {
+        console.warn('⚠️ [Auth Token] Failed to get token from Firebase Auth:', tokenError);
+      }
     }
+    
+    // Fallback: Try to get token from localStorage
+    console.log('🔄 [Auth Token] Firebase auth not ready, checking localStorage...');
+    
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        const userData = localStorage.getItem('Sitegrip-user');
+        if (userData) {
+          const parsed = JSON.parse(userData);
+          // Handle both nested and direct user object structures
+          const user = parsed.user || parsed;
+          const token = user.idToken || user.token;
+          
+          if (token) {
+            console.log('✅ [Auth Token] Got token from localStorage');
+            
+            // Basic token validation - check if it's not expired
+            try {
+              const tokenParts = token.split('.');
+              if (tokenParts.length === 3) {
+                const payload = JSON.parse(atob(tokenParts[1]));
+                const isExpired = payload.exp * 1000 < Date.now();
+                
+                if (!isExpired) {
+                  return token;
+                } else {
+                  console.warn('⚠️ [Auth Token] Token from localStorage is expired');
+                  return null;
+                }
+              }
+            } catch (parseError) {
+              console.warn('⚠️ [Auth Token] Failed to parse token, but using anyway:', parseError);
+              return token; // Use token anyway if we can't parse it
+            }
+          }
+        }
+      } catch (localStorageError) {
+        console.warn('⚠️ [Auth Token] Failed to get token from localStorage:', localStorageError);
+      }
+    }
+    
+    console.log('❌ [Auth Token] No valid token found in Firebase Auth or localStorage');
+    return null;
   } catch (error) {
-    console.error('❌ [Auth Token] Failed to get Firebase token:', error);
+    console.error('❌ [Auth Token] Failed to get auth token:', error);
     return null;
   }
 };
@@ -62,16 +100,42 @@ const getAuthToken = async (): Promise<string | null> => {
 const fetchWithAuth = async (url: string, options: RequestInit = {}): Promise<Response> => {
   const token = await getAuthToken();
   
+  console.log('🔐 [IndexingAPI] Making request to:', url);
+  console.log('🔐 [IndexingAPI] Token available:', !!token);
+  if (token) {
+    console.log('🔐 [IndexingAPI] Token preview:', token.substring(0, 20) + '...');
+  }
+  
   const headers = {
     'Content-Type': 'application/json',
     ...(token && { 'Authorization': `Bearer ${token}` }),
     ...options.headers,
   };
 
-  return fetch(url, {
+  console.log('🔐 [IndexingAPI] Request headers:', { ...headers, Authorization: headers.Authorization ? '[HIDDEN]' : 'NOT_SET' });
+
+  const response = await fetch(url, {
     ...options,
     headers,
   });
+
+  console.log('🔐 [IndexingAPI] Response status:', response.status);
+  
+  if (!response.ok && response.status === 403) {
+    console.error('❌ [IndexingAPI] 403 Forbidden - Authentication failed');
+    console.error('❌ [IndexingAPI] URL:', url);
+    console.error('❌ [IndexingAPI] Has token:', !!token);
+    
+    // Try to get error details
+    try {
+      const errorText = await response.clone().text();
+      console.error('❌ [IndexingAPI] Error response:', errorText);
+    } catch (e) {
+      console.error('❌ [IndexingAPI] Could not read error response');
+    }
+  }
+
+  return response;
 };
 
 class IndexingAPI {
@@ -82,8 +146,9 @@ class IndexingAPI {
       const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/status`);
 
       if (!response.ok) {
-        console.error('❌ [Frontend] Auth status request failed:', response.status, response.statusText);
-        throw new Error(`Auth status check failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Auth status request failed with status ${response.status}:`, errorData);
+        throw new Error(errorData.message || `Auth status request failed: ${response.status}`);
       }
 
       const data = await response.json();
@@ -98,7 +163,7 @@ class IndexingAPI {
       };
     } catch (error: any) {
       console.error('❌ [Frontend] Auth status check failed:', error);
-      throw new Error(`Auth status check failed: ${error.message}`);
+      throw error;
     }
   }
 
@@ -149,37 +214,21 @@ class IndexingAPI {
       const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/dashboard`);
 
       if (!response.ok) {
-        throw new Error(`Dashboard request failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error(`❌ Dashboard request failed with status ${response.status}:`, errorData);
+        throw new Error(errorData.message || `Dashboard request failed: ${response.status}`);
       }
 
       const data = await response.json();
       console.log('✅ Dashboard data loaded:', data);
 
+      // Normalize backend data to handle both snake_case and camelCase
+      const normalizedQuotaInfo = data.quotaInfo ? normalizeQuotaInfo(data.quotaInfo) : null;
+      const normalizedStatistics = data.statistics ? normalizeIndexingStats(data.statistics) : null;
+
       return {
-        statistics: data.statistics || {
-          total_submitted: 0,
-          pending: 0,
-          success: 0,
-          failed: 0,
-          quota_used: 0,
-          quota_remaining: 200,
-          success_rate: 0,
-          totalUrlsSubmitted: 0,
-          totalUrlsIndexed: 0,
-          totalUrlsNotIndexed: 0,
-          totalUrlsPending: 0,
-          totalUrlsError: 0,
-          indexingSuccessRate: 0,
-          averageIndexingTime: 0,
-          quotaUsed: 0,
-          quotaLimit: 200,
-          remainingQuota: 200,
-          lastUpdated: new Date().toISOString(),
-          dailySubmissions: 0,
-          weeklySubmissions: 0,
-          monthlySubmissions: 0,
-        },
-        quotaInfo: data.quotaInfo || null,
+        statistics: normalizedStatistics,
+        quotaInfo: normalizedQuotaInfo,
         recentEntries: data.recentEntries || [],
         recentHistory: data.recentHistory || [],
         authState: authStatus,
@@ -215,10 +264,10 @@ class IndexingAPI {
     }
   }
 
-  // Add the missing checkStatus function
+  // Enhanced status checking with real-time Google data
   async checkStatus(entries: any[]): Promise<any> {
     try {
-      console.log('🔍 Checking status for entries:', entries.length);
+      console.log('🔍 Checking real-time status for entries:', entries.length);
       
       const urls = entries.map(entry => entry.url);
       
@@ -233,31 +282,311 @@ class IndexingAPI {
       }
 
       const data = await response.json();
-      console.log('✅ Status check completed:', data);
+      console.log('✅ Real-time status check completed:', data);
       
-      return data;
+      // Process the results to provide detailed status information
+      const processedResults = data.results?.map((result: any) => ({
+        ...result,
+        // Add processed status indicators
+        isIndexed: result.simplifiedStatus === 'indexed',
+        isPending: result.simplifiedStatus === 'pending',
+        hasError: result.simplifiedStatus === 'error',
+        needsSubmission: result.simplifiedStatus === 'not_indexed',
+        // Extract detailed Google data
+        googleData: {
+          coverageState: result.inspectionResult?.indexStatusResult?.coverageState,
+          indexingState: result.inspectionResult?.indexStatusResult?.indexingState,
+          lastCrawlTime: result.inspectionResult?.indexStatusResult?.lastCrawlTime,
+          googleCanonical: result.inspectionResult?.indexStatusResult?.googleCanonical,
+          crawledAs: result.inspectionResult?.indexStatusResult?.crawledAs,
+          pageFetchState: result.inspectionResult?.indexStatusResult?.pageFetchState,
+        },
+        // Human-readable status
+        humanStatus: this.getHumanReadableStatus(result.simplifiedStatus, result.gscStatus),
+        lastUpdated: new Date().toISOString()
+      })) || [];
+      
+      return {
+        ...data,
+        results: processedResults,
+        summary: {
+          total: processedResults.length,
+          indexed: processedResults.filter((r: any) => r.isIndexed).length,
+          pending: processedResults.filter((r: any) => r.isPending).length,
+          errors: processedResults.filter((r: any) => r.hasError).length,
+          notIndexed: processedResults.filter((r: any) => r.needsSubmission).length,
+        }
+      };
     } catch (error: any) {
-      console.error('❌ Status check failed:', error);
+      console.error('❌ Real-time status check failed:', error);
       throw error;
+    }
+  }
+
+  // Helper method to get human-readable status
+  private getHumanReadableStatus(simplifiedStatus: string, gscStatus: string): string {
+    switch (simplifiedStatus) {
+      case 'indexed':
+        return '🚀 Successfully Indexed';
+      case 'pending':
+        return '⏳ Pending Indexation';
+      case 'not_indexed':
+        return '❌ Not Indexed';
+      case 'error':
+        return '⚠️ Error Checking Status';
+      case 'not_owned':
+        return '🔒 Not Verified in GSC';
+      default:
+        return `📊 ${gscStatus || 'Unknown Status'}`;
+    }
+  }
+
+  // New method for batch status checking with progress
+  async checkStatusWithProgress(
+    entries: any[], 
+    onProgress?: (progress: { completed: number; total: number; current: string }) => void
+  ): Promise<any> {
+    const batchSize = 10; // Check 10 URLs at a time to avoid rate limits
+    const results = [];
+    
+    for (let i = 0; i < entries.length; i += batchSize) {
+      const batch = entries.slice(i, i + batchSize);
+      
+      // Update progress
+      onProgress?.({
+        completed: i,
+        total: entries.length,
+        current: batch[0]?.url || 'Processing...'
+      });
+      
+      try {
+        const batchResult = await this.checkStatus(batch);
+        
+        // Ensure each result has the proper structure and boolean flags
+        const processedBatchResults = (batchResult.results || []).map((result: any) => ({
+          ...result,
+          isIndexed: result.simplifiedStatus === 'indexed',
+          isPending: result.simplifiedStatus === 'pending',
+          hasError: result.simplifiedStatus === 'error' || result.error,
+          needsSubmission: result.simplifiedStatus === 'not_indexed',
+          googleData: {
+            coverageState: result.inspectionResult?.indexStatusResult?.coverageState,
+            indexingState: result.inspectionResult?.indexStatusResult?.indexingState,
+            lastCrawlTime: result.inspectionResult?.indexStatusResult?.lastCrawlTime,
+            googleCanonical: result.inspectionResult?.indexStatusResult?.googleCanonical,
+            crawledAs: result.inspectionResult?.indexStatusResult?.crawledAs,
+            pageFetchState: result.inspectionResult?.indexStatusResult?.pageFetchState,
+          },
+          humanStatus: this.getHumanReadableStatus(result.simplifiedStatus, result.gscStatus),
+          detailedInfo: this.getDetailedStatusInfo(result),
+          lastUpdated: new Date().toISOString()
+        }));
+        
+        results.push(...processedBatchResults);
+        
+        // Small delay to respect rate limits
+        if (i + batchSize < entries.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } catch (error) {
+        console.error(`❌ Batch ${i}-${i + batchSize} failed:`, error);
+        // Add error results for failed batch
+        batch.forEach(entry => {
+          results.push({
+            url: entry.url,
+            simplifiedStatus: 'error',
+            isIndexed: false,
+            isPending: false,
+            hasError: true,
+            needsSubmission: false,
+            error: 'Batch check failed',
+            humanStatus: '⚠️ Check Failed',
+            lastUpdated: new Date().toISOString()
+          });
+        });
+      }
+    }
+    
+    // Final progress update
+    onProgress?.({
+      completed: entries.length,
+      total: entries.length,
+      current: 'Completed'
+    });
+    
+    // Create summary from processed results
+    const summary = {
+      total: results.length,
+      indexed: results.filter(r => r.simplifiedStatus === 'indexed' || r.isIndexed).length,
+      pending: results.filter(r => r.simplifiedStatus === 'pending' || r.isPending).length,
+      errors: results.filter(r => r.simplifiedStatus === 'error' || r.hasError || r.error).length,
+      notIndexed: results.filter(r => r.simplifiedStatus === 'not_indexed' || r.needsSubmission).length,
+    };
+
+    console.log('📊 checkStatusWithProgress creating summary:', summary, 'from results:', results.length);
+
+    return {
+      success: true,
+      results,
+      summary,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  // New method for single URL real-time check
+  async checkSingleUrlStatus(url: string): Promise<any> {
+    try {
+      console.log('🔍 Checking single URL status:', url);
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/check-status`, {
+        method: 'POST',
+        body: JSON.stringify({ urls: [url] }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Status check failed: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const result = data.results?.[0];
+      
+      if (!result) {
+        throw new Error('No status data received');
+      }
+      
+      // Add detailed processing for single URL
+      return {
+        ...result,
+        isIndexed: result.simplifiedStatus === 'indexed',
+        isPending: result.simplifiedStatus === 'pending',
+        hasError: result.simplifiedStatus === 'error',
+        needsSubmission: result.simplifiedStatus === 'not_indexed',
+        googleData: {
+          coverageState: result.inspectionResult?.indexStatusResult?.coverageState,
+          indexingState: result.inspectionResult?.indexStatusResult?.indexingState,
+          lastCrawlTime: result.inspectionResult?.indexStatusResult?.lastCrawlTime,
+          googleCanonical: result.inspectionResult?.indexStatusResult?.googleCanonical,
+          crawledAs: result.inspectionResult?.indexStatusResult?.crawledAs,
+          pageFetchState: result.inspectionResult?.indexStatusResult?.pageFetchState,
+        },
+        humanStatus: this.getHumanReadableStatus(result.simplifiedStatus, result.gscStatus),
+        detailedInfo: this.getDetailedStatusInfo(result),
+        lastUpdated: new Date().toISOString()
+      };
+    } catch (error: any) {
+      console.error('❌ Single URL status check failed:', error);
+      throw error;
+    }
+  }
+
+  // Helper method to get detailed status information
+  private getDetailedStatusInfo(result: any): string[] {
+    const info = [];
+    
+    if (result.inspectionResult?.indexStatusResult) {
+      const indexResult = result.inspectionResult.indexStatusResult;
+      
+      if (indexResult.coverageState) {
+        info.push(`Coverage: ${indexResult.coverageState}`);
+      }
+      
+      if (indexResult.indexingState) {
+        info.push(`Indexing: ${indexResult.indexingState}`);
+      }
+      
+      if (indexResult.lastCrawlTime) {
+        const crawlDate = new Date(indexResult.lastCrawlTime);
+        info.push(`Last crawled: ${crawlDate.toLocaleDateString()}`);
+      }
+      
+      if (indexResult.crawledAs) {
+        info.push(`Crawled as: ${indexResult.crawledAs}`);
+      }
+    }
+    
+    return info;
+  }
+
+  // Check verified Search Console properties
+  async checkVerifiedProperties(): Promise<{ success: boolean; properties: string[]; error?: string }> {
+    try {
+      console.log('🔍 [GSC] Checking verified Search Console properties...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/properties`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('❌ [GSC] Failed to get properties:', errorData);
+        return {
+          success: false,
+          properties: [],
+          error: errorData.message || `Failed to fetch properties: ${response.status}`
+        };
+      }
+      
+      const data = await response.json();
+      console.log('✅ [GSC] Verified properties:', data.properties);
+      
+      return {
+        success: true,
+        properties: data.properties || [],
+      };
+    } catch (error: any) {
+      console.error('❌ [GSC] Error checking properties:', error);
+      return {
+        success: false,
+        properties: [],
+        error: error.message
+      };
     }
   }
 
   // Legacy method for single URL submission (for backward compatibility)
   async submitSingleUrl(userId: string, url: string, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium', projectId?: string, tier?: string): Promise<IndexingResponse> {
     try {
-      console.log('📤 Submitting single URL for indexing:', url, 'projectId:', projectId, 'tier:', tier);
+      console.log('📤 [IndexingAPI] Submitting single URL for indexing:', {
+        url,
+        userId,
+        priority,
+        projectId,
+        tier,
+        apiUrl: `${API_BASE_URL}/api/indexing/submit`
+      });
       
       // Convert critical to high for API compatibility
       const apiPriority = priority === 'critical' ? 'high' : priority;
       
+      const requestBody = { urls: [url], priority: apiPriority, projectId, tier };
+      console.log('📤 [IndexingAPI] Request body:', requestBody);
+      
       const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/submit`, {
         method: 'POST',
-        body: JSON.stringify({ urls: [url], priority: apiPriority, projectId, tier }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('📤 [IndexingAPI] Response received:', response.status, response.statusText);
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Submission failed: ${response.status}`);
+        let errorData: any = {};
+        try {
+          errorData = await response.json();
+          console.error('❌ [IndexingAPI] Error response data:', errorData);
+        } catch (parseError) {
+          console.error('❌ [IndexingAPI] Could not parse error response:', parseError);
+          const errorText = await response.text();
+          console.error('❌ [IndexingAPI] Raw error response:', errorText);
+        }
+        
+        if (response.status === 403) {
+          // Check if it's a Search Console property verification issue
+          if (errorData.error && errorData.error.includes('verified Search Console properties')) {
+            throw new Error(`Search Console Verification Required: ${errorData.error}\n\nTo fix this:\n1. Go to Google Search Console (search.google.com/search-console)\n2. Add and verify your domain\n3. Try submitting URLs again`);
+          }
+          throw new Error(`Authentication failed: ${errorData.message || errorData.error || 'Access forbidden. Please check your login status and try again.'}`);
+        }
+        
+        throw new Error(errorData.message || `Submission failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
@@ -521,16 +850,25 @@ class IndexingAPI {
       const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/properties`);
 
       if (!response.ok) {
-        throw new Error(`GSC properties request failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `GSC properties request failed: ${response.status}`;
+        
+        if (response.status === 401) {
+          console.error('❌ GSC properties request failed with 401 - user needs to authenticate with Google Search Console');
+          throw new Error(`GSC properties request failed: 401 - ${errorMessage}`);
+        }
+        
+        console.error('❌ GSC properties request failed:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
       console.log('✅ GSC properties loaded:', data);
       
-      // Handle both response formats: data.properties and data.data.properties
-      return data.data?.properties || data.properties || [];
+      // Handle GSC API response format: data.data.properties
+      return data.data?.properties || [];
     } catch (error: any) {
-      console.error('❌ Failed to load GSC properties:', error);
+      console.error('❌ Failed to load GSC properties:', error.message);
       throw error;
     }
   }
@@ -668,6 +1006,41 @@ class IndexingAPI {
       console.error('❌ Failed to analyze keywords:', error);
       throw error;
     }
+  }
+
+  // Analytics methods
+  async getIndexingAnalytics(timeRange: string = '7d'): Promise<any> {
+    console.log('📊 Loading indexing analytics for timeRange:', timeRange);
+    
+    const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/analytics?timeRange=${timeRange}`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Analytics request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Analytics data loaded:', data);
+    
+    return data;
+  }
+
+  async getPerformanceMetrics(): Promise<any> {
+    console.log('⚡ Loading performance metrics...');
+    
+    const response = await fetchWithAuth(`${API_BASE_URL}/api/indexing/performance`, {
+      method: 'GET',
+    });
+
+    if (!response.ok) {
+      throw new Error(`Performance metrics request failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('✅ Performance metrics loaded:', data);
+    
+    return data;
   }
 
   // Sitemap functionality

@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { BarChart3, FileText, Calculator, PenTool, Grid3X3 } from 'lucide-react';
+import AuthGuard from '@/components/Common/AuthGuard';
 
 const tools = [
   {
@@ -45,6 +46,7 @@ const tools = [
 
 export default function ReportingAnalyticsPage() {
   return (
+    <AuthGuard>
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header */}
@@ -141,5 +143,6 @@ export default function ReportingAnalyticsPage() {
         </motion.div>
       </div>
     </div>
+    </AuthGuard>
   );
 } 

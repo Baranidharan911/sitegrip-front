@@ -2,7 +2,7 @@
 
 // Force rebuild - production API configured
 import { useState, useEffect, useRef } from 'react';
-import { getAuthInstance, getProvider } from '@/lib/firebase';
+import { getAuthInstance, getProvider } from '@/lib/firebase.js';
 import {
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -32,6 +32,12 @@ interface User {
   tierName?: string;
 }
 
+interface PlanInfo {
+  plan?: string;
+  price?: string;
+  tier?: string;
+}
+
 interface AuthResponse {
   success: boolean;
   message: string;
@@ -49,8 +55,8 @@ interface UseAuthReturn {
   loading: boolean;
   error: string | null;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signUp: (email: string, password: string, planInfo?: PlanInfo) => Promise<void>;
+  signInWithGoogle: (planInfo?: PlanInfo) => Promise<void>;
   signOut: () => Promise<void>;
   clearError: () => void;
 }
@@ -118,7 +124,7 @@ export const useAuth = (): UseAuthReturn => {
   };
 
   // Verify token with backend
-  const verifyTokenWithBackend = async (firebaseUser: FirebaseUser, isGoogleAuth = false, googleTokens?: { accessToken: string | null; refreshToken: string | null }): Promise<boolean> => {
+  const verifyTokenWithBackend = async (firebaseUser: FirebaseUser, isGoogleAuth = false, googleTokens?: { accessToken: string | null; refreshToken: string | null }, planInfo?: PlanInfo): Promise<boolean> => {
     try {
       console.log(`🔐 Verifying token with backend (Google: ${isGoogleAuth})...`);
       
@@ -132,10 +138,18 @@ export const useAuth = (): UseAuthReturn => {
         requestBody = {
           idToken,
           googleAccessToken: googleTokens?.accessToken || null,
-          googleRefreshToken: googleTokens?.refreshToken || null
+          googleRefreshToken: googleTokens?.refreshToken || null,
+          selectedPlan: planInfo?.plan || 'free',
+          planPrice: planInfo?.price || '0',
+          tier: planInfo?.tier || 'free'
         };
       } else {
-        requestBody = { idToken };
+        requestBody = { 
+          idToken,
+          selectedPlan: planInfo?.plan || 'free',
+          planPrice: planInfo?.price || '0',
+          tier: planInfo?.tier || 'free'
+        };
       }
 
       let response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -150,7 +164,12 @@ export const useAuth = (): UseAuthReturn => {
       if (!response.ok && isGoogleAuth && response.status === 405) {
         console.warn('⚠️ Google endpoint failed with 405, trying regular endpoint as fallback...');
         endpoint = '/api/auth/verify-token';
-        requestBody = { idToken };
+        requestBody = { 
+          idToken,
+          selectedPlan: planInfo?.plan || 'free',
+          planPrice: planInfo?.price || '0',
+          tier: planInfo?.tier || 'free'
+        };
         
         response = await fetch(`${API_BASE_URL}${endpoint}`, {
           method: 'POST',
@@ -220,7 +239,10 @@ export const useAuth = (): UseAuthReturn => {
             body: JSON.stringify({ 
               userId: data.uid || firebaseUser.uid,
               email: data.email || firebaseUser.email,
-              displayName: data.display_name || firebaseUser.displayName
+              displayName: data.display_name || firebaseUser.displayName,
+              plan: planInfo?.plan || 'basic',
+              price: planInfo?.price || '0',
+              tier: planInfo?.tier || 'basic'
             })
           });
 
@@ -276,9 +298,10 @@ export const useAuth = (): UseAuthReturn => {
 
     console.log('🔄 Initializing auth state...');
     
-    // Check if Firebase is available
-    if (!getAuthInstance()) {
-      console.warn('⚠️ Firebase not available, skipping auth initialization');
+    // Check if Firebase is available - with proper function availability check
+    const authCheck = getAuthInstance && getAuthInstance();
+    if (!authCheck) {
+      console.warn('⚠️ Firebase auth not available, skipping auth initialization');
       setLoading(false);
       return;
     }
@@ -316,8 +339,12 @@ export const useAuth = (): UseAuthReturn => {
     };
 
     // Set up auth state listener
-    const authInstance = getAuthInstance();
-    if (!authInstance) throw new Error('Authentication not available');
+    const authInstance = getAuthInstance && getAuthInstance();
+    if (!authInstance) {
+      console.warn('⚠️ Authentication not available, skipping auth state listener');
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(authInstance, async (firebaseUser) => {
       try {
         if (firebaseUser) {
@@ -365,7 +392,7 @@ export const useAuth = (): UseAuthReturn => {
 
   const signIn = async (email: string, password: string): Promise<void> => {
     try {
-      const authInstance = getAuthInstance();
+      const authInstance = getAuthInstance && getAuthInstance();
       if (!authInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
@@ -382,9 +409,9 @@ export const useAuth = (): UseAuthReturn => {
     }
   };
 
-  const signUp = async (email: string, password: string): Promise<void> => {
+  const signUp = async (email: string, password: string, planInfo?: PlanInfo): Promise<void> => {
     try {
-      const authInstance = getAuthInstance();
+      const authInstance = getAuthInstance && getAuthInstance();
       if (!authInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
@@ -401,10 +428,10 @@ export const useAuth = (): UseAuthReturn => {
     }
   };
 
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (planInfo?: PlanInfo): Promise<void> => {
     try {
-      const authInstance = getAuthInstance();
-      const providerInstance = getProvider();
+      const authInstance = getAuthInstance && getAuthInstance();
+      const providerInstance = getProvider && getProvider();
       if (!authInstance || !providerInstance) throw new Error('Authentication not available');
       setLoading(true);
       setError(null);
@@ -418,12 +445,20 @@ export const useAuth = (): UseAuthReturn => {
       const googleTokens = extractGoogleTokens(result);
       
       // Verify with backend
-      const success = await verifyTokenWithBackend(result.user, true, googleTokens);
+      const success = await verifyTokenWithBackend(result.user, true, googleTokens, planInfo);
       
       if (success) {
         toast.success('Successfully signed in with Google!');
-        console.log('🚀 Redirecting to profile page...');
+        console.log('🚀 Redirecting to intended destination...');
+        
+        // Check if there's a stored redirect path
+        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+        if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+          sessionStorage.removeItem('redirectAfterLogin');
+          router.push(redirectPath);
+        } else {
         router.push('/profile');
+        }
       } else {
         // Sign out from Firebase if backend verification failed
         await firebaseSignOut(authInstance);
@@ -441,7 +476,7 @@ export const useAuth = (): UseAuthReturn => {
 
   const signOut = async (): Promise<void> => {
     try {
-      const authInstance = getAuthInstance();
+      const authInstance = getAuthInstance && getAuthInstance();
       if (!authInstance) throw new Error('Authentication not available');
       console.log('🔐 Signing out user...');
       await firebaseSignOut(authInstance);

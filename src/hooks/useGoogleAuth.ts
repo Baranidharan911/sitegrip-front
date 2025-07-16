@@ -73,8 +73,8 @@ export const useGoogleAuth = () => {
         headers['Authorization'] = `Bearer ${idToken}`;
       }
       
-      // Call the analytics properties endpoint directly instead of status endpoint
-      const response = await fetch(`${apiUrl}/api/analytics/properties`, { headers });
+      // Call the GSC properties endpoint to check authentication status
+      const response = await fetch(`${apiUrl}/api/gsc/properties`, { headers });
       const data = await response.json();
       setDebug({ userId, statusResponse: data });
       
@@ -84,10 +84,10 @@ export const useGoogleAuth = () => {
       }
       
       return {
-        isAuthenticated: data.success && data.properties && data.properties.length > 0,
-        properties: data.properties || [],
+        isAuthenticated: data.success && data.data?.properties && data.data.properties.length > 0,
+        properties: data.data?.properties || [],
         indexStatuses: [],
-        selectedProperty: data.properties?.[0]
+        selectedProperty: data.data?.properties?.[0]
       };
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error');

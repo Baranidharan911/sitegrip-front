@@ -75,6 +75,96 @@ provider.setCustomParameters({
   }
 }
 
+// Export functions with proper error handling
+export function getFirebaseApp() {
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ getFirebaseApp called in server environment');
+    return null;
+  }
+  if (!app) {
+    try {
+      app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    } catch (error) {
+      console.error('❌ Firebase app initialization failed:', error);
+      return null;
+    }
+  }
+  return app;
+}
+
+export function getAuthInstance() {
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ getAuthInstance called in server environment');
+    return null;
+  }
+  if (!auth) {
+    const firebaseApp = getFirebaseApp();
+    if (!firebaseApp) {
+      console.warn('⚠️ Firebase app not available for auth');
+      return null;
+    }
+    try {
+      auth = getAuth(firebaseApp);
+    } catch (error) {
+      console.error('❌ Auth initialization failed:', error);
+      return null;
+    }
+  }
+  return auth;
+}
+
+export function getProvider() {
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ getProvider called in server environment');
+    return null;
+  }
+  if (!provider) {
+    try {
+      provider = new GoogleAuthProvider();
+      provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
+      provider.addScope("https://www.googleapis.com/auth/webmasters");
+      provider.addScope("https://www.googleapis.com/auth/indexing");
+      provider.addScope("https://www.googleapis.com/auth/analytics.readonly");
+      provider.addScope("https://www.googleapis.com/auth/analytics");
+      provider.setCustomParameters({
+        'access_type': 'offline',
+        'prompt': 'consent'
+      });
+    } catch (error) {
+      console.error('❌ Provider initialization failed:', error);
+      return null;
+    }
+  }
+  return provider;
+}
+
+export function getFirestoreInstance() {
+  if (typeof window === 'undefined') {
+    console.warn('⚠️ getFirestoreInstance called in server environment');
+    return null;
+  }
+  if (!db) {
+    if (!app) {
+      // Try to initialize app if not already done
+      try {
+        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+      } catch (error) {
+        console.error('❌ Firebase app initialization failed:', error);
+        return null;
+      }
+    }
+    try {
+      db = getFirestore(app, "indexing-sitegrip");
+      firestoreAvailable = true;
+    } catch (error) {
+      console.error('❌ Firestore initialization failed:', error);
+      firestoreAvailable = false;
+      return null;
+    }
+  }
+  return db;
+}
+
 // Save data to a Firestore collection with proper error handling
 export async function saveToFirebase(collectionName, data) {
   if (!isClient) {
@@ -121,71 +211,3 @@ export function isFirestoreAvailable() {
 export function isFirebaseAvailable() {
   return isClient && !!app;
 }
-
-// Add getFirestoreInstance implementation (ported from firebase.ts)
-function getFirestoreInstance() {
-  if (typeof window === 'undefined') return null;
-  if (!db) {
-    if (!app) {
-      // Try to initialize app if not already done
-      try {
-        app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-      } catch (error) {
-        console.error('❌ Firebase app initialization failed:', error);
-        return null;
-      }
-    }
-    try {
-      db = getFirestore(app, "indexing-sitegrip");
-      firestoreAvailable = true;
-    } catch (error) {
-      console.error('❌ Firestore initialization failed:', error);
-      firestoreAvailable = false;
-      return null;
-    }
-  }
-  return db;
-}
-
-// Add missing function definitions
-function getFirebaseApp() {
-  if (typeof window === 'undefined') return null;
-  if (!app) {
-    try {
-      app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-    } catch (error) {
-      console.error('❌ Firebase app initialization failed:', error);
-      return null;
-    }
-  }
-  return app;
-}
-
-function getAuthInstance() {
-  if (typeof window === 'undefined') return null;
-  if (!auth) {
-    const firebaseApp = getFirebaseApp();
-    if (!firebaseApp) return null;
-    auth = getAuth(firebaseApp);
-  }
-  return auth;
-}
-
-function getProvider() {
-  if (typeof window === 'undefined') return null;
-  if (!provider) {
-    provider = new GoogleAuthProvider();
-    provider.addScope("https://www.googleapis.com/auth/webmasters.readonly");
-    provider.addScope("https://www.googleapis.com/auth/webmasters");
-    provider.addScope("https://www.googleapis.com/auth/indexing");
-    provider.addScope("https://www.googleapis.com/auth/analytics.readonly");
-    provider.addScope("https://www.googleapis.com/auth/analytics");
-    provider.setCustomParameters({
-      'access_type': 'offline',
-      'prompt': 'consent'
-    });
-  }
-  return provider;
-}
-
-export { getFirebaseApp, getAuthInstance, getProvider, getFirestoreInstance };

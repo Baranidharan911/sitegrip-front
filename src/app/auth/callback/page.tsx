@@ -78,7 +78,6 @@ export default function AuthCallback() {
             setMessage(`Failed to load user profile: ${e.message}`);
             toast.error(`Profile fetch failed: ${e.message}`);
           }
-
         } else {
           const code = urlParams.get('code');
           const state = urlParams.get('state');
@@ -95,27 +94,25 @@ export default function AuthCallback() {
             if (processedCodes.length > 10) processedCodes.shift();
             localStorage.setItem('processed-oauth-codes', JSON.stringify(processedCodes));
 
+            // Use the state parameter as the user ID (which we set in the OAuth URL)
+            const userId = state;
+
             const response = await fetch(`${API_URL}/api/auth/google/callback`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ code, state })
+              body: JSON.stringify({ code, state: userId })
             });
 
             const data = await response.json();
 
             if (data.success) {
               const userData = {
-                uid: data.user_id,
-                email: data.user?.email || '',
-                displayName: data.user?.display_name || '',
-                photoURL: data.user?.photo_url || '',
+                uid: userId, // Use the userId from state parameter
+                email: data.data?.email || '',
+                displayName: data.data?.name || '',
+                photoURL: '',
                 googleAuthEnabled: true,
-                properties: (data.properties || []).map((p: any) => ({
-                  property_url: p.property_url || p.site_url,
-                  property_type: p.property_type || 'URL_PREFIX',
-                  permission_level: p.permission_level || 'siteOwner',
-                  verified: p.verified !== undefined ? p.verified : true
-                }))
+                properties: []
               };
 
               localStorage.setItem('Sitegrip-user', JSON.stringify(userData));

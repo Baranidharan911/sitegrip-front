@@ -9,7 +9,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase.js';
 import { Loader2, RefreshCw } from 'lucide-react';
 import CrawlSummary from '@/components/seo-crawler/CrawlSummary';
 import ResultsTable from '@/components/seo-crawler/ResultsTable';

@@ -3,7 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, Globe, FileText, Search } from 'lucide-react';
 import { QuotaInfo, AuthState, GSCProperty } from '@/types/indexing';
+import { getTierInfo, formatQuotaDisplay } from '@/lib/dataUtils';
 import { indexingApi } from '@/lib/indexingApi';
+import GoogleSearchConsoleConnect from './GoogleSearchConsoleConnect';
 
 interface EnhancedIndexingFormProps {
   onSubmitUrls: (urls: string[], priority: 'low' | 'medium' | 'high' | 'critical') => Promise<void>;
@@ -34,6 +36,7 @@ export default function EnhancedIndexingForm({
   const [includeExcluded, setIncludeExcluded] = useState(false);
   const [includeErrors, setIncludeErrors] = useState(false);
   const [gscProperties, setGscProperties] = useState<GSCProperty[]>([]);
+  const [showGSCConnect, setShowGSCConnect] = useState(false);
   const [gscLoading, setGscLoading] = useState(false);
   const [gscError, setGscError] = useState<string | null>(null);
 
@@ -52,7 +55,12 @@ export default function EnhancedIndexingForm({
           }
         } catch (error: any) {
           console.error("Failed to fetch GSC properties:", error);
+          if (error.message?.includes('401') || error.message?.includes('Unauthorized')) {
+            setGscError('Google Search Console access not available. Please connect your Google account with Search Console permissions to use this feature.');
+            setShowGSCConnect(true);
+          } else {
           setGscError(error.message || 'Failed to load your Google Search Console properties. Please try reconnecting your account.');
+          }
           setGscProperties([]);
         } finally {
           setGscLoading(false);
@@ -238,7 +246,16 @@ export default function EnhancedIndexingForm({
 
         {activeTab === 'gsc' && (
           <div>
-            {!isAuthenticated ? (
+            {showGSCConnect ? (
+              <GoogleSearchConsoleConnect
+                onConnect={() => {
+                  setShowGSCConnect(false);
+                  // TODO: Implement actual Google OAuth flow
+                  console.log('TODO: Implement Google OAuth flow for Search Console');
+                }}
+                onCancel={() => setShowGSCConnect(false)}
+              />
+            ) : !isAuthenticated ? (
               <div className="text-center py-8">
                 <Search className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500 dark:text-gray-400">
@@ -333,7 +350,23 @@ export default function EnhancedIndexingForm({
                   No Search Console properties found.
                 </p>
                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  Make sure you have verified properties in your Google Search Console account and have connected it on this page.
+                  To use Google Search Console features, you need to:
+                </p>
+                <ul className="text-sm text-gray-500 dark:text-gray-400 mt-2 space-y-1">
+                  <li>• Have verified properties in your Google Search Console account</li>
+                  <li>• Connect your Google account with Search Console permissions</li>
+                  <li>• Ensure your account has the necessary API access</li>
+                </ul>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowGSCConnect(true)}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Connect Google Search Console
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                  You can still use other indexing features without Search Console access.
                 </p>
             </div>
             )}

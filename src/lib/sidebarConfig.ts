@@ -171,7 +171,7 @@ export const sidebarItems: SidebarSection[] = [
     description: 'Search engine indexing',
     subItems: [
       { name: 'Submit URL', path: '/indexing', icon: ArrowUpRight, description: 'Submit URLs to search engines', pro: false },
-      { name: 'Index Status', path: '/indexing', icon: CheckCircle, description: 'Check indexing status', pro: false },
+      { name: 'Index Analytics', path: '/indexing/analytics', icon: CheckCircle, description: 'Check indexing status', pro: false },
     ],
   },
 

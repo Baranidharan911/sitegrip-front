@@ -1,16 +1,39 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'react-hot-toast';
 import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+
+interface PlanInfo {
+  plan?: string;
+  price?: string;
+  tier?: string;
+}
 
 export default function SignupCard() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [planInfo, setPlanInfo] = useState<PlanInfo>({});
   const { loading, signUp, signInWithGoogle } = useAuth();
+  const searchParams = useSearchParams();
+
+  // Extract plan information from URL parameters
+  useEffect(() => {
+    if (searchParams) {
+      const plan = searchParams.get('plan');
+      const price = searchParams.get('price');
+      const tier = searchParams.get('tier');
+      
+      if (plan || price || tier) {
+        setPlanInfo({ plan: plan || '', price: price || '', tier: tier || '' });
+        console.log('📋 Plan info extracted from URL:', { plan, price, tier });
+      }
+    }
+  }, [searchParams]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +61,7 @@ export default function SignupCard() {
     }
 
     try {
-      await signUp(email, password);
+      await signUp(email, password, planInfo);
     } catch (error) {
       console.error('Signup error:', error);
     }
@@ -47,7 +70,7 @@ export default function SignupCard() {
   const handleGoogleSignup = async () => {
     setErrorMessage('');
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(planInfo);
     } catch (error) {
       console.error('Google signup error:', error);
       toast.error('Failed to sign up with Google. Please try again.');
@@ -60,6 +83,11 @@ export default function SignupCard() {
     }
   };
 
+  // Format plan name for display
+  const formatPlanName = (plan: string) => {
+    return plan.charAt(0).toUpperCase() + plan.slice(1);
+  };
+
   return (
     <div className="p-10 bg-white dark:bg-gray-800 text-center max-w-md w-full mx-auto my-auto min-h-screen flex items-center justify-center">
       <div className="bg-white dark:bg-gray-800 p-8 sm:p-10 w-full max-w-md">
@@ -69,6 +97,23 @@ export default function SignupCard() {
         <p className="text-gray-600 dark:text-gray-300 mb-6">
           Sign up to get started with powerful SEO tools.
         </p>
+
+        {/* Plan Selection Display */}
+        {planInfo.plan && (
+          <div className="mb-6 p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+            <div className="text-sm text-purple-600 dark:text-purple-400 font-medium mb-1">
+              Selected Plan
+            </div>
+            <div className="text-lg font-bold text-purple-800 dark:text-purple-300">
+              {formatPlanName(planInfo.plan)}
+              {planInfo.price && (
+                <span className="text-sm font-normal text-purple-600 dark:text-purple-400 ml-2">
+                  ${planInfo.price}/month
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Google Sign Up Button */}
         <div className="mb-4">

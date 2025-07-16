@@ -5,7 +5,7 @@ export interface IndexingEntry {
   user_id: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
   action: 'URL_UPDATED' | 'URL_DELETED';
-  status: 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error';
+  status: 'pending' | 'submitted' | 'success' | 'failed' | 'retrying' | 'quota_exceeded' | 'indexed' | 'error' | 'queued';
   
   // Timestamps (properly aligned with backend)
   created_at: string;
@@ -21,6 +21,10 @@ export interface IndexingEntry {
   // Quota tracking
   quota_used: boolean;
   
+  // Queue-related fields
+  queued_at?: string;
+  queue_position?: number;
+  
   // Real indexing status fields from backend
   indexing_status?: 'indexed' | 'not_indexed' | string;
   indexing_state?: string;
@@ -33,6 +37,11 @@ export interface IndexingEntry {
     page_fetch_state?: string;
     error?: string;
   };
+  
+  // Additional status and info fields
+  latest_gsc_status?: string;
+  human_status?: string;
+  detailed_info?: string[];
   
   // Legacy fields for backward compatibility
   submittedAt: string;
@@ -150,6 +159,7 @@ export interface QuotaInfo {
   monthlyRemaining?: number;
   resetTime?: string;
   isPremium?: boolean;
+  queueInfo?: QueueInfo;
 }
 
 export interface IndexingHistoryEntry {
@@ -255,4 +265,38 @@ export interface AuthState {
   properties: GSCProperty[];
   indexStatuses: IndexStatus[];
   selectedProperty?: GSCProperty;
+}
+
+export interface QueueInfo {
+  totalQueued: number;
+  avgWaitTime: number; // in hours
+  oldestQueuedAt?: string;
+  newestQueuedAt?: string;
+  estimatedProcessingTime?: string;
+}
+
+export interface QueueStats {
+  totalQueued: number;
+  avgWaitTime: number;
+  oldestQueuedAt?: Date;
+  newestQueuedAt?: Date;
+}
+
+export interface SubmissionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    submittedUrls: number;
+    successfulSubmissions: number;
+    failedSubmissions: number;
+    queuedSubmissions: number;
+    entries: IndexingEntry[];
+    unmatchedUrls: string[];
+    quotaUsed: number;
+    quotaRemaining: number;
+    quotaLimit: number;
+    billingPlan: string;
+    queueInfo: QueueInfo;
+  };
+  timestamp: string;
 } 

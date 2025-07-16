@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { indexingApi } from '@/lib/indexingApi';
 import { IndexingEntry, IndexingStats, QuotaInfo, DashboardData, AuthState } from '@/types/indexing';
+import { normalizeQuotaInfo, getTierInfo, formatQuotaDisplay } from '@/lib/dataUtils';
 import { getStoredUserId } from '@/utils/auth';
 
 // Helper function to get user data from localStorage
@@ -32,33 +33,87 @@ export const useIndexingBackend = () => {
     return getStoredUserId() || 'anonymous';
   }, []);
 
+  // Separate function to load quota info directly from the backend
+  const loadQuotaInfo = useCallback(async () => {
+    try {
+      const userId = getUserId();
+      console.log('🔄 Loading quota information for user:', userId);
+      
+      const quotaData = await indexingApi.getQuotaInfo();
+      setQuotaInfo(quotaData);
+      
+      console.log('✅ Quota information loaded successfully:', quotaData);
+      return quotaData;
+    } catch (error) {
+      console.error('❌ Failed to load quota information:', error);
+      throw error;
+    }
+  }, []);
+
   const loadDashboardData = useCallback(async (projectId: string) => {
     setLoading(true);
     try {
       const userId = getUserId();
-      console.log('Loading dashboard data for project:', projectId, 'user:', userId);
+      console.log('🔄 Loading dashboard data for project:', projectId, 'user:', userId);
+      
+      // Load quota info first to ensure we have correct tier-based limits
+      try {
+        await loadQuotaInfo();
+      } catch (quotaError) {
+        console.warn('⚠️ Failed to load quota info, continuing with dashboard data:', quotaError);
+      }
       
       const dashboardData = await indexingApi.getDashboardData(userId);
       setIndexingEntries(dashboardData.recentEntries || []);
       setStatistics(dashboardData.statistics);
+      
+      // Use quota info from dedicated endpoint if dashboard doesn't have it
+      if (dashboardData.quotaInfo) {
       setQuotaInfo(dashboardData.quotaInfo);
+      }
       
       if (dashboardData.authState) {
         setAuthState(dashboardData.authState);
       }
       
-      console.log('Dashboard data loaded successfully:', dashboardData);
+      console.log('✅ Dashboard data loaded successfully:', dashboardData);
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
+      console.error('❌ Error loading dashboard data:', error);
       
       // Check if it's an authentication error
       if (error instanceof Error && error.message.includes('Authentication')) {
         toast.error('Please sign in with Google to access indexing features.');
+      } else if (error instanceof Error && error.message.includes('401')) {
+        toast.error('Authentication required. Please sign in again.');
       } else {
-        toast.error('Failed to load indexing data. Please check your connection.');
+        toast.error('Failed to load quota information. Please refresh the page.');
       }
     } finally {
       setLoading(false);
+    }
+  }, [loadQuotaInfo]);
+
+  const refreshDashboardStatistics = useCallback(async () => {
+    try {
+      const userId = getUserId();
+      console.log('🔄 Refreshing dashboard statistics (preserving Google data)...');
+      
+      const dashboardData = await indexingApi.getDashboardData(userId);
+      
+      // Only update statistics and quota info, preserve existing entries with Google data
+      setStatistics(dashboardData.statistics);
+      
+      if (dashboardData.quotaInfo) {
+        setQuotaInfo(dashboardData.quotaInfo);
+      }
+      
+      if (dashboardData.authState) {
+        setAuthState(dashboardData.authState);
+      }
+      
+      console.log('✅ Dashboard statistics refreshed (entries preserved)');
+    } catch (error: any) {
+      console.warn('⚠️ Failed to refresh dashboard statistics:', error);
     }
   }, []);
 
@@ -71,13 +126,31 @@ export const useIndexingBackend = () => {
     try {
       const userId = getUserId();
       const user = getStoredUser();
-      toast.loading('Submitting URLs for indexing...', { id: 'submit' });
+      
+      // Clean URLs but allow duplicates for manual submissions
+      const cleanedUrls = urls.map(url => {
+        try {
+          const urlObj = new URL(url.trim());
+          // Remove fragments and normalize
+          urlObj.hash = '';
+          return urlObj.toString();
+        } catch {
+          return url.trim();
+        }
+      }).filter(url => url && (url.startsWith('http://') || url.startsWith('https://')));
+      
+      if (cleanedUrls.length === 0) {
+        toast.error('No valid URLs found to submit.', { id: 'submit' });
+        return { success: false, message: 'No valid URLs' };
+      }
+      
+      toast.loading(`Submitting ${cleanedUrls.length} URLs for indexing...`, { id: 'submit' });
       
       let response;
-      if (urls.length === 1) {
-        response = await indexingApi.submitSingleUrl(userId, urls[0], priority, user?.projectId, user?.tier);
+      if (cleanedUrls.length === 1) {
+        response = await indexingApi.submitSingleUrl(userId, cleanedUrls[0], priority, user?.projectId, user?.tier);
       } else {
-        response = await indexingApi.submitBulkUrls(userId, urls, priority, user?.projectId, user?.tier);
+        response = await indexingApi.submitBulkUrls(userId, cleanedUrls, priority, user?.projectId, user?.tier);
       }
       
       if (response.success) {
@@ -135,6 +208,28 @@ export const useIndexingBackend = () => {
   ) => {
     setLoading(true);
     try {
+      // Check if website has already been discovered recently
+      const websiteHostname = new URL(websiteUrl).hostname;
+      const recentDiscoveries = indexingEntries.filter(entry => {
+        try {
+          const entryUrl = new URL(entry.url);
+          const submittedDate = entry.created_at || entry.submitted_at || entry.submittedAt;
+          const entryTime = submittedDate ? new Date(submittedDate).getTime() : 0;
+          return entryUrl.hostname === websiteHostname && 
+                 new Date().getTime() - entryTime < 24 * 60 * 60 * 1000; // Last 24 hours
+        } catch {
+          return false;
+        }
+      });
+      
+      if (recentDiscoveries.length > 0) {
+        toast(`⚠️ Found ${recentDiscoveries.length} URLs from this website discovered in the last 24 hours. Proceeding with fresh discovery...`, { 
+          id: 'recent-discovery-warning',
+          icon: '⚠️',
+          duration: 4000
+        });
+      }
+      
       toast.loading('Discovering pages from website...', { id: 'website-discovery' });
       
       // Check if we're in browser environment before accessing localStorage
@@ -151,6 +246,17 @@ export const useIndexingBackend = () => {
       const idToken = userData.token || userData.idToken;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
+      // Get existing URLs from this website to prevent duplicates during discovery
+      const existingUrls = indexingEntries
+        .filter(entry => {
+          try {
+            return new URL(entry.url).hostname === websiteHostname;
+          } catch {
+            return false;
+          }
+        })
+        .map(entry => entry.url);
+      
       const response = await fetch(`${apiUrl}/api/indexing/discover-website`, {
         method: 'POST',
         headers: {
@@ -160,7 +266,8 @@ export const useIndexingBackend = () => {
         body: JSON.stringify({
           websiteUrl: websiteUrl,
           priority: priority,
-          maxPages: 10
+          maxPages: 10,
+          excludeUrls: existingUrls // Send existing URLs to backend for deduplication
         })
       });
 
@@ -250,6 +357,19 @@ export const useIndexingBackend = () => {
       const idToken = userData.token || userData.idToken;
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
+      // Get existing URLs from this property to prevent duplicates during discovery
+      const existingPropertyUrls = indexingEntries
+        .filter(entry => {
+          try {
+            const entryUrl = new URL(entry.url);
+            const propertyUrlObj = new URL(propertyUrl);
+            return entryUrl.hostname === propertyUrlObj.hostname;
+          } catch {
+            return false;
+          }
+        })
+        .map(entry => entry.url);
+      
       const response = await fetch(`${apiUrl}/api/indexing/discover-gsc`, {
         method: 'POST',
         headers: {
@@ -260,7 +380,8 @@ export const useIndexingBackend = () => {
           propertyUrl: propertyUrl,
           maxPages: options.maxPages,
           includeExcluded: options.includeExcluded,
-          includeErrors: options.includeErrors
+          includeErrors: options.includeErrors,
+          excludeUrls: existingPropertyUrls // Send existing URLs to backend for deduplication
         })
       });
 
@@ -395,65 +516,99 @@ export const useIndexingBackend = () => {
     
     setLoading(true);
     try {
-      toast.loading(`Checking status for ${entries.length} URLs...`, { id: 'check-status' });
-      
-      const response = await indexingApi.checkStatus(entries);
+      // Use enhanced status checking with real-time Google data and progress tracking
+      const response = await indexingApi.checkStatusWithProgress(
+        entries,
+        (progress) => {
+          const percentage = Math.round((progress.completed / progress.total) * 100);
+          toast.loading(
+            `🔍 Checking real-time status... ${percentage}% (${progress.completed}/${progress.total})`,
+            { id: 'check-status' }
+          );
+        }
+      );
       
       if (response.success) {
+        // Ensure response has summary, create one if missing
+        const summary = response.summary || {
+          total: response.results?.length || 0,
+          indexed: (response.results || []).filter((r: any) => 
+            r.simplifiedStatus === 'indexed' || r.isIndexed
+          ).length,
+          pending: (response.results || []).filter((r: any) => 
+            r.simplifiedStatus === 'pending' || r.isPending
+          ).length,
+          errors: (response.results || []).filter((r: any) => 
+            r.simplifiedStatus === 'error' || r.hasError || r.error
+          ).length,
+          notIndexed: (response.results || []).filter((r: any) => 
+            r.simplifiedStatus === 'not_indexed' || r.needsSubmission
+          ).length,
+        };
+        
+        const { indexed, pending, errors, notIndexed, total } = summary;
+        
         toast.success(
-          `Status check completed: ${response.data.indexed_count} indexed, ${response.data.not_indexed_count} not indexed`,
-          { id: 'check-status' }
+          `✅ Real-time status check completed: ${indexed} indexed, ${pending} pending, ${notIndexed} not indexed`,
+          { id: 'check-status', duration: 6000 }
         );
         
-        // Force a complete dashboard data refresh after status check
-        console.log('🔄 Refreshing dashboard data after status check...');
-        
-        // Add a small delay to allow database updates to propagate
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        try {
-          const userId = getUserId();
-          const dashboardData = await indexingApi.getDashboardData(userId);
-          setIndexingEntries(dashboardData.recentEntries || []);
-          setStatistics(dashboardData.statistics);
-          setQuotaInfo(dashboardData.quotaInfo);
+        // Update local state with real-time Google data
+        if (response.results) {
+          const updatedEntries = indexingEntries.map(entry => {
+            const statusResult = response.results.find((r: any) => r.url === entry.url);
+            if (statusResult) {
+              return {
+                ...entry,
+                indexing_status: statusResult.isIndexed ? 'indexed' : 
+                               statusResult.isPending ? 'pending' : 
+                               statusResult.needsSubmission ? 'not_indexed' : 'unknown',
+                latest_gsc_status: statusResult.gscStatus,
+                status_checked_at: statusResult.lastUpdated,
+                google_data: statusResult.googleData,
+                human_status: statusResult.humanStatus,
+                detailed_info: statusResult.detailedInfo,
+                // Update other fields from Google inspection result
+                coverage_state: statusResult.googleData?.coverageState,
+                indexing_state: statusResult.googleData?.indexingState,
+                last_crawl_time: statusResult.googleData?.lastCrawlTime,
+                google_canonical: statusResult.googleData?.googleCanonical,
+              };
+            }
+            return entry;
+          });
           
-          if (dashboardData.authState) {
-            setAuthState(dashboardData.authState);
-          }
-          
-          console.log('✅ Dashboard refreshed successfully after status check');
-        } catch (refreshError) {
-          console.error('Failed to refresh dashboard after status check:', refreshError);
-          
-          // Fallback: try to refresh just the entries
-          try {
-            const userId = getUserId();
-            const historyResponse = await indexingApi.getIndexingHistory(userId, 1, 50);
-            setIndexingEntries(historyResponse.entries || []);
-            
-            // Also try to update statistics
-            const statsResponse = await indexingApi.getIndexingStats(userId);
-            setStatistics(statsResponse);
-          } catch (fallbackError) {
-            console.error('Fallback refresh also failed:', fallbackError);
-          }
+          setIndexingEntries(updatedEntries);
+          console.log('📊 Updated entries with real-time Google data:', updatedEntries.length);
         }
+        
+        // Show detailed summary in console for debugging
+        console.log('📊 Real-time status check results:', {
+          summary: response.summary,
+          indexed_urls: response.results?.filter((r: any) => r.isIndexed).map((r: any) => r.url),
+          pending_urls: response.results?.filter((r: any) => r.isPending).map((r: any) => r.url),
+        });
+            
+        // Optional: Refresh dashboard statistics after a delay, but preserve Google data
+        setTimeout(() => {
+          refreshDashboardStatistics().catch(error => {
+            console.warn('Dashboard statistics refresh after status check failed:', error);
+          });
+        }, 1500);
         
         return response;
       } else {
-        toast.error(response.message || 'Status check failed', { id: 'check-status' });
+        toast.error(response.message || 'Real-time status check failed', { id: 'check-status' });
         return response;
       }
-    } catch (error) {
-      console.error('Error checking status:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to check indexing status.';
-      toast.error(errorMessage, { id: 'check-status' });
+    } catch (error: any) {
+      console.error('❌ Real-time status check failed:', error);
+      toast.error('Real-time status check failed. Please try again.', { id: 'check-status' });
       throw error;
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [indexingEntries, loadDashboardData]);
 
   return {
     loading,
@@ -469,6 +624,7 @@ export const useIndexingBackend = () => {
     retryEntry,
     deleteEntry,
     loadDashboardData,
+    loadQuotaInfo,
     loadMoreEntries,
     getGoogleAuthUrl,
     revokeGoogleAccess,

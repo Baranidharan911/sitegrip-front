@@ -6,7 +6,7 @@ import { Loader2, Globe, Shield, Copy, Check, AlertCircle, CheckCircle, ChevronD
 import { Tooltip } from 'react-tooltip';
 
 // Import Firebase and export utilities
-import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase.js';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';

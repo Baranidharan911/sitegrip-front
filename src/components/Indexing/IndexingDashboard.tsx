@@ -22,10 +22,11 @@ import {
 } from 'lucide-react';
 import { useIndexingBackend } from '@/hooks/useIndexingBackend';
 import { IndexingStats, QuotaInfo } from '@/types/indexing';
+import { getTierInfo, formatQuotaDisplay, getQuotaUsagePercentage, getQuotaStatusColor } from '@/lib/dataUtils';
 import { useAuth } from '@/hooks/useAuth';
 
 const IndexingDashboard: React.FC = () => {
-  const { loading, statistics, quotaInfo, loadDashboardData } = useIndexingBackend();
+  const { loading, statistics, quotaInfo, loadDashboardData, loadQuotaInfo } = useIndexingBackend();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [isNewUser, setIsNewUser] = useState(false);
@@ -36,11 +37,19 @@ const IndexingDashboard: React.FC = () => {
       setRefreshing(true);
       
       // Update tier info from user data
-      if (user) {
-        setTierName(user.tierName || 'Basic');
+      // const userTier = user?.tier || 'free';
+      // setTierName(userTier.charAt(0).toUpperCase() + userTier.slice(1));
+      
+      // Load quota info first to get real-time quota data
+      try {
+        await loadQuotaInfo();
+        console.log('✅ Quota info refreshed successfully');
+      } catch (quotaError) {
+        console.warn('⚠️ Failed to refresh quota info:', quotaError);
       }
       
-      await loadDashboardData(user?.projectId || 'sitegrip-basic-1');
+      // Then load dashboard data
+      await loadDashboardData('sitegrip-basic-1'); // user?.projectId || 'sitegrip-basic-1'
       
       const totalSubmitted = statistics?.total_submitted ?? statistics?.totalUrlsSubmitted ?? 0;
       const quotaUsed = quotaInfo?.total_used ?? quotaInfo?.totalUsed ?? 0;
@@ -51,7 +60,7 @@ const IndexingDashboard: React.FC = () => {
         setIsNewUser(false);
       }
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
+      console.error('❌ Failed to load dashboard data:', err);
     } finally {
       setRefreshing(false);
     }
@@ -59,9 +68,9 @@ const IndexingDashboard: React.FC = () => {
 
   useEffect(() => {
     // Update tier info when user data changes
-    if (user) {
-      setTierName(user.tierName || 'Basic');
-    }
+    // if (user) {
+    //   setTierName(user.tierName || 'Basic');
+    // }
     
     const totalSubmitted = statistics?.total_submitted ?? statistics?.totalUrlsSubmitted ?? 0;
     const quotaUsed = quotaInfo?.total_used ?? quotaInfo?.totalUsed ?? 0;
@@ -71,7 +80,7 @@ const IndexingDashboard: React.FC = () => {
     } else {
       setIsNewUser(false);
     }
-  }, [statistics, quotaInfo, user]);
+  }, [statistics, quotaInfo]); // , user
 
   if (loading && !statistics) {
     return (
@@ -105,9 +114,15 @@ const IndexingDashboard: React.FC = () => {
   const quotaRemaining = safeNumber(statistics?.quota_remaining);
   const indexingSuccessRate = safeNumber(statistics?.indexingSuccessRate);
 
-  const dailyLimit = safeNumber(quotaInfo?.daily_limit, 200);
-  const priorityReserve = safeNumber(quotaInfo?.priority_reserve, 50);
+  // Get tier information based on actual quota limits (no fallbacks)
+  const dailyLimit = quotaInfo?.daily_limit || 0;
+  const priorityReserve = quotaInfo?.priority_reserve || 0;
   const priorityUsed = safeNumber(quotaInfo?.high_priority_used) + safeNumber(quotaInfo?.critical_priority_used);
+  
+  // Get tier information for display
+  const tierInfo = quotaInfo ? getTierInfo(dailyLimit) : { tierName: 'Unknown', tierLevel: 'unknown', features: [] };
+  const quotaUsagePercentage = quotaInfo ? getQuotaUsagePercentage(quotaInfo) : 0;
+  const quotaStatusColor = quotaInfo ? getQuotaStatusColor(quotaInfo) : 'text-gray-500';
   const priorityRemaining = priorityReserve - priorityUsed;
 
   const quotaPercentage = (quotaUsed / dailyLimit) * 100;
@@ -174,50 +189,114 @@ const IndexingDashboard: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Daily Quota Usage</h3>
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full"></div>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {tierName} Plan - {quotaInfo?.daily_limit || 200} URLs/day
-            </span>
+            {loading || !quotaInfo ? (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-400 dark:text-gray-500 animate-pulse">
+                  Loading quota info...
+                </span>
+              </div>
+            ) : (
+              <>
+                <div className="w-3 h-3 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full"></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {tierInfo.tierName} Plan - {quotaInfo.daily_limit} URLs/day
+                </span>
+              </>
+            )}
           </div>
         </div>
         
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Used Today</span>
-            <span className="font-semibold text-gray-900 dark:text-white">
-              {quotaInfo?.total_used || 0} / {quotaInfo?.daily_limit || 200}
-            </span>
+        {loading || !quotaInfo ? (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Used Today</span>
+              <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div className="bg-gray-300 dark:bg-gray-600 h-3 rounded-full animate-pulse w-1/4"></div>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <div className="w-24 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+              <span className="text-gray-500 dark:text-gray-400">
+                Resets daily at midnight
+              </span>
+            </div>
           </div>
-          
-          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-            <div 
-              className="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-300"
-              style={{ width: `${Math.min(((quotaInfo?.total_used || 0) / (quotaInfo?.daily_limit || 200)) * 100, 100)}%` }}
-            ></div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Used Today</span>
+              <span className="font-semibold text-gray-900 dark:text-white">
+                {quotaInfo.total_used} / {quotaInfo.daily_limit}
+              </span>
+            </div>
+            
+            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+              <div 
+                className={`h-3 rounded-full transition-all duration-300 ${
+                  quotaUsagePercentage >= 90 ? 'bg-gradient-to-r from-red-500 to-red-600' :
+                  quotaUsagePercentage >= 70 ? 'bg-gradient-to-r from-yellow-500 to-orange-500' :
+                  'bg-gradient-to-r from-green-500 to-emerald-500'
+                }`}
+                style={{ width: `${Math.min(quotaUsagePercentage, 100)}%` }}
+              ></div>
+            </div>
+            
+            <div className="flex items-center justify-between text-sm">
+              <span className={quotaStatusColor}>
+                {quotaInfo.daily_limit - quotaInfo.total_used} URLs remaining today
+              </span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Resets daily at midnight
+              </span>
+            </div>
+            
+            {/* Tier Features */}
+            <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                  tierInfo.tierLevel === 'free' ? 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200' :
+                  tierInfo.tierLevel === 'basic' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                  tierInfo.tierLevel === 'professional' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                  tierInfo.tierLevel === 'advanced' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                  tierInfo.tierLevel === 'premium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' :
+                  'bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 dark:from-purple-900 dark:to-pink-900 dark:text-purple-200'
+                }`}>
+                  {tierInfo.tierName} Tier
+                </span>
+                {quotaUsagePercentage >= 90 && (
+                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    Quota Low
+                  </span>
+                )}
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">
+                Plan includes: {tierInfo.features.slice(0, 2).join(', ')}
+                {tierInfo.features.length > 2 && ` +${tierInfo.features.length - 2} more`}
+              </div>
+            </div>
           </div>
-          
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500 dark:text-gray-400">
-              {(quotaInfo?.daily_limit || 200) - (quotaInfo?.total_used || 0)} URLs remaining today
-            </span>
-            <span className="text-gray-500 dark:text-gray-400">
-              Resets daily at midnight
-            </span>
-          </div>
-        </div>
+        )}
       </div>
 
       {/* Quota Alert */}
-      {quotaInfo && ((quotaInfo.daily_limit || 200) - (quotaInfo.total_used || 0)) < 10 && (
+      {quotaInfo && (quotaInfo.daily_limit - quotaInfo.total_used) < Math.max(5, Math.floor(quotaInfo.daily_limit * 0.1)) && (
         <div className="bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-4 rounded-lg border border-yellow-200 dark:border-yellow-800 flex items-center gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0" />
           <div>
             <p className="font-medium">Quota Limit Approaching</p>
             <p className="text-sm">
-              You are nearing your daily quota limit. 
-              <a href="/pricing" className="ml-1 underline text-yellow-700 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">
-                Upgrade your plan
-              </a> for more capacity.
+              You have only {quotaInfo.daily_limit - quotaInfo.total_used} URLs remaining on your {tierInfo.tierName} plan ({quotaInfo.daily_limit}/day). 
+              {tierInfo.tierLevel === 'free' ? (
+                <a href="/pricing" className="ml-1 underline text-yellow-700 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">
+                  Upgrade to Basic (50/day)
+                </a>
+              ) : (
+                <a href="/pricing" className="ml-1 underline text-yellow-700 dark:text-yellow-300 hover:text-yellow-800 dark:hover:text-yellow-100">
+                  Upgrade your plan
+                </a>
+              )} for more capacity.
             </p>
           </div>
         </div>

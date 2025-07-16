@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { getAuthInstance } from '@/lib/firebase';
+import { getAuthInstance } from '@/lib/firebase.js';
 
 interface TrackingResponse {
   success: boolean;

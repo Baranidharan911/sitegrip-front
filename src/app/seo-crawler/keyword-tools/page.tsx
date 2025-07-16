@@ -5,7 +5,7 @@ import { useEffect, useState, Suspense } from 'react';
 import KeywordToolsTabs from '@/components/seo-crawler/KeywordToolsTabs';
 import { Search, Database, Globe, History } from 'lucide-react';
 import { collection, onSnapshot } from 'firebase/firestore';
-import { getFirestoreInstance } from '@/lib/firebase';
+import { getFirestoreInstance } from '@/lib/firebase.js';
 
 interface PageData {
   url: string;

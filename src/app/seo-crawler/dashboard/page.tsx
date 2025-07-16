@@ -3,10 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
+import AuthGuard from '@/components/Common/AuthGuard';
 import { FileText, Search, Download, Share2, Printer, Globe, BarChart3 } from 'lucide-react';
 
 // Import Firebase and export utilities
-import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase';
+import { getAuthInstance, getFirestoreInstance } from '@/lib/firebase.js';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { exportComponentToPDF } from '@/utils/exportPDF';
@@ -318,6 +319,7 @@ export default function SeoCrawlerDashboardPage() {
   };
 
   return (
+    <AuthGuard>
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-8 bg-gray-50 dark:bg-[#0a0b1e]">
       <div className="max-w-7xl mx-auto">
         <RunCrawlForm
@@ -520,6 +522,7 @@ export default function SeoCrawlerDashboardPage() {
         )}
       </div>
     </div>
+    </AuthGuard>
   );
 }
 
