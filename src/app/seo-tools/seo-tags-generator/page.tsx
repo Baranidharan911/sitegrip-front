@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import SEOTagsGenerator from '@/components/Home/SEOTagsGenerator';
 import HowToUseSection from '@/components/Common/HowToUseSection';
