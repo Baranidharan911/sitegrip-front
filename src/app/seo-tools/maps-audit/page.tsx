@@ -41,6 +41,7 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 // Helper to get Google Maps embed URL
 function getGoogleMapEmbedUrl(lat: number, lng: number) {
@@ -151,75 +152,60 @@ export default function MapsAuditPage() {
 
           {/* Help Section */}
           {showHelp && (
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-2xl border border-gray-200 dark:border-gray-700 p-6 mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-                <Info className="w-5 h-5 text-blue-500" />
-                How to Use Google Maps Audit
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">What URLs can I use?</h4>
-                  <div className="space-y-3">
-                    {exampleUrls.map((example, index) => (
-                      <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                          <span className="font-medium text-gray-900 dark:text-white">{example.type}</span>
-                        </div>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">{example.description}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold text-gray-900 dark:text-white mb-3">What will I get?</h4>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Business Profile Analysis</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Complete audit of your GMB listing</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Competitor Insights</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">See how you compare to nearby businesses</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-gray-900 dark:text-white">Optimization Recommendations</p>
-                        <p className="text-sm text-gray-600 dark:text-gray-300">Actionable tips to improve your presence</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
-                  <div>
-                    <p className="font-medium text-blue-900 dark:text-blue-100 mb-1">💡 Pro Tip</p>
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      For best results, use your Google Maps business URL. You can find this by searching for your business on Google Maps, 
-                      clicking on your listing, and copying the URL from your browser's address bar.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <HowToUseSection
+              title="How to Use Google Maps Audit"
+              description="Comprehensive audit of your business presence across all major mapping platforms. Analyze your Google Business Profile, identify issues, and compare with competitors."
+              steps={[
+                {
+                  title: "Enter your business URL",
+                  description: "Paste your Google Business Profile URL, Google Maps URL, or business website"
+                },
+                {
+                  title: "Click 'Run Audit'",
+                  description: "Our system will analyze your business listing and gather comprehensive data"
+                },
+                {
+                  title: "Review the results",
+                  description: "Check your profile completeness, reviews, photos, and competitor analysis"
+                },
+                {
+                  title: "Take action",
+                  description: "Follow the recommendations to improve your local search presence"
+                }
+              ]}
+              examples={[
+                {
+                  type: "Google Maps Business URL",
+                  example: "https://maps.google.com/maps/place/...",
+                  description: "Direct link to your business on Google Maps"
+                },
+                {
+                  type: "Google Business Profile URL",
+                  example: "https://business.google.com/dashboard/l/...",
+                  description: "Your Google Business Profile dashboard URL"
+                },
+                {
+                  type: "Website URL",
+                  example: "https://yourbusiness.com",
+                  description: "Your business website (we'll find the GMB listing)"
+                }
+              ]}
+              tips={[
+                {
+                  title: "Profile Completeness",
+                  content: "Ensure all business information is complete and accurate"
+                },
+                {
+                  title: "Review Management",
+                  content: "Monitor and respond to reviews regularly"
+                },
+                {
+                  title: "Photo Quality",
+                  content: "Upload high-quality photos that showcase your business"
+                }
+              ]}
+              proTip="Run this audit monthly to track improvements and identify new opportunities. Focus on completing your profile 100% before optimizing other aspects."
+            />
           )}
         </div>
 

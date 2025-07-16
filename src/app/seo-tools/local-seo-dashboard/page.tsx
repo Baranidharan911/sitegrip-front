@@ -3,9 +3,10 @@ import { useState, useEffect } from 'react';
 import {
   MapPin, Search, TrendingUp, BarChart3, ArrowUpRight, Filter, Download, Share2, Settings, Info, Star, Eye, ChevronDown, ChevronUp, Plus, 
   Building2, Users, Target, Globe, Grid3X3, Play, Pause, RefreshCw, FileText, Calendar, Clock, CheckCircle, AlertTriangle, XCircle,
-  Pin, Navigation, Compass, Map, Minus
+  Pin, Navigation, Compass, Map, Minus, HelpCircle
 } from 'lucide-react';
 import EnhancedMapView from '@/components/seo-crawler/EnhancedMapView';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 export default function LocalSEODashboardPage() {
   const [selectedLocation, setSelectedLocation] = useState('');
@@ -17,6 +18,7 @@ export default function LocalSEODashboardPage() {
   const [showMap, setShowMap] = useState(true);
   const [activeTab, setActiveTab] = useState('scan');
   const [selectedGMBLocation, setSelectedGMBLocation] = useState<any>(null);
+  const [showHelp, setShowHelp] = useState(false);
   
   // Real data state
   const [gmbLocations, setGmbLocations] = useState([]);
@@ -150,6 +152,13 @@ export default function LocalSEODashboardPage() {
             <div className="text-sm text-gray-500">Home &gt; Local SEO &gt; Dashboard</div>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-4 h-4" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
             <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
               <Pause className="w-4 h-4" />
               Stop Monitoring
@@ -164,6 +173,64 @@ export default function LocalSEODashboardPage() {
       </div>
 
       <div className="p-6">
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Local SEO Dashboard"
+            description="Monitor and optimize your local search presence across multiple locations. Track performance, run grid scans, and analyze competitor data."
+            steps={[
+              {
+                title: "Select your location",
+                description: "Choose the GMB location you want to monitor and optimize"
+              },
+              {
+                title: "Set up grid scans",
+                description: "Configure search queries and grid parameters for local analysis"
+              },
+              {
+                title: "Run scans",
+                description: "Execute grid scans to analyze local search competition"
+              },
+              {
+                title: "Review results",
+                description: "Analyze scan results and identify optimization opportunities"
+              }
+            ]}
+            examples={[
+              {
+                type: "Grid Scan",
+                example: "9x9 grid, 0.5 miles radius",
+                description: "Analyze local competition in a specific area"
+              },
+              {
+                type: "Search Query",
+                example: "plumber near me",
+                description: "Target keyword for local search analysis"
+              },
+              {
+                type: "Location",
+                example: "New York, NY",
+                description: "Target location for local SEO optimization"
+              }
+            ]}
+            tips={[
+              {
+                title: "Regular Monitoring",
+                content: "Run scans regularly to track changes in local competition"
+              },
+              {
+                title: "Multiple Locations",
+                content: "Monitor all your business locations for comprehensive coverage"
+              },
+              {
+                title: "Competitor Analysis",
+                content: "Use scan results to identify and analyze local competitors"
+              }
+            ]}
+            proTip="Set up automated scans for your most important keywords and locations. This helps you stay ahead of local competition and identify new opportunities quickly."
+          />
+        )}
+
         {/* Breadcrumb and Report Info */}
         <div className="mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">

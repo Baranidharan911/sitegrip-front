@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import {
-  FileText, Edit, Eye, CheckCircle, AlertCircle, Download, Share2, Settings, Info, Star, MapPin, Filter, ChevronDown, ChevronUp, Plus
+  FileText, Edit, Eye, CheckCircle, AlertCircle, Download, Share2, Settings, Info, Star, MapPin, Filter, ChevronDown, ChevronUp, Plus, HelpCircle
 } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 const mockListings = [
   { id: 1, name: 'Main Street Plumbing', status: 'Active', address: '123 Main St, New York, NY', phone: '(555) 123-4567', platform: 'Google', lastUpdated: '2024-07-01' },
@@ -26,6 +27,7 @@ export default function ListingManagementPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [filterPlatform, setFilterPlatform] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
+  const [showHelp, setShowHelp] = useState(false);
 
   const filteredListings = mockListings.filter(l =>
     (filterPlatform === 'All' || l.platform === filterPlatform) &&
@@ -81,6 +83,13 @@ export default function ListingManagementPage() {
             <p className="text-gray-600 dark:text-gray-300 mt-2">Manage your business listings, update details, and monitor status across platforms.</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow hover:from-blue-600 hover:to-indigo-600 transition-all">
               <Download className="w-4 h-4" /> Export CSV
             </button>
@@ -95,6 +104,64 @@ export default function ListingManagementPage() {
             </button>
           </div>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Listing Management"
+            description="Manage your business listings across multiple platforms from one central dashboard. Monitor status, update information, and ensure consistency."
+            steps={[
+              {
+                title: "View all listings",
+                description: "See all your business listings across different platforms in one place"
+              },
+              {
+                title: "Filter and search",
+                description: "Use filters to find specific listings by platform or status"
+              },
+              {
+                title: "Update information",
+                description: "Edit listing details to ensure consistency across all platforms"
+              },
+              {
+                title: "Monitor status",
+                description: "Track the status of your listings and address any issues"
+              }
+            ]}
+            examples={[
+              {
+                type: "Google Business Profile",
+                example: "Main Street Plumbing - Active",
+                description: "Your primary business listing on Google"
+              },
+              {
+                type: "Yelp Business",
+                example: "Downtown Cafe - Pending",
+                description: "Business listing awaiting approval"
+              },
+              {
+                type: "Bing Places",
+                example: "City Gym - Error",
+                description: "Listing with issues that need attention"
+              }
+            ]}
+            tips={[
+              {
+                title: "Maintain Consistency",
+                content: "Keep business information identical across all platforms"
+              },
+              {
+                title: "Regular Updates",
+                content: "Update listings when business information changes"
+              },
+              {
+                title: "Monitor Status",
+                content: "Check for errors or pending approvals regularly"
+              }
+            ]}
+            proTip="Set up alerts for listing status changes so you can quickly address any issues that arise. This helps maintain your online presence."
+          />
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

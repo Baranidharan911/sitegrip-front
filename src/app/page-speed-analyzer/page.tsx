@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Gauge, FileText, Download, Printer, Share2, CheckCircle, AlertCircle, Check, Star, XCircle, Clock, Zap, ExternalLink } from "lucide-react";
+import { Loader2, Gauge, FileText, Download, Printer, Share2, CheckCircle, AlertCircle, Check, Star, XCircle, Clock, Zap, ExternalLink, HelpCircle } from "lucide-react";
 import { useAuth } from '@/hooks/useAuth';
 import { saveToFirebase } from '@/lib/firebase.js';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,7 @@ export default function PageSpeedAnalyzerPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<PageSpeedResult | null>(null);
   const [error, setError] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
   const { user } = useAuth();
 
   const analyzeSpeed = async () => {
@@ -126,11 +128,77 @@ export default function PageSpeedAnalyzerPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Page Speed Analyzer
             </h1>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="ml-4 flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Measure your page's Time To First Byte (TTFB) and total download size. Get actionable recommendations to improve speed.
           </p>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Page Speed Analyzer"
+            description="Analyze your website's loading speed and performance metrics. Get detailed insights into TTFB, page size, and optimization recommendations."
+            steps={[
+              {
+                title: "Enter your website URL",
+                description: "Paste the complete URL of the page you want to analyze"
+              },
+              {
+                title: "Click 'Analyze'",
+                description: "Our system will measure the page's loading performance"
+              },
+              {
+                title: "Review the results",
+                description: "Check TTFB, page size, and read optimization recommendations"
+              },
+              {
+                title: "Implement improvements",
+                description: "Follow the suggestions to improve your page speed"
+              }
+            ]}
+            examples={[
+              {
+                type: "Homepage",
+                example: "https://example.com",
+                description: "Test your main homepage loading speed"
+              },
+              {
+                type: "Product Page",
+                example: "https://example.com/products/item",
+                description: "Check product page performance"
+              },
+              {
+                type: "Blog Post",
+                example: "https://example.com/blog/article",
+                description: "Analyze content page speed"
+              }
+            ]}
+            tips={[
+              {
+                title: "TTFB Target",
+                content: "Aim for TTFB under 200ms for optimal performance"
+              },
+              {
+                title: "Page Size",
+                content: "Keep total page size under 2MB for faster loading"
+              },
+              {
+                title: "Regular Testing",
+                content: "Test page speed regularly to monitor improvements"
+              }
+            ]}
+            proTip="Test your most important pages first (homepage, checkout pages, high-traffic content). Focus on pages that directly impact user experience and conversion rates."
+          />
+        )}
+
         <div className="max-w-2xl mx-auto mb-8">
           <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
             <div className="flex flex-col sm:flex-row gap-4">

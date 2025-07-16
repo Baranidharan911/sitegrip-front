@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Link, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info, Filter, Search, MoreVertical, ExternalLink, RefreshCw, BarChart3, Copy, Check } from 'lucide-react';
+import { Link, FileText, CheckCircle, AlertCircle, Loader2, TrendingUp, Download, Share2, Settings, Eye, Clock, Users, Zap, Target, ArrowUpRight, Info, Filter, Search, MoreVertical, ExternalLink, RefreshCw, BarChart3, Copy, Check, HelpCircle } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 type Status = 'Ready to Submit' | 'Submitted' | 'Error';
 
@@ -58,6 +59,7 @@ export default function CitationBuilderPage() {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
 
   const citations = generateCitations(business);
 
@@ -101,13 +103,82 @@ export default function CitationBuilderPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3 mb-2">
-            <Link className="w-8 h-8 text-purple-500" />
-            Citation Builder
-          </h1>
-          <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Generate and manage your business citations across top directories for maximum local SEO impact
-          </p>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3 mb-2">
+                <Link className="w-8 h-8 text-purple-500" />
+                Citation Builder
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300 text-lg">
+                Generate and manage your business citations across top directories for maximum local SEO impact
+              </p>
+            </div>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
+          </div>
+
+          {/* Help Section */}
+          {showHelp && (
+            <HowToUseSection
+              title="How to Use Citation Builder"
+              description="Generate consistent business citations for submission to major online directories and improve your local SEO presence."
+              steps={[
+                {
+                  title: "Enter your business information",
+                  description: "Fill in your business name, address, and phone number exactly as they should appear online"
+                },
+                {
+                  title: "Click 'Generate Citations'",
+                  description: "Our system will create properly formatted citations for each directory"
+                },
+                {
+                  title: "Review the citations",
+                  description: "Check that all information is accurate and consistent across all directories"
+                },
+                {
+                  title: "Submit to directories",
+                  description: "Use the provided links to submit your citations to each directory"
+                }
+              ]}
+              examples={[
+                {
+                  type: "Business Name",
+                  example: "Joe's Plumbing Service",
+                  description: "Use your exact business name as registered"
+                },
+                {
+                  type: "Address",
+                  example: "123 Main Street, New York, NY 10001",
+                  description: "Include full street address, city, state, and ZIP code"
+                },
+                {
+                  type: "Phone Number",
+                  example: "(555) 123-4567",
+                  description: "Use your main business phone number"
+                }
+              ]}
+              tips={[
+                {
+                  title: "Consistent NAP",
+                  content: "Ensure your Name, Address, and Phone are identical across all citations"
+                },
+                {
+                  title: "Directory Coverage",
+                  content: "Submit to major directories like Google, Yelp, Bing, and Facebook"
+                },
+                {
+                  title: "Regular Updates",
+                  content: "Keep your citations updated when business information changes"
+                }
+              ]}
+              proTip="Submit to Google Business Profile first, then work through other directories systematically. This ensures consistency and faster indexing."
+            />
+          )}
         </div>
 
         {/* Business Info Form */}

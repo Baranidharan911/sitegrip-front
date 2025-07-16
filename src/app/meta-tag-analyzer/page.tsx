@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Search, Download, Share2, Printer, CheckCircle, AlertCircle, XCircle, Info, ExternalLink } from 'lucide-react';
+import { Search, Download, Share2, Printer, CheckCircle, AlertCircle, XCircle, Info, ExternalLink, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { saveToFirebase } from '@/lib/firebase.js';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,6 +24,7 @@ export default function MetaTagAnalyzerPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<MetaTagAnalysis | null>(null);
   const [error, setError] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
   const { user } = useAuth();
 
   const analyzeMetaTags = async () => {
@@ -159,11 +161,76 @@ export default function MetaTagAnalyzerPage() {
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Meta Tag Analyzer
             </h1>
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="ml-4 flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
           </div>
           <p className="text-gray-600 text-lg max-w-2xl mx-auto">
             Analyze and optimize your page's meta tags for better SEO performance.
           </p>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Meta Tag Analyzer"
+            description="Analyze your website's meta tags to identify SEO issues and get recommendations for improvement. This tool checks title tags, descriptions, keywords, and other important meta elements."
+            steps={[
+              {
+                title: "Enter your website URL",
+                description: "Paste the complete URL of the page you want to analyze"
+              },
+              {
+                title: "Click 'Analyze'",
+                description: "Our system will crawl the page and extract all meta tags"
+              },
+              {
+                title: "Review the results",
+                description: "Check scores for each meta tag category and read recommendations"
+              },
+              {
+                title: "Implement improvements",
+                description: "Follow the suggestions to optimize your meta tags"
+              }
+            ]}
+            examples={[
+              {
+                type: "Homepage URL",
+                example: "https://example.com",
+                description: "Analyze your main homepage meta tags"
+              },
+              {
+                type: "Product Page",
+                example: "https://example.com/products/item",
+                description: "Check product page optimization"
+              },
+              {
+                type: "Blog Post",
+                example: "https://example.com/blog/article",
+                description: "Analyze blog post meta tags"
+              }
+            ]}
+            tips={[
+              {
+                title: "Title Tag Length",
+                content: "Keep titles between 50-60 characters for optimal display"
+              },
+              {
+                title: "Description Quality",
+                content: "Write compelling descriptions that encourage clicks"
+              },
+              {
+                title: "Keyword Placement",
+                content: "Include primary keywords in title and description"
+              }
+            ]}
+            proTip="Run this analysis on your most important pages first (homepage, main service pages, high-traffic blog posts). Focus on pages that drive the most organic traffic."
+          />
+        )}
 
         {/* Input Form */}
         <div className="max-w-2xl mx-auto mb-8">
