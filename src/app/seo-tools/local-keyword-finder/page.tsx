@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import {
-  KeySquare, Search, TrendingUp, BarChart3, ArrowUpRight, Filter, Download, Info, Star, Zap, Eye, Share2, Settings, ChevronDown, ChevronUp
+  KeySquare, Search, TrendingUp, BarChart3, ArrowUpRight, Filter, Download, Info, Star, Zap, Eye, Share2, Settings, ChevronDown, ChevronUp, HelpCircle
 } from 'lucide-react';
+import HowToUseSection from '@/components/Common/HowToUseSection';
 
 const mockKeywords = [
   { keyword: 'plumber near me', volume: 1900, difficulty: 32, trend: 8, cpc: 3.2, competition: 'Medium' },
@@ -61,6 +62,7 @@ export default function LocalKeywordFinderPage() {
   const [sortBy, setSortBy] = useState<'volume' | 'difficulty' | 'trend'>('volume');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [filterComp, setFilterComp] = useState('All');
+  const [showHelp, setShowHelp] = useState(false);
 
   const sortedKeywords = [...mockKeywords]
     .filter(k => filterComp === 'All' || k.competition === filterComp)
@@ -81,6 +83,13 @@ export default function LocalKeywordFinderPage() {
             <p className="text-gray-600 dark:text-gray-300 mt-2">Discover high-potential local keywords for your business. Enter a seed keyword and location to get started.</p>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors"
+            >
+              <HelpCircle className="w-5 h-5" />
+              {showHelp ? 'Hide Help' : 'How to Use'}
+            </button>
             <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold shadow hover:from-blue-600 hover:to-indigo-600 transition-all">
               <Download className="w-4 h-4" /> Export CSV
             </button>
@@ -92,6 +101,72 @@ export default function LocalKeywordFinderPage() {
             </button>
           </div>
         </div>
+
+        {/* Help Section */}
+        {showHelp && (
+          <HowToUseSection
+            title="How to Use Local Keyword Finder"
+            description="Find high-impact local keywords that can drive targeted traffic to your business. This tool analyzes search patterns and competition to identify the best opportunities for your local SEO strategy."
+            steps={[
+              {
+                title: "Enter a seed keyword",
+                description: "Start with a broad term related to your business (e.g., 'plumber', 'restaurant', 'dentist')"
+              },
+              {
+                title: "Add your location",
+                description: "Specify your target location (city, state, or region) to get location-specific keyword suggestions"
+              },
+              {
+                title: "Click 'Find Keywords'",
+                description: "Our AI will analyze search patterns and generate relevant local keyword suggestions"
+              },
+              {
+                title: "Review and filter results",
+                description: "Use filters to sort by volume, difficulty, or trend to find the best opportunities"
+              }
+            ]}
+            examples={[
+              {
+                type: "Service Business",
+                example: "Seed: 'plumber' | Location: 'New York'",
+                description: "Finds keywords like 'plumber near me', 'emergency plumber NYC', 'licensed plumber Manhattan'"
+              },
+              {
+                type: "Restaurant",
+                example: "Seed: 'pizza' | Location: 'Chicago'",
+                description: "Finds keywords like 'pizza delivery Chicago', 'best pizza near me', 'deep dish pizza'"
+              },
+              {
+                type: "Professional Service",
+                example: "Seed: 'dentist' | Location: 'Los Angeles'",
+                description: "Finds keywords like 'dentist near me', 'family dentist LA', 'emergency dentist'"
+              }
+            ]}
+            tips={[
+              {
+                title: "Keyword Volume Analysis",
+                content: "See monthly search volumes to understand demand for each keyword",
+                icon: TrendingUp
+              },
+              {
+                title: "Competition Assessment",
+                content: "Difficulty scores help you identify low-competition opportunities",
+                icon: BarChart3
+              },
+              {
+                title: "Trend Analysis",
+                content: "Track keyword trends to focus on growing search terms",
+                icon: Star
+              },
+              {
+                title: "Local Intent Keywords",
+                content: "Discover keywords with strong local search intent",
+                icon: KeySquare
+              }
+            ]}
+            proTip="Focus on long-tail keywords with local modifiers (like 'near me', city names, or 'best') as they often have lower competition and higher conversion rates."
+          />
+        )}
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
