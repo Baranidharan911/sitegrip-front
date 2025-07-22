@@ -6,6 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
+import { clearAllAuthData } from '@/utils/auth';
 
 const AppHeader = () => {
   const [mounted, setMounted] = useState(false);
@@ -172,7 +173,8 @@ const AppHeader = () => {
 
   const handleLogout = () => {
     if (typeof window !== 'undefined' && localStorage) {
-      localStorage.removeItem('Sitegrip-user');
+      // Clear all authentication data from storage
+      clearAllAuthData();
       window.location.href = '/login';
     }
   };

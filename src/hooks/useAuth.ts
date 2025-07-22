@@ -17,6 +17,7 @@ import {
 } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-hot-toast';
+import { clearAllAuthData } from '@/utils/auth';
 
 interface User {
   uid: string;
@@ -372,11 +373,17 @@ export const useAuth = (): UseAuthReturn => {
           console.log('👤 User signed out');
           setUser(null);
           clearUserData();
+          
+          // Clear all authentication data from storage
+          clearAllAuthData();
         }
       } catch (error) {
         console.error('❌ Error in auth state change:', error);
         setUser(null);
         clearUserData();
+        
+        // Clear all authentication data from storage
+        clearAllAuthData();
       } finally {
         setLoading(false);
       }
@@ -479,8 +486,17 @@ export const useAuth = (): UseAuthReturn => {
       const authInstance = getAuthInstance && getAuthInstance();
       if (!authInstance) throw new Error('Authentication not available');
       console.log('🔐 Signing out user...');
+      
+      // Clear all authentication data from storage
+      clearAllAuthData();
+      
+      // Sign out from Firebase
       await firebaseSignOut(authInstance);
       console.log('✅ Sign out successful');
+      
+      // Clear user state
+      setUser(null);
+      
     } catch (error: any) {
       console.error('❌ Sign out error:', error);
       setError(getAuthErrorMessage(error.code));

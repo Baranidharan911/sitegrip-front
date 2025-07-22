@@ -198,3 +198,5 @@ app.yml
 .yarn-integrity
 .yarnrc
 .npmrc
+
+.vercel

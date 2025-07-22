@@ -2,6 +2,7 @@
 
 import { LogOut } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { clearAllAuthData } from '@/utils/auth';
 
 const LogoutButton = () => {
   const { signOut, loading } = useAuth();
@@ -9,10 +10,12 @@ const LogoutButton = () => {
   const handleLogout = async () => {
     try {
       await signOut();
+      // Redirect to login page after successful logout
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
-      // Fallback: if signOut fails, still clear local data and redirect
-      localStorage.removeItem('Sitegrip-user');
+      // Fallback: if signOut fails, still clear all local data and redirect
+      clearAllAuthData();
       window.location.href = '/login';
     }
   };

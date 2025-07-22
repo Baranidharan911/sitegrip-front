@@ -117,3 +117,38 @@ export const hasGoogleAuth = (): boolean => {
   const user = getStoredUser();
   return user?.googleAuthEnabled === true;
 }; 
+
+/**
+ * Clear all authentication-related storage data
+ * This function clears all Sitegrip-related items from localStorage and sessionStorage
+ */
+export const clearAllAuthData = (): void => {
+  if (!isBrowser) return;
+  
+  try {
+    // Clear specific known authentication items
+    localStorage.removeItem('Sitegrip-user');
+    localStorage.removeItem('Sitegrip-temp-user-id');
+    localStorage.removeItem('Sitegrip-user-tier-updated');
+    localStorage.removeItem('processed-oauth-codes');
+    sessionStorage.removeItem('redirectAfterLogin');
+    
+    // Clear any other Sitegrip-related items
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith('Sitegrip-')) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Clear dashboard-related data that might contain user-specific information
+    localStorage.removeItem('dashboard-widgets');
+    localStorage.removeItem('dashboard-layouts');
+    
+    console.log('🧹 All authentication data cleared from storage');
+  } catch (error) {
+    console.error('Error clearing authentication data:', error);
+  }
+}; 
