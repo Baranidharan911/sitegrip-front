@@ -75,7 +75,7 @@ export default function SignupCard() {
   const handleGoogleSignup = async () => {
     setErrorMessage('');
     try {
-      await signInWithGoogle(planInfo);
+      await signInWithGoogle(planInfo, true); // true indicates this is a signup flow
     } catch (error: any) {
       console.error('Google signup error:', error);
       if (error.code === 'auth/account-exists-with-different-credential') {

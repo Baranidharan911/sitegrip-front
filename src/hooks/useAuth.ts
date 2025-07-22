@@ -451,7 +451,7 @@ export const useAuth = (): UseAuthReturn => {
     }
   };
 
-  const signInWithGoogle = async (planInfo?: PlanInfo): Promise<void> => {
+  const signInWithGoogle = async (planInfo?: PlanInfo, isSignup: boolean = false): Promise<void> => {
     try {
       const authInstance = getAuthInstance && getAuthInstance();
       const providerInstance = getProvider && getProvider();
@@ -473,11 +473,16 @@ export const useAuth = (): UseAuthReturn => {
       if (verificationResult.success) {
         // Check if this is a new user from the backend response
         const isNewUser = verificationResult.data?.isNewUser;
+        console.log('🔍 Google auth result - isNewUser:', isNewUser);
+        console.log('🔍 Backend response data:', verificationResult.data);
+        console.log('🔍 Is signup flow:', isSignup);
         
-        if (isNewUser) {
+        if (isSignup && (isNewUser || !verificationResult.data)) {
+          console.log('🆕 New user signup detected, redirecting to login page');
           toast.success('Account created successfully! Please sign in to continue.');
           router.push('/login');
         } else {
+          console.log('👤 Existing user or login detected, redirecting to dashboard');
           toast.success('Successfully signed in with Google!');
           console.log('🚀 Redirecting to intended destination...');
           
