@@ -181,6 +181,7 @@ export const sidebarItems: SidebarSection[] = [
     subItems: [
       { name: 'Google Indexing', path: '/indexing', icon: Search, description: 'Submit URLs to search engines', pro: false },
       { name: 'Index Analytics', path: '/indexing/analytics', icon: BarChart3, description: 'Check indexing status', pro: false },
+      { name: 'GSC Dashboard', path: '/seo-crawler/gsc-dashboard', icon: BarChart3, description: 'Google Search Console data & reports', pro: false, badge: 'New' },
     ],
   },
 
