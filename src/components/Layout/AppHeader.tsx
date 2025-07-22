@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
-import { clearAllAuthData } from '@/utils/auth';
+import { useAuth } from '@/hooks/useAuth';
 
 const AppHeader = () => {
   const [mounted, setMounted] = useState(false);
@@ -19,6 +19,7 @@ const AppHeader = () => {
   const { toggleSidebar } = useSidebar();
   const { isDark, toggleTheme } = useTheme();
   const pathname = usePathname();
+  const { signOut } = useAuth();
 
   // Set mounted state after component mounts
   useEffect(() => {
@@ -171,28 +172,7 @@ const AppHeader = () => {
     };
   }, [mounted]);
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined' && localStorage) {
-      // Clear all authentication data from storage
-      clearAllAuthData();
-      
-      // Double-check and clear any remaining Sitegrip items
-      const remainingKeys = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('Sitegrip-')) {
-          remainingKeys.push(key);
-          localStorage.removeItem(key);
-        }
-      }
-      
-      // Clear sessionStorage completely
-      sessionStorage.clear();
-      
-      // Force page reload to clear any cached state
-      window.location.href = '/login';
-    }
-  };
+
 
   const getInitial = (nameOrEmail: string | undefined) =>
     nameOrEmail?.trim()?.charAt(0)?.toUpperCase() || '?';
@@ -408,7 +388,7 @@ const AppHeader = () => {
                     {/* Logout */}
                     <div className="border-t border-slate-200/50 dark:border-slate-700/50 pt-2">
                       <button
-                        onClick={handleLogout}
+                        onClick={signOut}
                         className="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-all duration-200"
                       >
                         <LogOut size={16} />
