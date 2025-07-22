@@ -30,6 +30,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const saved = localStorage.getItem('theme');
     if (saved) {
       setIsDark(saved === 'dark');
+    } else {
+      // Force light mode for new users or when no theme is saved
+      setIsDark(false);
+      localStorage.setItem('theme', 'light');
     }
   }, []);
 

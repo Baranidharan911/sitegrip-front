@@ -175,6 +175,21 @@ const AppHeader = () => {
     if (typeof window !== 'undefined' && localStorage) {
       // Clear all authentication data from storage
       clearAllAuthData();
+      
+      // Double-check and clear any remaining Sitegrip items
+      const remainingKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('Sitegrip-')) {
+          remainingKeys.push(key);
+          localStorage.removeItem(key);
+        }
+      }
+      
+      // Clear sessionStorage completely
+      sessionStorage.clear();
+      
+      // Force page reload to clear any cached state
       window.location.href = '/login';
     }
   };

@@ -147,6 +147,12 @@ export const clearAllAuthData = (): void => {
     localStorage.removeItem('dashboard-widgets');
     localStorage.removeItem('dashboard-layouts');
     
+    // Reset theme to light mode
+    localStorage.setItem('theme', 'light');
+    if (typeof document !== 'undefined') {
+      document.documentElement.classList.remove('dark');
+    }
+    
     console.log('🧹 All authentication data cleared from storage');
   } catch (error) {
     console.error('Error clearing authentication data:', error);

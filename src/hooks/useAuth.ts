@@ -513,6 +513,29 @@ export const useAuth = (): UseAuthReturn => {
       // Clear user state
       setUser(null);
       
+      // Force clear any remaining localStorage items that might have been missed
+      if (typeof window !== 'undefined') {
+        // Double-check and clear any remaining Sitegrip items
+        const remainingKeys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('Sitegrip-')) {
+            remainingKeys.push(key);
+            localStorage.removeItem(key);
+          }
+        }
+        if (remainingKeys.length > 0) {
+          console.log('🧹 Cleared additional items:', remainingKeys);
+        }
+        
+        // Clear sessionStorage completely
+        sessionStorage.clear();
+        
+        // Force page reload to clear any cached state
+        console.log('🔄 Reloading page to ensure clean logout...');
+        window.location.href = '/login';
+      }
+      
     } catch (error: any) {
       console.error('❌ Sign out error:', error);
       setError(getAuthErrorMessage(error.code));

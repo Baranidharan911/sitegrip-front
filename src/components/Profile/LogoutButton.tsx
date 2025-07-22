@@ -10,13 +10,15 @@ const LogoutButton = () => {
   const handleLogout = async () => {
     try {
       await signOut();
-      // Redirect to login page after successful logout
-      window.location.href = '/login';
+      // The signOut function now handles the redirect and page reload
     } catch (error) {
       console.error('Logout error:', error);
       // Fallback: if signOut fails, still clear all local data and redirect
       clearAllAuthData();
-      window.location.href = '/login';
+      if (typeof window !== 'undefined') {
+        sessionStorage.clear();
+        window.location.href = '/login';
+      }
     }
   };
 
