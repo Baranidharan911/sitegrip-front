@@ -34,7 +34,7 @@ import {
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
 import { Chart, MetricCard } from '@/components/ui/chart';
-import { LineChart, AreaChart, BarChart as GSCBarChart, PerformanceChart, ComparisonChart } from '@/components/ui/charts';
+import { LineChart, AreaChart, BarChart as GSCBarChart, PerformanceChart, ComparisonChart, GaugeChart } from '@/components/ui/charts';
 
 interface GSCProperty {
   site_url: string;
@@ -399,48 +399,66 @@ export default function GSCDashboardPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Overall Indexing Rate</span>
-                <span className="text-sm font-bold">
-                  {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
-                </span>
-              </div>
-              <Progress 
-                value={indexedPages.length > 0 ? (indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100 : 0} 
-                className="h-3" 
-              />
-              
-              {/* Indexing Chart */}
-              {indexedPages.length > 0 && (
-                <div className="h-64">
-                  <GSCBarChart 
-                    data={[
-                      { 
-                        label: 'Indexed', 
-                        value: indexedPages.filter(page => page.indexed).length, 
-                        color: '#10b981' 
-                      },
-                      { 
-                        label: 'Not Indexed', 
-                        value: indexedPages.filter(page => !page.indexed).length, 
-                        color: '#f59e0b' 
-                      },
-                      { 
-                        label: 'Pending', 
-                        value: indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length, 
-                        color: '#f97316' 
-                      },
-                      { 
-                        label: 'Errors', 
-                        value: indexedPages.filter(page => page.coverageState === 'Error').length, 
-                        color: '#ef4444' 
-                      }
-                    ]}
-                    title="Indexing Status Distribution"
-                    height={200}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Analog Gauge */}
+                <div className="flex justify-center">
+                  <GaugeChart
+                    value={indexedPages.filter(page => page.indexed).length}
+                    maxValue={indexedPages.length || 1}
+                    title="Indexing Rate"
+                    color="#10b981"
+                    size={150}
                   />
                 </div>
-              )}
+                
+                {/* Progress Bar */}
+                <div className="flex flex-col justify-center">
+                  <div className="mb-2">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+                  </div>
+                  <Progress 
+                    value={indexedPages.length > 0 ? (indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100 : 0} 
+                    className="h-4" 
+                  />
+                  <div className="mt-2 text-right">
+                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                      {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Indexing Status Chart */}
+                <div>
+                  {indexedPages.length > 0 && (
+                    <GSCBarChart 
+                      data={[
+                        { 
+                          label: 'Indexed', 
+                          value: indexedPages.filter(page => page.indexed).length, 
+                          color: '#10b981' 
+                        },
+                        { 
+                          label: 'Not Indexed', 
+                          value: indexedPages.filter(page => !page.indexed).length, 
+                          color: '#f59e0b' 
+                        },
+                        { 
+                          label: 'Pending', 
+                          value: indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length, 
+                          color: '#f97316' 
+                        },
+                        { 
+                          label: 'Errors', 
+                          value: indexedPages.filter(page => page.coverageState === 'Error').length, 
+                          color: '#ef4444' 
+                        }
+                      ]}
+                      title="Status Distribution"
+                      height={150}
+                    />
+                  )}
+                </div>
+              </div>
             </CardContent>
           </Card>
 
