@@ -18,8 +18,8 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Initialize with default theme (dark) to prevent hydration mismatch
-  const [isDark, setIsDark] = useState(true);
+  // Initialize with default theme (light) to prevent hydration mismatch
+  const [isDark, setIsDark] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

@@ -116,9 +116,12 @@ const SidebarSection = memo(({
   const sectionContent = useMemo(() => (
     <div className="space-y-1">
       <button
-        onClick={toggleExpanded}
+        onClick={section.disabled ? undefined : toggleExpanded}
+        disabled={section.disabled}
         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-          isActive(section.path)
+          section.disabled
+            ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+            : isActive(section.path)
             ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
@@ -146,11 +149,13 @@ const SidebarSection = memo(({
           {section.subItems.map((item: any) => (
             <Link
               key={item.path}
-              href={item.path}
-              prefetch={true}
-              onClick={handleItemClick}
+              href={item.disabled ? '#' : item.path}
+              prefetch={!item.disabled}
+              onClick={item.disabled ? (e) => e.preventDefault() : handleItemClick}
               className={`block px-3 py-2 rounded-lg text-sm transition-colors ${
-                isActive(item.path)
+                item.disabled
+                  ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
+                  : isActive(item.path)
                   ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
               }`}

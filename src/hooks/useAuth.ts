@@ -325,7 +325,7 @@ export const useAuth = (): UseAuthReturn => {
           
           if (success) {
             toast.success('Successfully signed in with Google!');
-            router.push('/profile');
+            router.push('/dashboard/overview');
           } else {
             // Sign out from Firebase if backend verification failed
             await firebaseSignOut(auth2);
@@ -407,6 +407,10 @@ export const useAuth = (): UseAuthReturn => {
       
       await signInWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign in successful');
+      
+      // Redirect to overview page after successful login
+      toast.success('Successfully signed in!');
+      router.push('/dashboard/overview');
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
       setError(getAuthErrorMessage(error.code));
@@ -426,9 +430,20 @@ export const useAuth = (): UseAuthReturn => {
       
       await createUserWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign up successful');
+      
+      // For new users, redirect directly to overview page
+      toast.success('Account created successfully! Welcome to SiteGrip.');
+      router.push('/dashboard/overview');
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
-      setError(getAuthErrorMessage(error.code));
+      
+      // Check if user already exists
+      if (error.code === 'auth/email-already-in-use') {
+        setError('An account with this email already exists. Please sign in instead.');
+        toast.error('Account already exists. Please sign in.');
+      } else {
+        setError(getAuthErrorMessage(error.code));
+      }
       throw error;
     } finally {
       setLoading(false);
@@ -464,7 +479,8 @@ export const useAuth = (): UseAuthReturn => {
           sessionStorage.removeItem('redirectAfterLogin');
           router.push(redirectPath);
         } else {
-        router.push('/profile');
+          // Redirect to overview page after successful login
+          router.push('/dashboard/overview');
         }
       } else {
         // Sign out from Firebase if backend verification failed

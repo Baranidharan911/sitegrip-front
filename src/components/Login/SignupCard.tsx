@@ -62,8 +62,13 @@ export default function SignupCard() {
 
     try {
       await signUp(email, password, planInfo);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      // Error message is already set in the useAuth hook
+      if (error.code === 'auth/email-already-in-use') {
+        // Show a more helpful message with a link to login
+        setErrorMessage('An account with this email already exists. Please sign in instead.');
+      }
     }
   };
 
@@ -71,9 +76,14 @@ export default function SignupCard() {
     setErrorMessage('');
     try {
       await signInWithGoogle(planInfo);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google signup error:', error);
-      toast.error('Failed to sign up with Google. Please try again.');
+      if (error.code === 'auth/account-exists-with-different-credential') {
+        setErrorMessage('An account with this email already exists. Please sign in with your existing method.');
+        toast.error('Account already exists. Please sign in with your existing method.');
+      } else {
+        toast.error('Failed to sign up with Google. Please try again.');
+      }
     }
   };
 
@@ -176,7 +186,16 @@ export default function SignupCard() {
           />
 
           {errorMessage && (
-            <p className="text-red-500 text-sm text-left">{errorMessage}</p>
+            <div className="text-red-500 text-sm text-left">
+              <p>{errorMessage}</p>
+              {errorMessage.includes('already exists') && (
+                <p className="mt-2">
+                  <a href="/login" className="text-blue-600 hover:underline dark:text-blue-400 font-medium">
+                    Click here to sign in →
+                  </a>
+                </p>
+              )}
+            </div>
           )}
 
           <button

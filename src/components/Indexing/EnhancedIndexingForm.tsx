@@ -26,7 +26,7 @@ export default function EnhancedIndexingForm({
   quotaInfo,
   authState
 }: EnhancedIndexingFormProps) {
-  const [activeTab, setActiveTab] = useState<'urls' | 'website' | 'file' | 'gsc'>('urls');
+  const [activeTab, setActiveTab] = useState<'urls' | 'website' | 'file' | 'gsc'>('gsc');
   const [urls, setUrls] = useState('');
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'critical'>('medium');
@@ -147,10 +147,10 @@ export default function EnhancedIndexingForm({
       {/* Tab Navigation */}
       <div className="flex border-b border-gray-200 dark:border-gray-600 mb-6">
         {[
+          { id: 'gsc', label: 'Search Console', icon: Search },
           { id: 'urls', label: 'Individual URLs', icon: FileText },
           { id: 'website', label: 'Website Discovery', icon: Globe },
-          { id: 'file', label: 'File Upload', icon: Upload },
-          { id: 'gsc', label: 'Search Console', icon: Search }
+          { id: 'file', label: 'File Upload', icon: Upload }
         ].map(({ id, label, icon: Icon }) => (
           <button
             key={id}
