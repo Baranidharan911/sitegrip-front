@@ -305,7 +305,7 @@ export default function GSCDashboardPage() {
                   <div>
                     <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Pages</p>
                     <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
-                      {indexingSummary?.totalPages.toLocaleString() || '0'}
+                      {indexedPages.length.toLocaleString()}
                     </p>
                   </div>
                   <Globe className="w-8 h-8 text-blue-600" />
@@ -319,7 +319,7 @@ export default function GSCDashboardPage() {
                   <div>
                     <p className="text-sm font-medium text-green-600 dark:text-green-400">Indexed Pages</p>
                     <p className="text-2xl font-bold text-green-900 dark:text-green-100">
-                      {indexingSummary?.indexedPages.toLocaleString() || '0'}
+                      {indexedPages.filter(page => page.indexed).length.toLocaleString()}
                     </p>
                   </div>
                   <CheckCircle className="w-8 h-8 text-green-600" />
@@ -333,7 +333,7 @@ export default function GSCDashboardPage() {
                   <div>
                     <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Indexing Rate</p>
                     <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
-                      {indexingSummary?.indexingRate || 0}%
+                      {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
                     </p>
                   </div>
                   <Target className="w-8 h-8 text-purple-600" />
@@ -367,19 +367,40 @@ export default function GSCDashboardPage() {
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Overall Indexing Rate</span>
-                <span className="text-sm font-bold">{indexingSummary?.indexingRate || 0}%</span>
+                <span className="text-sm font-bold">
+                  {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
+                </span>
               </div>
-              <Progress value={indexingSummary?.indexingRate || 0} className="h-3" />
+              <Progress 
+                value={indexedPages.length > 0 ? (indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100 : 0} 
+                className="h-3" 
+              />
               
               {/* Indexing Chart */}
-              {indexingSummary && (
+              {indexedPages.length > 0 && (
                 <div className="h-64">
                   <Chart 
                     data={[
-                      { label: 'Indexed', value: indexingSummary.indexedPages, color: '#10b981' },
-                      { label: 'Not Indexed', value: indexingSummary.notIndexedPages, color: '#f59e0b' },
-                      { label: 'Pending', value: indexingSummary.pendingPages, color: '#f97316' },
-                      { label: 'Errors', value: indexingSummary.errorPages, color: '#ef4444' }
+                      { 
+                        label: 'Indexed', 
+                        value: indexedPages.filter(page => page.indexed).length, 
+                        color: '#10b981' 
+                      },
+                      { 
+                        label: 'Not Indexed', 
+                        value: indexedPages.filter(page => !page.indexed).length, 
+                        color: '#f59e0b' 
+                      },
+                      { 
+                        label: 'Pending', 
+                        value: indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length, 
+                        color: '#f97316' 
+                      },
+                      { 
+                        label: 'Errors', 
+                        value: indexedPages.filter(page => page.coverageState === 'Error').length, 
+                        color: '#ef4444' 
+                      }
                     ]}
                     type="bar"
                     height={200}
@@ -449,7 +470,7 @@ export default function GSCDashboardPage() {
                       <CheckCircle className="w-5 h-5 text-green-600" />
                       <span className="font-medium">Indexed</span>
                     </div>
-                    <Badge variant="secondary">{indexingSummary?.indexedPages || 0}</Badge>
+                    <Badge variant="secondary">{indexedPages.filter(page => page.indexed).length}</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
@@ -457,7 +478,7 @@ export default function GSCDashboardPage() {
                       <Clock className="w-5 h-5 text-yellow-600" />
                       <span className="font-medium">Not Indexed</span>
                     </div>
-                    <Badge variant="secondary">{indexingSummary?.notIndexedPages || 0}</Badge>
+                    <Badge variant="secondary">{indexedPages.filter(page => !page.indexed).length}</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
@@ -465,7 +486,7 @@ export default function GSCDashboardPage() {
                       <AlertCircle className="w-5 h-5 text-orange-600" />
                       <span className="font-medium">Pending</span>
                     </div>
-                    <Badge variant="secondary">{indexingSummary?.pendingPages || 0}</Badge>
+                    <Badge variant="secondary">{indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length}</Badge>
                   </div>
                   
                   <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
@@ -473,7 +494,7 @@ export default function GSCDashboardPage() {
                       <XCircle className="w-5 h-5 text-red-600" />
                       <span className="font-medium">Errors</span>
                     </div>
-                    <Badge variant="secondary">{indexingSummary?.errorPages || 0}</Badge>
+                    <Badge variant="secondary">{indexedPages.filter(page => page.coverageState === 'Error').length}</Badge>
                   </div>
                 </div>
               </div>
