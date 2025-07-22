@@ -254,29 +254,31 @@ export default function GSCDashboardPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-            <BarChart3 className="w-8 h-8 text-blue-600" />
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-blue-600" />
             Google Search Console Dashboard
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
             Real-time data and insights from Google Search Console
           </p>
         </div>
         <Button 
           onClick={loadGSCData} 
           disabled={refreshing}
+          variant="outline"
+          size="sm"
           className="flex items-center gap-2"
         >
           <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Refreshing...' : 'Refresh Data'}
+          {refreshing ? 'Refreshing...' : 'Refresh'}
         </Button>
       </div>
 
       {/* Property Selector */}
-      <Card>
-        <CardContent className="p-6">
+      <Card className="border border-gray-200 dark:border-gray-700">
+        <CardContent className="p-4">
           <div className="flex items-center gap-4">
-            <Globe className="w-5 h-5 text-gray-500" />
+            <Globe className="w-4 h-4 text-gray-500" />
             <Select value={selectedProperty} onValueChange={setSelectedProperty}>
               <SelectTrigger className="w-80">
                 <SelectValue placeholder="Select GSC Property" />
@@ -332,103 +334,92 @@ export default function GSCDashboardPage() {
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
           {/* Key Metrics */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20">
-              <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="border border-gray-200 dark:border-gray-700">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Pages</p>
-                    <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Pages</p>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
                       {indexedPages.length.toLocaleString()}
                     </p>
                   </div>
-                  <Globe className="w-8 h-8 text-blue-600" />
+                  <Globe className="w-5 h-5 text-blue-600" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20">
-              <CardContent className="p-6">
+            <Card className="border border-gray-200 dark:border-gray-700">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Indexed Pages</p>
-                    <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Indexed Pages</p>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
                       {indexedPages.filter(page => page.indexed).length.toLocaleString()}
                     </p>
                   </div>
-                  <CheckCircle className="w-8 h-8 text-green-600" />
+                  <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20">
-              <CardContent className="p-6">
+            <Card className="border border-gray-200 dark:border-gray-700">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Indexing Rate</p>
-                    <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Indexing Rate</p>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
                       {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
                     </p>
                   </div>
-                  <Target className="w-8 h-8 text-purple-600" />
+                  <Target className="w-5 h-5 text-purple-600" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20">
-              <CardContent className="p-6">
+            <Card className="border border-gray-200 dark:border-gray-700">
+              <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-orange-600 dark:text-orange-400">Total Clicks</p>
-                    <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Clicks</p>
+                    <p className="text-xl font-semibold text-gray-900 dark:text-white">
                       {performanceData?.totalClicks.toLocaleString() || '0'}
                     </p>
                   </div>
-                  <MousePointer className="w-8 h-8 text-orange-600" />
+                  <MousePointer className="w-5 h-5 text-orange-600" />
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Indexing Progress */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+          <Card className="border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
                 <Target className="w-5 h-5" />
                 Indexing Progress
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Analog Gauge */}
-                <div className="flex justify-center">
-                  <GaugeChart
-                    value={indexedPages.filter(page => page.indexed).length}
-                    maxValue={indexedPages.length || 1}
-                    title="Indexing Rate"
-                    color="#10b981"
-                    size={150}
-                  />
-                </div>
-                
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Progress Bar */}
                 <div className="flex flex-col justify-center">
                   <div className="mb-2">
-                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Overall Progress</span>
                   </div>
                   <Progress 
                     value={indexedPages.length > 0 ? (indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100 : 0} 
-                    className="h-4" 
+                    className="h-3" 
                   />
                   <div className="mt-2 text-right">
-                    <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {indexedPages.length > 0 ? Math.round((indexedPages.filter(page => page.indexed).length / indexedPages.length) * 100) : 0}%
                     </span>
                   </div>
                 </div>
                 
                 {/* Indexing Status Chart */}
-                <div>
+                <div className="lg:col-span-2">
                   {indexedPages.length > 0 && (
                     <GSCBarChart 
                       data={[
@@ -464,45 +455,45 @@ export default function GSCDashboardPage() {
 
           {/* Performance Charts */}
           {historicalData && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PerformanceChart
                 data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
                 metric="clicks"
                 title="Clicks Over Time"
-                height={250}
+                height={200}
               />
               <PerformanceChart
                 data={historicalData.map(d => ({ date: d.date, value: d.impressions }))}
                 metric="impressions"
                 title="Impressions Over Time"
-                height={250}
+                height={200}
               />
             </div>
           )}
 
           {/* CTR and Position Charts */}
           {historicalData && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               <PerformanceChart
                 data={historicalData.map(d => ({ date: d.date, value: d.ctr }))}
                 metric="ctr"
                 title="Click-Through Rate"
-                height={250}
+                height={200}
               />
               <PerformanceChart
                 data={historicalData.map(d => ({ date: d.date, value: d.position }))}
                 metric="position"
                 title="Average Position"
-                height={250}
+                height={200}
               />
             </div>
           )}
 
           {/* Comparison Chart */}
           {historicalData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className="border border-gray-200 dark:border-gray-700">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
                   Performance Comparison
                 </CardTitle>
@@ -522,29 +513,22 @@ export default function GSCDashboardPage() {
         </TabsContent>
 
         {/* Indexing Tab */}
-        <TabsContent value="indexing" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <TabsContent value="indexing" className="space-y-4">
+          <Card className="border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
                 <Target className="w-5 h-5" />
                 Indexing Status Breakdown
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Pie Chart Placeholder */}
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 text-center">
-                  <PieChart className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                  <p className="text-sm text-gray-500">Indexing Status Chart</p>
-                  <p className="text-xs text-gray-400">Chart visualization coming soon</p>
-                </div>
-                
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Status Details */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="font-medium">Indexed</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Indexed</span>
                     </div>
                     <Badge variant="secondary">{indexedPages.filter(page => page.indexed).length}</Badge>
                   </div>
@@ -565,10 +549,10 @@ export default function GSCDashboardPage() {
                     <Badge variant="secondary">{indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length}</Badge>
                   </div>
                   
-                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <XCircle className="w-5 h-5 text-red-600" />
-                      <span className="font-medium">Errors</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Errors</span>
                     </div>
                     <Badge variant="secondary">{indexedPages.filter(page => page.coverageState === 'Error').length}</Badge>
                   </div>
@@ -579,54 +563,54 @@ export default function GSCDashboardPage() {
         </TabsContent>
 
         {/* Performance Tab */}
-        <TabsContent value="performance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <TabsContent value="performance" className="space-y-4">
+          <Card className="border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg font-medium flex items-center gap-2">
                 <TrendingUp className="w-5 h-5" />
                 Search Performance
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Performance Metrics */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Eye className="w-5 h-5 text-blue-600" />
-                      <span className="font-medium">Impressions</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Impressions</span>
                     </div>
-                    <span className="text-2xl font-bold text-blue-600">
+                    <span className="text-xl font-semibold text-gray-900 dark:text-white">
                       {performanceData?.totalImpressions.toLocaleString() || '0'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <MousePointer className="w-5 h-5 text-green-600" />
-                      <span className="font-medium">Clicks</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Clicks</span>
                     </div>
-                    <span className="text-2xl font-bold text-green-600">
+                    <span className="text-xl font-semibold text-gray-900 dark:text-white">
                       {performanceData?.totalClicks.toLocaleString() || '0'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <Target className="w-5 h-5 text-purple-600" />
-                      <span className="font-medium">CTR</span>
+                      <span className="font-medium text-gray-900 dark:text-white">CTR</span>
                     </div>
-                    <span className="text-2xl font-bold text-purple-600">
+                    <span className="text-xl font-semibold text-gray-900 dark:text-white">
                       {performanceData?.avgCTR || 0}%
                     </span>
                   </div>
                   
-                  <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     <div className="flex items-center gap-3">
                       <BarChart className="w-5 h-5 text-orange-600" />
-                      <span className="font-medium">Position</span>
+                      <span className="font-medium text-gray-900 dark:text-white">Position</span>
                     </div>
-                    <span className="text-2xl font-bold text-orange-600">
+                    <span className="text-xl font-semibold text-gray-900 dark:text-white">
                       {performanceData?.avgPosition || 0}
                     </span>
                   </div>
@@ -634,18 +618,18 @@ export default function GSCDashboardPage() {
                 
                 {/* Performance Charts */}
                 {historicalData && (
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <AreaChart
                       data={historicalData.map(d => ({ date: d.date, value: d.impressions }))}
                       title="Impressions Trend"
                       color="#3b82f6"
-                      height={120}
+                      height={100}
                     />
                     <AreaChart
                       data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
                       title="Clicks Trend"
                       color="#10b981"
-                      height={120}
+                      height={100}
                     />
                   </div>
                 )}
@@ -655,10 +639,10 @@ export default function GSCDashboardPage() {
 
           {/* Performance Trends Analysis */}
           {historicalData && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card className="border border-gray-200 dark:border-gray-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-medium flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
                     CTR vs Position Analysis
                   </CardTitle>
@@ -675,9 +659,9 @@ export default function GSCDashboardPage() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className="border border-gray-200 dark:border-gray-700">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-lg font-medium flex items-center gap-2">
                     <BarChart3 className="w-5 h-5" />
                     Performance Distribution
                   </CardTitle>
@@ -699,11 +683,11 @@ export default function GSCDashboardPage() {
         </TabsContent>
 
         {/* Pages Tab */}
-        <TabsContent value="pages" className="space-y-6">
-          <Card>
-            <CardHeader>
+        <TabsContent value="pages" className="space-y-4">
+          <Card className="border border-gray-200 dark:border-gray-700">
+            <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
                   <Search className="w-5 h-5" />
                   Indexed Pages ({indexedPages.length})
                 </CardTitle>
@@ -720,9 +704,9 @@ export default function GSCDashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {indexedPages.map((page, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                  <div key={index} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3">
                         {getStatusIcon(page.coverageState || '')}

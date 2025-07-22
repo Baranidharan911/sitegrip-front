@@ -223,18 +223,18 @@ export function PerformanceChart({
   };
 
   return (
-    <div className={cn("border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg", className)}>
+    <div className={cn("border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800", className)}>
       {title && (
-        <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border shadow-sm">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
           {title}
         </div>
       )}
       
-      <div className="flex items-center justify-between mb-4 bg-white dark:bg-gray-800 p-3 rounded-lg border shadow-sm">
-        <div className="text-3xl font-bold" style={{ color: colors[metric] }}>
+      <div className="flex items-center justify-between mb-2">
+        <div className="text-2xl font-semibold" style={{ color: colors[metric] }}>
           {data.length > 0 ? formatValue(data[data.length - 1].value) : '0'}
         </div>
-        <div className="text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded border">
+        <div className="text-xs text-gray-500">
           {metric.toUpperCase()}
         </div>
       </div>
@@ -242,7 +242,7 @@ export function PerformanceChart({
       <LineChart 
         data={data} 
         color={colors[metric]} 
-        height={height - 80} 
+        height={height - 60} 
         showArea={true}
       />
     </div>
@@ -270,9 +270,9 @@ export function GaugeChart({
   const angle = (percentage / 100) * 180; // 180 degrees for semi-circle
   
   return (
-    <div className={cn("relative bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 shadow-lg", className)}>
+    <div className={cn("relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4", className)}>
       {title && (
-        <div className="text-center text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border shadow-sm">
+        <div className="text-center text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
           {title}
         </div>
       )}
@@ -367,33 +367,6 @@ export function GaugeChart({
       </div>
     </div>
   );
-};
-
-  return (
-    <div className={cn("border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg", className)}>
-      {title && (
-        <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border shadow-sm">
-          {title}
-        </div>
-      )}
-      
-      <div className="flex items-center justify-between mb-4 bg-white dark:bg-gray-800 p-3 rounded-lg border shadow-sm">
-        <div className="text-3xl font-bold" style={{ color: colors[metric] }}>
-          {data.length > 0 ? formatValue(data[data.length - 1].value) : '0'}
-        </div>
-        <div className="text-xs font-mono text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded border">
-          {metric.toUpperCase()}
-        </div>
-      </div>
-      
-      <LineChart 
-        data={data} 
-        color={colors[metric]} 
-        height={height - 80} 
-        showArea={true}
-      />
-    </div>
-  );
 }
 
 export function ComparisonChart({ 
@@ -414,21 +387,21 @@ export function ComparisonChart({
   className?: string;
 }) {
   return (
-    <div className={cn("border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 shadow-lg", className)}>
+    <div className={cn("border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-800", className)}>
       {title && (
-        <div className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-4 bg-white dark:bg-gray-800 px-3 py-2 rounded-lg border shadow-sm">
+        <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
           {title}
         </div>
       )}
       
-      <div className="flex items-center gap-4 mb-4 bg-white dark:bg-gray-800 p-3 rounded-lg border shadow-sm">
+      <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-blue-500 shadow-md border-2 border-white"></div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{label1}</span>
+          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+          <span className="text-xs text-gray-600 dark:text-gray-400">{label1}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-green-500 shadow-md border-2 border-white"></div>
-          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{label2}</span>
+          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+          <span className="text-xs text-gray-600 dark:text-gray-400">{label2}</span>
         </div>
       </div>
       
