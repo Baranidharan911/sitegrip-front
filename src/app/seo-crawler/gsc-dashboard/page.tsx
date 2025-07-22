@@ -26,7 +26,10 @@ import {
   Calendar,
   BarChart,
   PieChart,
-  Activity
+  Activity,
+  Database,
+  FileText,
+  Sparkles
 } from 'lucide-react';
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
@@ -49,6 +52,21 @@ interface IndexedPage {
   impressions?: number;
   ctr?: number;
   position?: number;
+  crawlAllowed?: boolean;
+  robotsTxtState?: string;
+  mobileUsabilityResult?: any;
+  richResultsItems?: any[];
+  lastCrawlTime?: string;
+  pageFetchState?: string;
+  googleCanonical?: string;
+  userCanonical?: string;
+  sitemap?: string[];
+  referringUrls?: string[];
+  richResults?: any;
+  mobileUsability?: any;
+  structuredData?: any;
+  links?: any;
+  screenshot?: any;
 }
 
 interface IndexingSummary {
@@ -68,12 +86,40 @@ interface PerformanceData {
   avgPosition: number;
 }
 
+interface CoverageData {
+  totalSubmitted: number;
+  totalIndexed: number;
+  totalExcluded: number;
+  totalError: number;
+  coverageByType: any[];
+}
+
+interface SitemapData {
+  path: string;
+  lastSubmitted: string;
+  contents: number;
+  errors: number;
+  warnings: number;
+  isPending: boolean;
+  isSitemapsIndex: boolean;
+}
+
+interface EnhancementsData {
+  structuredData: any[];
+  mobileUsability: any[];
+  coreWebVitals: any[];
+  richResults: any[];
+}
+
 export default function GSCDashboardPage() {
   const [properties, setProperties] = useState<GSCProperty[]>([]);
   const [selectedProperty, setSelectedProperty] = useState<string>('');
   const [indexedPages, setIndexedPages] = useState<IndexedPage[]>([]);
   const [indexingSummary, setIndexingSummary] = useState<IndexingSummary | null>(null);
   const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [coverageData, setCoverageData] = useState<CoverageData | null>(null);
+  const [sitemapsData, setSitemapsData] = useState<SitemapData[]>([]);
+  const [enhancementsData, setEnhancementsData] = useState<EnhancementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
@@ -120,6 +166,9 @@ export default function GSCDashboardPage() {
       
       setIndexedPages(pagesResponse.data.pages || []);
       setPerformanceData(pagesResponse.data.performance || null);
+      setCoverageData(pagesResponse.data.coverage || null);
+      setSitemapsData(pagesResponse.data.sitemaps || []);
+      setEnhancementsData(pagesResponse.data.enhancements || null);
       
       // Load indexing summary
       const summaryResponse = await indexingApi.getIndexingSummary(selectedProperty);
@@ -223,7 +272,7 @@ export default function GSCDashboardPage() {
 
       {/* Main Dashboard */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="overview" className="flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Overview
@@ -239,6 +288,10 @@ export default function GSCDashboardPage() {
           <TabsTrigger value="pages" className="flex items-center gap-2">
             <Search className="w-4 h-4" />
             Pages
+          </TabsTrigger>
+          <TabsTrigger value="gsc-data" className="flex items-center gap-2">
+            <Database className="w-4 h-4" />
+            GSC Data
           </TabsTrigger>
         </TabsList>
 
@@ -563,6 +616,119 @@ export default function GSCDashboardPage() {
                   </div>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* GSC Data Tab */}
+        <TabsContent value="gsc-data" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Coverage Data */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5" />
+                  Coverage Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {coverageData ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-blue-600">{coverageData.totalSubmitted}</div>
+                        <div className="text-sm text-gray-600">Total Submitted</div>
+                      </div>
+                      <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-green-600">{coverageData.totalIndexed}</div>
+                        <div className="text-sm text-gray-600">Total Indexed</div>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-yellow-600">{coverageData.totalExcluded}</div>
+                        <div className="text-sm text-gray-600">Total Excluded</div>
+                      </div>
+                      <div className="text-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <div className="text-2xl font-bold text-red-600">{coverageData.totalError}</div>
+                        <div className="text-sm text-gray-600">Total Errors</div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">No coverage data available</div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Sitemaps Data */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Sitemaps ({sitemapsData.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {sitemapsData.length > 0 ? (
+                  <div className="space-y-3">
+                    {sitemapsData.slice(0, 5).map((sitemap, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 border rounded">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{sitemap.path}</p>
+                          <p className="text-xs text-gray-500">
+                            {sitemap.contents} URLs • {sitemap.errors} errors
+                          </p>
+                        </div>
+                        <Badge variant={sitemap.isPending ? "secondary" : "default"}>
+                          {sitemap.isPending ? "Pending" : "Active"}
+                        </Badge>
+                      </div>
+                    ))}
+                    {sitemapsData.length > 5 && (
+                      <p className="text-sm text-gray-500 text-center">
+                        +{sitemapsData.length - 5} more sitemaps
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center text-gray-500">No sitemaps found</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Enhancements Data */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                Enhancements & Rich Results
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {enhancementsData ? (
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-purple-600">{enhancementsData.structuredData.length}</div>
+                    <div className="text-sm text-gray-600">Structured Data</div>
+                  </div>
+                  <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{enhancementsData.mobileUsability.length}</div>
+                    <div className="text-sm text-gray-600">Mobile Usability</div>
+                  </div>
+                  <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{enhancementsData.coreWebVitals.length}</div>
+                    <div className="text-sm text-gray-600">Core Web Vitals</div>
+                  </div>
+                  <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+                    <div className="text-2xl font-bold text-orange-600">{enhancementsData.richResults.length}</div>
+                    <div className="text-sm text-gray-600">Rich Results</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500">No enhancements data available</div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
