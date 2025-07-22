@@ -129,6 +129,8 @@ export const useAuth = (): UseAuthReturn => {
   const verifyTokenWithBackend = async (firebaseUser: FirebaseUser, isGoogleAuth = false, googleTokens?: { accessToken: string | null; refreshToken: string | null }, planInfo?: PlanInfo): Promise<{ success: boolean; data?: AuthResponse }> => {
     try {
       console.log(`🔐 Verifying token with backend (Google: ${isGoogleAuth})...`);
+      console.log(`🔍 Plan info:`, planInfo);
+      console.log(`🔍 Google tokens:`, googleTokens ? 'Present' : 'Not present');
       
       const idToken = await firebaseUser.getIdToken();
       
@@ -429,12 +431,24 @@ export const useAuth = (): UseAuthReturn => {
       setError(null);
       console.log('🔐 Creating user account:', email);
       
-      await createUserWithEmailAndPassword(authInstance, email, password);
+      const result = await createUserWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign up successful');
       
-      // For new users, redirect to login page to sign in
-      toast.success('Account created successfully! Please sign in to continue.');
-      router.push('/login');
+      // Verify with backend to create complete user data
+      const verificationResult = await verifyTokenWithBackend(result.user, false, undefined, planInfo);
+      
+      if (verificationResult.success) {
+        console.log('✅ Backend verification successful for new user');
+        // For new users, redirect to login page to sign in
+        toast.success('Account created successfully! Please sign in to continue.');
+        router.push('/login');
+      } else {
+        console.error('❌ Backend verification failed for new user');
+        // Sign out from Firebase if backend verification failed
+        await firebaseSignOut(authInstance);
+        toast.error('Account creation failed. Please try again.');
+        throw new Error('Backend verification failed');
+      }
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
       
@@ -468,11 +482,28 @@ export const useAuth = (): UseAuthReturn => {
       const googleTokens = extractGoogleTokens(result);
       
       // Verify with backend
+      console.log('🔍 Calling backend verification for Google auth...');
       const verificationResult = await verifyTokenWithBackend(result.user, true, googleTokens, planInfo);
+      console.log('🔍 Backend verification result:', verificationResult);
       
       if (verificationResult.success) {
         // Check if this is a new user from the backend response
         const isNewUser = verificationResult.data?.isNewUser;
+        
+        // Always store user data regardless of signup or login
+        if (verificationResult.data) {
+          const userData: User = {
+            uid: verificationResult.data.uid || result.user.uid,
+            email: verificationResult.data.email || result.user.email,
+            displayName: verificationResult.data.display_name || result.user.displayName,
+            photoURL: verificationResult.data.photo_url || result.user.photoURL,
+            idToken: await result.user.getIdToken()
+          };
+          
+          setUser(userData);
+          storeUserData(userData);
+          console.log('✅ User data stored successfully');
+        }
         
         if (isSignup && (isNewUser || !verificationResult.data)) {
           toast.success('Account created successfully! Please sign in to continue.');
