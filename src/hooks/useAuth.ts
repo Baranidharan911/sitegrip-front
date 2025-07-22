@@ -48,6 +48,7 @@ interface AuthResponse {
   photo_url?: string;
   google_auth_enabled?: boolean;
   database_status?: string;
+  isNewUser?: boolean;
   error?: string;
 }
 
@@ -125,7 +126,7 @@ export const useAuth = (): UseAuthReturn => {
   };
 
   // Verify token with backend
-  const verifyTokenWithBackend = async (firebaseUser: FirebaseUser, isGoogleAuth = false, googleTokens?: { accessToken: string | null; refreshToken: string | null }, planInfo?: PlanInfo): Promise<boolean> => {
+  const verifyTokenWithBackend = async (firebaseUser: FirebaseUser, isGoogleAuth = false, googleTokens?: { accessToken: string | null; refreshToken: string | null }, planInfo?: PlanInfo): Promise<{ success: boolean; data?: AuthResponse }> => {
     try {
       console.log(`🔐 Verifying token with backend (Google: ${isGoogleAuth})...`);
       
@@ -198,7 +199,7 @@ export const useAuth = (): UseAuthReturn => {
         storeUserData(userData);
         
         toast.success('✅ Signed in successfully (Firebase auth)');
-        return true;
+        return { success: true };
       }
 
       const data: AuthResponse = await response.json();
@@ -270,7 +271,7 @@ export const useAuth = (): UseAuthReturn => {
 
         setUser(userData);
         storeUserData(userData);
-        return true;
+        return { success: true, data };
       } else {
         console.error('❌ Backend verification failed:', data.message);
         
@@ -283,12 +284,12 @@ export const useAuth = (): UseAuthReturn => {
           toast.error(`Verification failed: ${data.message}`);
         }
         
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error('❌ Error verifying token with backend:', error);
       toast.error('Failed to verify authentication with server');
-      return false;
+      return { success: false };
     }
   };
 
@@ -431,9 +432,9 @@ export const useAuth = (): UseAuthReturn => {
       await createUserWithEmailAndPassword(authInstance, email, password);
       console.log('✅ Sign up successful');
       
-      // For new users, redirect directly to overview page
-      toast.success('Account created successfully! Welcome to SiteGrip.');
-      router.push('/dashboard/overview');
+      // For new users, redirect to login page to sign in
+      toast.success('Account created successfully! Please sign in to continue.');
+      router.push('/login');
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
       
@@ -467,20 +468,28 @@ export const useAuth = (): UseAuthReturn => {
       const googleTokens = extractGoogleTokens(result);
       
       // Verify with backend
-      const success = await verifyTokenWithBackend(result.user, true, googleTokens, planInfo);
+      const verificationResult = await verifyTokenWithBackend(result.user, true, googleTokens, planInfo);
       
-      if (success) {
-        toast.success('Successfully signed in with Google!');
-        console.log('🚀 Redirecting to intended destination...');
+      if (verificationResult.success) {
+        // Check if this is a new user from the backend response
+        const isNewUser = verificationResult.data?.isNewUser;
         
-        // Check if there's a stored redirect path
-        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-        if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
-          sessionStorage.removeItem('redirectAfterLogin');
-          router.push(redirectPath);
+        if (isNewUser) {
+          toast.success('Account created successfully! Please sign in to continue.');
+          router.push('/login');
         } else {
-          // Redirect to overview page after successful login
-          router.push('/dashboard/overview');
+          toast.success('Successfully signed in with Google!');
+          console.log('🚀 Redirecting to intended destination...');
+          
+          // Check if there's a stored redirect path
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+            sessionStorage.removeItem('redirectAfterLogin');
+            router.push(redirectPath);
+          } else {
+            // Redirect to overview page after successful login
+            router.push('/dashboard/overview');
+          }
         }
       } else {
         // Sign out from Firebase if backend verification failed
