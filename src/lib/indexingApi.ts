@@ -1079,6 +1079,81 @@ class IndexingAPI {
     const data = await response.json();
     return data.results;
   }
+
+  // Get comprehensive indexed pages data from Google Search Console
+  async getIndexedPages(
+    property: string,
+    options: {
+      days?: number;
+      page?: number;
+      pageSize?: number;
+      includePerformance?: boolean;
+    } = {}
+  ): Promise<any> {
+    try {
+      console.log('🔍 Loading indexed pages from Google Search Console...');
+      
+      const params = new URLSearchParams({
+        days: (options.days || 30).toString(),
+        page: (options.page || 1).toString(),
+        pageSize: (options.pageSize || 100).toString(),
+        includePerformance: (options.includePerformance || false).toString()
+      });
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/indexed-pages/${encodeURIComponent(property)}?${params}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `Indexed pages request failed: ${response.status}`;
+        
+        if (response.status === 401) {
+          console.error('❌ Indexed pages request failed with 401 - user needs to authenticate with Google Search Console');
+          throw new Error(`Indexed pages request failed: 401 - ${errorMessage}`);
+        }
+        
+        console.error('❌ Indexed pages request failed:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ Indexed pages loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load indexed pages:', error.message);
+      throw error;
+    }
+  }
+
+  // Get indexing summary statistics from Google Search Console
+  async getIndexingSummary(property: string): Promise<any> {
+    try {
+      console.log('📊 Loading indexing summary from Google Search Console...');
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/indexing-summary/${encodeURIComponent(property)}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `Indexing summary request failed: ${response.status}`;
+        
+        if (response.status === 401) {
+          console.error('❌ Indexing summary request failed with 401 - user needs to authenticate with Google Search Console');
+          throw new Error(`Indexing summary request failed: 401 - ${errorMessage}`);
+        }
+        
+        console.error('❌ Indexing summary request failed:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ Indexing summary loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load indexing summary:', error.message);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
