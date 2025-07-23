@@ -23,7 +23,12 @@ import {
   Activity,
   Database,
   FileText,
-  Sparkles
+  Sparkles,
+  ExternalLink,
+  Settings,
+  MoreHorizontal,
+  ArrowRight,
+  ChevronRight
 } from 'lucide-react';
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
@@ -103,6 +108,48 @@ interface EnhancementsData {
   coreWebVitals: any[];
   richResults: any[];
 }
+
+// Simple line chart component to match Google's design
+const SimpleLineChart = ({ data, color = "#1a73e8", height = 200 }: { data: Array<{ date: string; value: number }>, color?: string, height?: number }) => {
+  if (!data || data.length === 0) return null;
+
+  const maxValue = Math.max(...data.map(d => d.value));
+  const minValue = Math.min(...data.map(d => d.value));
+  const range = maxValue - minValue || 1;
+
+  const points = data.map((point, index) => {
+    const x = (index / (data.length - 1)) * 100;
+    const y = 100 - ((point.value - minValue) / range) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="relative" style={{ height }}>
+      <svg width="100%" height="100%" className="absolute inset-0">
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          points={points}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {/* Add subtle gradient fill */}
+        <defs>
+          <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        <polyline
+          fill={`url(#gradient-${color})`}
+          stroke="none"
+          points={`${points} 100,100 0,100`}
+        />
+      </svg>
+    </div>
+  );
+};
 
 export default function GSCDashboardPage() {
   const [properties, setProperties] = useState<GSCProperty[]>([]);
@@ -198,19 +245,19 @@ export default function GSCDashboardPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Submitted and indexed': return 'bg-green-500';
-      case 'Discovered – currently not indexed': return 'bg-yellow-500';
-      case 'Crawled – currently not indexed': return 'bg-orange-500';
-      default: return 'bg-gray-500';
+      case 'Submitted and indexed': return 'text-green-600';
+      case 'Discovered – currently not indexed': return 'text-yellow-600';
+      case 'Crawled – currently not indexed': return 'text-orange-600';
+      default: return 'text-gray-600';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Submitted and indexed': return <CheckCircle className="w-4 h-4" />;
-      case 'Discovered – currently not indexed': return <Clock className="w-4 h-4" />;
-      case 'Crawled – currently not indexed': return <AlertCircle className="w-4 h-4" />;
-      default: return <XCircle className="w-4 h-4" />;
+      case 'Submitted and indexed': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'Discovered – currently not indexed': return <Clock className="w-4 h-4 text-yellow-600" />;
+      case 'Crawled – currently not indexed': return <AlertCircle className="w-4 h-4 text-orange-600" />;
+      default: return <XCircle className="w-4 h-4 text-gray-600" />;
     }
   };
 
@@ -234,15 +281,15 @@ export default function GSCDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="h-8 w-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
-            <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="flex items-center justify-between mb-8">
+            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -251,59 +298,46 @@ export default function GSCDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        {/* Header */}
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6"
-        >
-          <div>
-            <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-slate-200/50 dark:border-white/20 rounded-full px-4 py-2 mb-4">
-              <BarChart3 className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-              <span className="text-sm font-medium text-slate-700 dark:text-white/90">GSC Analytics</span>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Google Search Console Style Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <Search className="w-5 h-5 text-white" />
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 dark:from-white dark:via-purple-200 dark:to-pink-200 bg-clip-text text-transparent">
-              Google Search Console Dashboard
-            </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 mt-2">
-              Monitor your website's search performance and indexing status
-            </p>
+            <div>
+              <h1 className="text-2xl font-normal text-gray-900">Search Console</h1>
+              <p className="text-sm text-gray-600">Monitor your site's search performance</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="text-sm text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl px-3 py-2 rounded-lg">
-              Last update: {new Date().toLocaleTimeString()}
-            </div>
             <button 
               onClick={loadGSCData} 
               disabled={refreshing}
-              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Property Selector */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50"
-        >
-          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-4">
+        {/* Property Selector - Google Style */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Google Search Console Property
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property
               </label>
               <select 
                 value={selectedProperty} 
                 onChange={(e) => setSelectedProperty(e.target.value)}
-                className="w-full lg:w-80 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="">Select GSC Property</option>
                 {properties.map((property) => (
                   <option key={property.site_url} value={property.site_url}>
                     {property.site_url} ({property.property_type})
@@ -313,502 +347,257 @@ export default function GSCDashboardPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Date Range
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date range
               </label>
               <select 
                 value={dateRange} 
                 onChange={(e) => setDateRange(e.target.value)}
-                className="w-32 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-3 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               >
-                <option value="7">7 days</option>
-                <option value="30">30 days</option>
-                <option value="90">90 days</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
               </select>
             </div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Main Dashboard */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="space-y-6"
-        >
-          {/* Tab Navigation */}
-          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/20 dark:border-slate-700/50 rounded-2xl p-1">
-            <div className="grid grid-cols-5 gap-1">
-              {[
-                { id: 'overview', label: 'Overview' },
-                { id: 'indexing', label: 'Indexing' },
-                { id: 'performance', label: 'Performance' },
-                { id: 'pages', label: 'Pages' },
-                { id: 'gsc-data', label: 'GSC Data' }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 ${
-                    activeTab === tab.id
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg'
-                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+        {/* Main Dashboard - Google Search Console Style */}
+        <div className="space-y-8">
+          {/* Overview Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-medium text-gray-900">Overview</h2>
+              <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                Explore your insights
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Performance Card */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Performance</h3>
+                  <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                    Full report
+                    <ChevronRight className="w-4 h-4" />
+                  </a>
+                </div>
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                    <span className="text-sm text-gray-700">
+                      {formatNumber(performanceData?.totalClicks)} total web search clicks
+                    </span>
+                  </div>
+                </div>
+                {historicalData && (
+                  <div className="h-32 mb-4">
+                    <SimpleLineChart 
+                      data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
+                      color="#1a73e8"
+                      height={120}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">Performance data available for the selected period</p>
+              </div>
+
+              {/* Indexing Card */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Indexing</h3>
+                  <a href="/seo-crawler/gsc-dashboard/indexing" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                    Full report
+                    <ChevronRight className="w-4 h-4" />
+                  </a>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex items-center gap-4 mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                      <span className="text-sm text-gray-700">
+                        {indexedPages.filter(page => !page.indexed).length} not indexed pages
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                      <span className="text-sm text-gray-700">
+                        {indexedPages.filter(page => page.indexed).length} indexed pages
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {historicalData && (
+                  <div className="h-32 mb-4">
+                    <SimpleLineChart 
+                      data={historicalData.map(d => ({ date: d.date, value: indexedPages.filter(page => page.indexed).length }))}
+                      color="#34a853"
+                      height={120}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-gray-500">Indexing status overview for the selected property</p>
+              </div>
+
+              {/* Coverage Card */}
+              <div className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Coverage</h3>
+                  <a href="/seo-crawler/gsc-dashboard/coverage" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                    Full report
+                    <ChevronRight className="w-4 h-4" />
+                  </a>
+                </div>
+                
+                {coverageData && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total submitted</span>
+                      <span className="font-medium">{coverageData.totalSubmitted}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total indexed</span>
+                      <span className="font-medium text-green-600">{coverageData.totalIndexed}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total excluded</span>
+                      <span className="font-medium text-yellow-600">{coverageData.totalExcluded}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Total errors</span>
+                      <span className="font-medium text-red-600">{coverageData.totalError}</span>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 text-yellow-600">💡</div>
+                    <span className="text-sm text-gray-700">Get insights into your site's Search performance</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Tab Content */}
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-6"
-            >
-              {activeTab === 'overview' && (
-                <div className="space-y-6">
-                  {/* Overview Section */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Overview</h2>
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                        Explore your insights →
-                      </button>
-                    </div>
-                    <div className="flex items-center gap-3 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
-                      <div className="w-5 h-5 text-yellow-600">💡</div>
-                      <span className="text-sm text-slate-700 dark:text-slate-300">Get insights into your site's Search performance</span>
-                    </div>
-                  </div>
-
-                  {/* Performance Section */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Performance</h2>
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                        Full report →
-                      </button>
-                    </div>
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                        <span className="text-sm text-slate-700 dark:text-slate-300">
-                          {formatNumber(performanceData?.totalClicks)} total web search clicks
-                        </span>
-                      </div>
-                    </div>
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Performance data available for the selected period</p>
-                    </div>
-                  </div>
-
-                  {/* Indexing Section */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Indexing</h2>
-                      <button className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-                        Full report →
-                      </button>
-                    </div>
-                    
-                    <div className="flex items-center gap-6 mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        <span className="text-sm text-slate-700 dark:text-slate-300">
-                          {indexedPages.filter(page => !page.indexed).length} not indexed pages
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-slate-700 dark:text-slate-300">
-                          {indexedPages.filter(page => page.indexed).length} indexed pages
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                      <p className="text-sm text-slate-600 dark:text-slate-400">Indexing status overview for the selected property</p>
-                    </div>
-                  </div>
+          {/* Quick Actions */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <h2 className="text-xl font-medium text-gray-900 mb-4">Quick actions</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <a href="/seo-crawler/gsc-dashboard/performance" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <BarChart3 className="w-6 h-6 text-blue-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Performance</h3>
+                  <p className="text-sm text-gray-600">View search performance</p>
                 </div>
-              )}
-
-              {activeTab === 'indexing' && (
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                  <div className="flex items-center gap-2 mb-6">
-                    <Target className="w-5 h-5 text-blue-600" />
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Indexing Status Breakdown</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <CheckCircle className="w-5 h-5 text-green-600" />
-                          <span className="font-medium text-slate-900 dark:text-white">Indexed</span>
-                        </div>
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium">
-                          {indexedPages.filter(page => page.indexed).length}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <Clock className="w-5 h-5 text-yellow-600" />
-                          <span className="font-medium">Not Indexed</span>
-                        </div>
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium">
-                          {indexedPages.filter(page => !page.indexed).length}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <AlertCircle className="w-5 h-5 text-orange-600" />
-                          <span className="font-medium">Pending</span>
-                        </div>
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium">
-                          {indexedPages.filter(page => page.coverageState === 'Discovered – currently not indexed').length}
-                        </span>
-                      </div>
-                      
-                      <div className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl">
-                        <div className="flex items-center gap-3">
-                          <XCircle className="w-5 h-5 text-red-600" />
-                          <span className="font-medium text-slate-900 dark:text-white">Errors</span>
-                        </div>
-                        <span className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-sm font-medium">
-                          {indexedPages.filter(page => page.coverageState === 'Error').length}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
+              </a>
+              
+              <a href="/seo-crawler/gsc-dashboard/indexing" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <Target className="w-6 h-6 text-green-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Indexing</h3>
+                  <p className="text-sm text-gray-600">Check indexing status</p>
                 </div>
-              )}
-
-              {activeTab === 'performance' && (
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                  <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Performance</h2>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                      <Download className="w-4 h-4" />
-                      EXPORT
-                    </button>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 mb-6">
-                    <button className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">24 hours</button>
-                    <button className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">7 days</button>
-                    <button className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">28 days</button>
-                    <button className="px-3 py-1 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-xs shadow-lg">3 months</button>
-                    <button className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">More</button>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Total clicks</span>
-                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold mt-1">
-                        {formatNumber(performanceData?.totalClicks)}
-                      </div>
-                      <div className="text-xs opacity-80 mt-1">?</div>
-                    </div>
-                    
-                    <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm">Total impressions</span>
-                        <div className="w-4 h-4 bg-white rounded-full flex items-center justify-center">
-                          <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                        </div>
-                      </div>
-                      <div className="text-2xl font-bold mt-1">
-                        {formatNumber(performanceData?.totalImpressions)}
-                      </div>
-                      <div className="text-xs opacity-80 mt-1">?</div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-700 dark:text-slate-300">Average CTR</span>
-                        <div className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded"></div>
-                      </div>
-                      <div className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">
-                        {formatCTR(performanceData?.avgCTR)}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">?</div>
-                    </div>
-                    
-                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-700 dark:text-slate-300">Average position</span>
-                        <div className="w-4 h-4 border border-slate-300 dark:border-slate-600 rounded"></div>
-                      </div>
-                      <div className="text-2xl font-bold mt-1 text-slate-900 dark:text-white">
-                        {formatPosition(performanceData?.avgPosition)}
-                      </div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">?</div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    <p className="text-sm text-slate-600 dark:text-slate-400">Performance metrics for the selected period</p>
-                  </div>
+              </a>
+              
+              <a href="/seo-crawler/gsc-dashboard/pages" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <FileText className="w-6 h-6 text-purple-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Pages</h3>
+                  <p className="text-sm text-gray-600">View indexed pages</p>
                 </div>
-              )}
+              </a>
+              
+              <a href="/seo-crawler/gsc-dashboard/sitemaps" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                <Database className="w-6 h-6 text-orange-600" />
+                <div>
+                  <h3 className="font-medium text-gray-900">Sitemaps</h3>
+                  <p className="text-sm text-gray-600">Manage sitemaps</p>
+                </div>
+              </a>
+            </div>
+          </div>
 
-              {activeTab === 'pages' && (
-                <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <Search className="w-5 h-5 text-blue-600" />
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                        Indexed Pages ({indexedPages.length})
-                      </h2>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                        <Filter className="w-4 h-4" />
-                        Filter
-                      </button>
-                      <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
-                        <Download className="w-4 h-4" />
-                        Export
-                      </button>
+          {/* Recent Activity */}
+          <div className="bg-white border border-gray-200 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-medium text-gray-900">Recent activity</h2>
+              <a href="/seo-crawler/gsc-dashboard/activity" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                View all
+                <ChevronRight className="w-4 h-4" />
+              </a>
+            </div>
+            
+            <div className="space-y-3">
+              {indexedPages.slice(0, 5).map((page, index) => (
+                <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getStatusIcon(page.coverageState || '')}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate text-gray-900">{page.url}</p>
+                      <p className="text-xs text-gray-500">
+                        {page.lastCrawled ? `Last crawled: ${new Date(page.lastCrawled).toLocaleDateString()}` : 'Not crawled yet'}
+                      </p>
                     </div>
                   </div>
                   
-                  <div className="space-y-3">
-                    {indexedPages.map((page, index) => (
-                      <div key={index} className="flex items-center justify-between p-4 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            {getStatusIcon(page.coverageState || '')}
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-sm truncate text-slate-900 dark:text-white">{page.url}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {page.lastCrawled ? `Last crawled: ${new Date(page.lastCrawled).toLocaleDateString()}` : 'Not crawled yet'}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          {page.clicks !== undefined && (
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-slate-900 dark:text-white">{page.clicks}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">Clicks</p>
-                            </div>
-                          )}
-                          
-                          {page.impressions !== undefined && (
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-slate-900 dark:text-white">{page.impressions}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">Impressions</p>
-                            </div>
-                          )}
-                          
-                          {page.ctr !== undefined && (
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-slate-900 dark:text-white">{page.ctr.toFixed(2)}%</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">CTR</p>
-                            </div>
-                          )}
-                          
-                          {page.position !== undefined && (
-                            <div className="text-right">
-                              <p className="text-sm font-medium text-slate-900 dark:text-white">{page.position.toFixed(1)}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">Position</p>
-                            </div>
-                          )}
-                          
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            page.indexed 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              : 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
-                          }`}>
-                            {page.coverageState || 'Unknown'}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                    
-                    {indexedPages.length === 0 && (
-                      <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                        <Search className="w-12 h-12 mx-auto mb-4 text-slate-300 dark:text-slate-600" />
-                        <p className="text-lg font-medium">No indexed pages found</p>
-                        <p className="text-sm">Try refreshing the data or selecting a different property</p>
+                  <div className="flex items-center gap-4">
+                    {page.clicks !== undefined && (
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">{page.clicks}</p>
+                        <p className="text-xs text-gray-500">Clicks</p>
                       </div>
                     )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'gsc-data' && (
-                <div className="space-y-6">
-                  {/* Data Diagnostic Panel */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Database className="w-5 h-5 text-blue-600" />
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Data Diagnostic</h2>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                          <h4 className="font-medium text-blue-900 dark:text-blue-300 mb-2">Performance Data</h4>
-                          <pre className="text-xs text-blue-800 dark:text-blue-200 overflow-auto max-h-32">
-                            {JSON.stringify(performanceData, null, 2) || 'null'}
-                          </pre>
-                        </div>
-                        <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                          <h4 className="font-medium text-green-900 dark:text-green-300 mb-2">Historical Data Sample</h4>
-                          <pre className="text-xs text-green-800 dark:text-green-200 overflow-auto max-h-32">
-                            {JSON.stringify(historicalData?.slice(0, 3), null, 2) || 'null'}
-                            {historicalData && historicalData.length > 3 && `\n... and ${historicalData.length - 3} more days`}
-                          </pre>
-                        </div>
+                    
+                    {page.impressions !== undefined && (
+                      <div className="text-right">
+                        <p className="text-sm font-medium text-gray-900">{page.impressions}</p>
+                        <p className="text-xs text-gray-500">Impressions</p>
                       </div>
-                      <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                        <h4 className="font-medium text-slate-900 dark:text-white mb-2">Pages Sample (first 3)</h4>
-                        <pre className="text-xs text-slate-800 dark:text-slate-200 overflow-auto max-h-32">
-                          {JSON.stringify(indexedPages?.slice(0, 3), null, 2) || 'null'}
-                        </pre>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Coverage Data */}
-                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-6">
-                        <Target className="w-5 h-5 text-blue-600" />
-                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Coverage Summary</h2>
-                      </div>
-                      {coverageData ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{coverageData.totalSubmitted}</div>
-                              <div className="text-sm text-slate-600 dark:text-slate-400">Total Submitted</div>
-                            </div>
-                            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{coverageData.totalIndexed}</div>
-                              <div className="text-sm text-slate-600 dark:text-slate-400">Total Indexed</div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="text-center p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-xl">
-                              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">{coverageData.totalExcluded}</div>
-                              <div className="text-sm text-slate-600 dark:text-slate-400">Total Excluded</div>
-                            </div>
-                            <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-xl">
-                              <div className="text-2xl font-bold text-red-600 dark:text-red-400">{coverageData.totalError}</div>
-                              <div className="text-sm text-slate-600 dark:text-slate-400">Total Errors</div>
-                            </div>
-                          </div>
-                          
-                          <div className="p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                            <p className="text-sm text-slate-600 dark:text-slate-400">Coverage distribution summary</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-500 dark:text-slate-400">No coverage data available</div>
-                      )}
-                    </div>
-
-                    {/* Sitemaps Data */}
-                    <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                      <div className="flex items-center gap-2 mb-6">
-                        <FileText className="w-5 h-5 text-blue-600" />
-                        <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
-                          Sitemaps ({sitemapsData.length})
-                        </h2>
-                      </div>
-                      {sitemapsData.length > 0 ? (
-                        <div className="space-y-3">
-                          {sitemapsData.slice(0, 5).map((sitemap, index) => (
-                            <div key={index} className="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-xl">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate text-slate-900 dark:text-white">{sitemap.path}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {sitemap.contents} URLs • {sitemap.errors} errors
-                                </p>
-                              </div>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                sitemap.isPending 
-                                  ? 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'
-                                  : 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                              }`}>
-                                {sitemap.isPending ? "Pending" : "Active"}
-                              </span>
-                            </div>
-                          ))}
-                          {sitemapsData.length > 5 && (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 text-center">
-                              +{sitemapsData.length - 5} more sitemaps
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="text-center text-slate-500 dark:text-slate-400">No sitemaps found</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Enhancements Data */}
-                  <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50">
-                    <div className="flex items-center gap-2 mb-6">
-                      <Sparkles className="w-5 h-5 text-blue-600" />
-                      <h2 className="text-xl font-semibold text-slate-900 dark:text-white">Enhancements & Rich Results</h2>
-                    </div>
-                    {enhancementsData ? (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{enhancementsData.structuredData.length}</div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">Structured Data</div>
-                        </div>
-                        <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{enhancementsData.mobileUsability.length}</div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">Mobile Usability</div>
-                        </div>
-                        <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{enhancementsData.coreWebVitals.length}</div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">Core Web Vitals</div>
-                        </div>
-                        <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl">
-                          <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{enhancementsData.richResults.length}</div>
-                          <div className="text-sm text-slate-600 dark:text-slate-400">Rich Results</div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center text-slate-500 dark:text-slate-400">No enhancements data available</div>
                     )}
+                    
+                    <span className={`px-2 py-1 rounded text-xs font-medium ${
+                      page.indexed 
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {page.coverageState || 'Unknown'}
+                    </span>
                   </div>
                 </div>
+              ))}
+              
+              {indexedPages.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-lg font-medium">No activity found</p>
+                  <p className="text-sm">Try refreshing the data or selecting a different property</p>
+                </div>
               )}
-            </motion.div>
-          </AnimatePresence>
-        </motion.div>
+            </div>
+          </div>
+        </div>
 
-        {/* Last Updated */}
-        {indexingSummary && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-            className="text-center text-sm text-slate-500 dark:text-slate-400 bg-white/50 dark:bg-slate-800/50 backdrop-blur-xl px-4 py-2 rounded-lg"
-          >
-            Last updated: {new Date(indexingSummary.lastUpdated).toLocaleString()}
-          </motion.div>
-        )}
+        {/* Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div>
+              {indexingSummary && (
+                <span>Last updated: {new Date(indexingSummary.lastUpdated).toLocaleString()}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-4">
+              <a href="/help" className="hover:text-gray-700">Help</a>
+              <a href="/feedback" className="hover:text-gray-700">Send feedback</a>
+              <a href="/privacy" className="hover:text-gray-700">Privacy</a>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
