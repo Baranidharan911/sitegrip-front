@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { 
-  BarChart3, 
   TrendingUp, 
   Eye, 
   MousePointer, 
@@ -10,10 +9,9 @@ import {
   RefreshCw,
   Download,
   Filter,
-  Calendar,
   ArrowLeft,
-  Settings,
-  MoreHorizontal
+  BarChart3,
+  AlertCircle
 } from 'lucide-react';
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
@@ -65,17 +63,56 @@ export default function GSCPerformancePage() {
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30');
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
+  const [propertyLoading, setPropertyLoading] = useState(true);
 
   useEffect(() => {
-    loadPerformanceData();
-  }, [dateRange]);
+    loadGSCProperties();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProperty) {
+      loadPerformanceData();
+    }
+  }, [selectedProperty, dateRange]);
+
+  const loadGSCProperties = async () => {
+    try {
+      setPropertyLoading(true);
+      const properties = await indexingApi.getGSCProperties();
+      
+      if (properties && properties.length > 0) {
+        const propertyUrls = properties.map((prop: any) => prop.site_url || prop.property);
+        setAvailableProperties(propertyUrls);
+        setSelectedProperty(propertyUrls[0]); // Use first property by default
+      } else {
+        setAvailableProperties([]);
+        setSelectedProperty('');
+      }
+    } catch (error: any) {
+      console.error('Failed to load GSC properties:', error);
+      setAvailableProperties([]);
+      setSelectedProperty('');
+      toast.error('Failed to load Google Search Console properties. Please ensure you have connected your GSC account.');
+    } finally {
+      setPropertyLoading(false);
+    }
+  };
 
   const loadPerformanceData = async () => {
+    if (!selectedProperty) {
+      setPerformanceData(null);
+      setHistoricalData([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Try to load real performance data
-      const response = await indexingApi.getPerformanceHistory('', parseInt(dateRange));
+      const response = await indexingApi.getPerformanceHistory(selectedProperty, parseInt(dateRange));
       
       if (response.data && response.data.history && response.data.history.length > 0) {
         setHistoricalData(response.data.history);
@@ -115,6 +152,53 @@ export default function GSCPerformancePage() {
     if (!ctr && ctr !== 0) return '0%';
     return `${(ctr * 100).toFixed(1)}%`;
   };
+
+  if (propertyLoading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-gray-200 rounded-full animate-pulse"></div>
+            <div className="h-4 w-48 mx-auto bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-3 w-32 mx-auto bg-gray-200 rounded animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (availableProperties.length === 0) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="flex items-center gap-4 mb-8">
+            <Link href="/seo-crawler/gsc-dashboard" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-normal text-gray-900">Performance</h1>
+              <p className="text-sm text-gray-600">Search performance over time</p>
+            </div>
+          </div>
+          
+          <div className="text-center py-12">
+            <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <h2 className="text-xl font-medium text-gray-900 mb-2">No Google Search Console properties found</h2>
+            <p className="text-gray-500 mb-4">You need to connect your Google Search Console account to view performance data.</p>
+            <button 
+              onClick={loadGSCProperties}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -164,9 +248,25 @@ export default function GSCPerformancePage() {
           </div>
         </div>
 
-        {/* Date Range Selector */}
+        {/* Property Selector */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property
+              </label>
+              <select 
+                value={selectedProperty} 
+                onChange={(e) => setSelectedProperty(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {availableProperties.map((property) => (
+                  <option key={property} value={property}>
+                    {property}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date range
@@ -188,7 +288,7 @@ export default function GSCPerformancePage() {
           <div className="text-center py-12">
             <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
             <h2 className="text-xl font-medium text-gray-900 mb-2">No performance data available</h2>
-            <p className="text-gray-500 mb-4">Performance data is not currently available for the selected period.</p>
+            <p className="text-gray-500 mb-4">Performance data is not currently available for the selected property and period.</p>
             <button 
               onClick={loadPerformanceData}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -198,51 +298,51 @@ export default function GSCPerformancePage() {
           </div>
         ) : (
           <>
-            {/* Metrics Cards */}
+            {/* Performance Overview */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Total clicks</h3>
-                  <Eye className="w-5 h-5 text-blue-600" />
+                  <MousePointer className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {formatNumber(performanceData?.totalClicks)}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Clicks in selected period
+                  Clicks from search results
                 </div>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Total impressions</h3>
-                  <BarChart3 className="w-5 h-5 text-green-600" />
+                  <Eye className="w-5 h-5 text-green-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {formatNumber(performanceData?.totalImpressions)}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Impressions in selected period
+                  Times shown in search
                 </div>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Average CTR</h3>
-                  <MousePointer className="w-5 h-5 text-purple-600" />
+                  <Target className="w-5 h-5 text-purple-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {formatCTR(performanceData?.avgCTR)}
                 </div>
                 <div className="text-sm text-gray-600">
-                  Average click-through rate
+                  Click-through rate
                 </div>
               </div>
 
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-medium text-gray-900">Average position</h3>
-                  <Target className="w-5 h-5 text-orange-600" />
+                  <TrendingUp className="w-5 h-5 text-orange-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
                   {performanceData?.avgPosition?.toFixed(1) || '0'}
@@ -253,15 +353,15 @@ export default function GSCPerformancePage() {
               </div>
             </div>
 
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Performance Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* Clicks Chart */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Clicks</h3>
+                  <h3 className="text-lg font-medium text-gray-900">Clicks over time</h3>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                    <span className="text-sm text-gray-600">Clicks over time</span>
+                    <span className="text-sm text-gray-600">Clicks</span>
                   </div>
                 </div>
                 <div className="h-64">
@@ -276,10 +376,10 @@ export default function GSCPerformancePage() {
               {/* Impressions Chart */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Impressions</h3>
+                  <h3 className="text-lg font-medium text-gray-900">Impressions over time</h3>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                    <span className="text-sm text-gray-600">Impressions over time</span>
+                    <span className="text-sm text-gray-600">Impressions</span>
                   </div>
                 </div>
                 <div className="h-64">
@@ -290,22 +390,22 @@ export default function GSCPerformancePage() {
                   />
                 </div>
               </div>
+            </div>
 
+            {/* Additional Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
               {/* CTR Chart */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Click-through rate</h3>
+                  <h3 className="text-lg font-medium text-gray-900">CTR over time</h3>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
-                    <span className="text-sm text-gray-600">CTR over time</span>
+                    <span className="text-sm text-gray-600">CTR (%)</span>
                   </div>
                 </div>
                 <div className="h-64">
                   <SimpleLineChart 
-                    data={historicalData.map(d => ({ 
-                      date: d.date, 
-                      value: d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0 
-                    }))}
+                    data={historicalData.map(d => ({ date: d.date, value: (d.ctr || 0) * 100 }))}
                     color="#9c27b0"
                     height={240}
                   />
@@ -315,10 +415,10 @@ export default function GSCPerformancePage() {
               {/* Position Chart */}
               <div className="bg-white border border-gray-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-lg font-medium text-gray-900">Average position</h3>
+                  <h3 className="text-lg font-medium text-gray-900">Position over time</h3>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
-                    <span className="text-sm text-gray-600">Position over time</span>
+                    <span className="text-sm text-gray-600">Position</span>
                   </div>
                 </div>
                 <div className="h-64">

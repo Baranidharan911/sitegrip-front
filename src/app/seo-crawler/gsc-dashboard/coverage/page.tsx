@@ -64,17 +64,51 @@ export default function GSCCoveragePage() {
   const [coverageHistory, setCoverageHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30');
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   useEffect(() => {
-    loadCoverageData();
-  }, [dateRange]);
+    loadGSCProperties();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProperty) {
+      loadCoverageData();
+    }
+  }, [selectedProperty, dateRange]);
+
+  const loadGSCProperties = async () => {
+    try {
+      const properties = await indexingApi.getGSCProperties();
+      
+      if (properties && properties.length > 0) {
+        const propertyUrls = properties.map((prop: any) => prop.site_url || prop.property);
+        setAvailableProperties(propertyUrls);
+        setSelectedProperty(propertyUrls[0]); // Use first property by default
+      } else {
+        setAvailableProperties([]);
+        setSelectedProperty('');
+      }
+    } catch (error: any) {
+      console.error('Failed to load GSC properties:', error);
+      setAvailableProperties([]);
+      setSelectedProperty('');
+    }
+  };
 
   const loadCoverageData = async () => {
+    if (!selectedProperty) {
+      setCoverageData(null);
+      setCoverageHistory([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Try to load real coverage data
-      const response = await indexingApi.getIndexedPages('', {
+      const response = await indexingApi.getIndexedPages(selectedProperty, {
         days: parseInt(dateRange),
         page: 1,
         pageSize: 100,
@@ -191,9 +225,30 @@ export default function GSCCoveragePage() {
           </div>
         </div>
 
-        {/* Date Range Selector */}
+        {/* Property and Date Range Selectors */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
+            {/* Property Selector */}
+            {availableProperties.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Property
+                </label>
+                <select
+                  value={selectedProperty}
+                  onChange={(e) => setSelectedProperty(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  {availableProperties.map((property) => (
+                    <option key={property} value={property}>
+                      {property}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
+            {/* Date Range Selector */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date range

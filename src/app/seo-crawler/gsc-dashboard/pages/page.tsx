@@ -23,17 +23,50 @@ export default function GSCPagesPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   useEffect(() => {
-    loadPages();
+    loadGSCProperties();
   }, []);
 
+  useEffect(() => {
+    if (selectedProperty) {
+      loadPages();
+    }
+  }, [selectedProperty]);
+
+  const loadGSCProperties = async () => {
+    try {
+      const properties = await indexingApi.getGSCProperties();
+      
+      if (properties && properties.length > 0) {
+        const propertyUrls = properties.map((prop: any) => prop.site_url || prop.property);
+        setAvailableProperties(propertyUrls);
+        setSelectedProperty(propertyUrls[0]); // Use first property by default
+      } else {
+        setAvailableProperties([]);
+        setSelectedProperty('');
+      }
+    } catch (error: any) {
+      console.error('Failed to load GSC properties:', error);
+      setAvailableProperties([]);
+      setSelectedProperty('');
+    }
+  };
+
   const loadPages = async () => {
+    if (!selectedProperty) {
+      setPages([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Try to load real pages data
-      const response = await indexingApi.getIndexedPages('', {
+      const response = await indexingApi.getIndexedPages(selectedProperty, {
         days: 30,
         page: 1,
         pageSize: 100,
@@ -127,9 +160,25 @@ export default function GSCPagesPage() {
           </div>
         </div>
 
-        {/* Search and Filter */}
+        {/* Property, Search and Filter */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property
+              </label>
+              <select 
+                value={selectedProperty} 
+                onChange={(e) => setSelectedProperty(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {availableProperties.map((property) => (
+                  <option key={property} value={property}>
+                    {property}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />

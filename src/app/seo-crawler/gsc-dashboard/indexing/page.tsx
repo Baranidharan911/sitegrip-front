@@ -61,55 +61,94 @@ const SimpleLineChart = ({ data, color = "#1a73e8", height = 200 }: { data: Arra
 
 export default function GSCIndexingPage() {
   const [indexingData, setIndexingData] = useState<any>(null);
-  const [indexedPages, setIndexedPages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateRange, setDateRange] = useState('30');
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   useEffect(() => {
-    loadIndexingData();
-  }, [dateRange]);
+    loadGSCProperties();
+  }, []);
+
+  useEffect(() => {
+    if (selectedProperty) {
+      loadIndexingData();
+    }
+  }, [selectedProperty, dateRange]);
+
+  const loadGSCProperties = async () => {
+    try {
+      const properties = await indexingApi.getGSCProperties();
+      
+      if (properties && properties.length > 0) {
+        const propertyUrls = properties.map((prop: any) => prop.site_url || prop.property);
+        setAvailableProperties(propertyUrls);
+        setSelectedProperty(propertyUrls[0]); // Use first property by default
+      } else {
+        setAvailableProperties([]);
+        setSelectedProperty('');
+      }
+    } catch (error: any) {
+      console.error('Failed to load GSC properties:', error);
+      setAvailableProperties([]);
+      setSelectedProperty('');
+    }
+  };
 
   const loadIndexingData = async () => {
+    if (!selectedProperty) {
+      setIndexingData(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Try to load real indexing data
-      const pagesResponse = await indexingApi.getIndexedPages('', {
+      const response = await indexingApi.getIndexedPages(selectedProperty, {
         days: parseInt(dateRange),
         page: 1,
         pageSize: 100,
         includePerformance: true
       });
       
-      if (pagesResponse.data && pagesResponse.data.pages) {
-        setIndexedPages(pagesResponse.data.pages);
+      if (response.data && response.data.pages) {
+        const pages = response.data.pages;
         
-        // Calculate indexing summary from real data
-        const totalPages = pagesResponse.data.pages.length;
-        const indexedPages = pagesResponse.data.pages.filter((page: any) => page.indexed).length;
-        const notIndexedPages = pagesResponse.data.pages.filter((page: any) => !page.indexed).length;
-        const pendingPages = pagesResponse.data.pages.filter((page: any) => 
-          page.coverageState === 'Discovered – currently not indexed'
+        // Calculate indexing data from real pages
+        const totalSubmitted = pages.length;
+        const totalIndexed = pages.filter((page: any) => page.indexed).length;
+        const totalNotIndexed = pages.filter((page: any) => !page.indexed).length;
+        const totalExcluded = pages.filter((page: any) => 
+          page.coverageState === 'Excluded' || page.coverageState === 'Blocked by robots.txt'
         ).length;
-        const errorPages = pagesResponse.data.pages.filter((page: any) => 
-          page.coverageState === 'Error'
+        const totalError = pages.filter((page: any) => 
+          page.coverageState === 'Error' || page.coverageState === 'Server error (5xx)'
         ).length;
+        
+        const indexingByType = [
+          { type: 'Submitted and indexed', count: totalIndexed, color: '#34a853' },
+          { type: 'Discovered – currently not indexed', count: pages.filter((p: any) => p.coverageState === 'Discovered – currently not indexed').length, color: '#fbbc04' },
+          { type: 'Crawled – currently not indexed', count: pages.filter((p: any) => p.coverageState === 'Crawled – currently not indexed').length, color: '#fa903e' },
+          { type: 'Error', count: totalError, color: '#ea4335' },
+          { type: 'Excluded', count: totalExcluded, color: '#9aa0a6' }
+        ];
         
         setIndexingData({
-          totalPages,
-          indexedPages,
-          notIndexedPages,
-          pendingPages,
-          errorPages,
-          indexingRate: totalPages > 0 ? (indexedPages / totalPages) * 100 : 0
+          totalSubmitted,
+          totalIndexed,
+          totalNotIndexed,
+          totalExcluded,
+          totalError,
+          indexingByType,
+          pages: pages.slice(0, 10) // Show first 10 pages
         });
       } else {
-        setIndexedPages([]);
         setIndexingData(null);
       }
     } catch (error: any) {
       console.error('Failed to load indexing data:', error);
-      setIndexedPages([]);
       setIndexingData(null);
       toast.error('Failed to load indexing data: ' + error.message);
     } finally {
@@ -148,7 +187,7 @@ export default function GSCIndexingPage() {
     );
   }
 
-  const hasData = indexingData && indexedPages.length > 0;
+  const hasData = indexingData && indexingData.pages && indexingData.pages.length > 0;
 
   return (
     <div className="min-h-screen bg-white">
@@ -179,9 +218,25 @@ export default function GSCIndexingPage() {
           </div>
         </div>
 
-        {/* Date Range Selector */}
+        {/* Property and Date Range Selector */}
         <div className="mb-8">
           <div className="flex items-center gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Property
+              </label>
+              <select 
+                value={selectedProperty} 
+                onChange={(e) => setSelectedProperty(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                {availableProperties.map((property) => (
+                  <option key={property} value={property}>
+                    {property}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Date range
@@ -221,7 +276,7 @@ export default function GSCIndexingPage() {
                   <Database className="w-5 h-5 text-blue-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {formatNumber(indexingData?.totalPages)}
+                  {formatNumber(indexingData?.totalSubmitted)}
                 </div>
                 <div className="text-sm text-gray-600">
                   All pages submitted
@@ -234,10 +289,10 @@ export default function GSCIndexingPage() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {formatNumber(indexingData?.indexedPages)}
+                  {formatNumber(indexingData?.totalIndexed)}
                 </div>
                 <div className="text-sm text-gray-600">
-                  {indexingData?.indexingRate?.toFixed(1)}% indexing rate
+                  {indexingData?.totalIndexed ? `${indexingData.totalIndexed / indexingData.totalSubmitted * 100}%` : '0%'} indexing rate
                 </div>
               </div>
 
@@ -247,7 +302,7 @@ export default function GSCIndexingPage() {
                   <Clock className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {formatNumber(indexingData?.notIndexedPages)}
+                  {formatNumber(indexingData?.totalNotIndexed)}
                 </div>
                 <div className="text-sm text-gray-600">
                   Pages pending indexing
@@ -260,7 +315,7 @@ export default function GSCIndexingPage() {
                   <XCircle className="w-5 h-5 text-red-600" />
                 </div>
                 <div className="text-3xl font-bold text-gray-900 mb-2">
-                  {formatNumber(indexingData?.errorPages)}
+                  {formatNumber(indexingData?.totalError)}
                 </div>
                 <div className="text-sm text-gray-600">
                   Pages with errors
@@ -279,7 +334,7 @@ export default function GSCIndexingPage() {
                       <span className="font-medium text-gray-900">Indexed</span>
                     </div>
                     <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                      {indexingData?.indexedPages}
+                      {indexingData?.totalIndexed}
                     </span>
                   </div>
                   
@@ -289,7 +344,7 @@ export default function GSCIndexingPage() {
                       <span className="font-medium">Not Indexed</span>
                     </div>
                     <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
-                      {indexingData?.notIndexedPages}
+                      {indexingData?.totalNotIndexed}
                     </span>
                   </div>
                   
@@ -298,9 +353,9 @@ export default function GSCIndexingPage() {
                       <AlertCircle className="w-5 h-5 text-orange-600" />
                       <span className="font-medium">Pending</span>
                     </div>
-                    <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
-                      {indexingData?.pendingPages}
-                    </span>
+                                          <span className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm font-medium">
+                        {indexingData?.indexingByType.find((item: any) => item.type === 'Discovered – currently not indexed')?.count || 0}
+                      </span>
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
@@ -309,7 +364,7 @@ export default function GSCIndexingPage() {
                       <span className="font-medium text-gray-900">Errors</span>
                     </div>
                     <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
-                      {indexingData?.errorPages}
+                      {indexingData?.totalError}
                     </span>
                   </div>
                 </div>
@@ -318,13 +373,13 @@ export default function GSCIndexingPage() {
                 <div className="h-64">
                   <SimpleLineChart 
                     data={[
-                      { date: '2025-01-20', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-21', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-22', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-23', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-24', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-25', value: indexingData?.indexedPages || 0 },
-                      { date: '2025-01-26', value: indexingData?.indexedPages || 0 }
+                      { date: '2025-01-20', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-21', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-22', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-23', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-24', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-25', value: indexingData?.totalIndexed || 0 },
+                      { date: '2025-01-26', value: indexingData?.totalIndexed || 0 }
                     ]}
                     color="#34a853"
                     height={240}
@@ -350,7 +405,7 @@ export default function GSCIndexingPage() {
               </div>
               
               <div className="space-y-3">
-                {indexedPages.slice(0, 10).map((page, index) => (
+                {indexingData?.pages.map((page: any, index: number) => (
                   <div key={index} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-3">
                       {getStatusIcon(page.coverageState || '')}

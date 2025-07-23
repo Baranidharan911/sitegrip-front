@@ -22,17 +22,50 @@ import Link from 'next/link';
 export default function GSCSitemapsPage() {
   const [sitemaps, setSitemaps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [availableProperties, setAvailableProperties] = useState<string[]>([]);
 
   useEffect(() => {
-    loadSitemaps();
+    loadGSCProperties();
   }, []);
 
+  useEffect(() => {
+    if (selectedProperty) {
+      loadSitemaps();
+    }
+  }, [selectedProperty]);
+
+  const loadGSCProperties = async () => {
+    try {
+      const properties = await indexingApi.getGSCProperties();
+      
+      if (properties && properties.length > 0) {
+        const propertyUrls = properties.map((prop: any) => prop.site_url || prop.property);
+        setAvailableProperties(propertyUrls);
+        setSelectedProperty(propertyUrls[0]); // Use first property by default
+      } else {
+        setAvailableProperties([]);
+        setSelectedProperty('');
+      }
+    } catch (error: any) {
+      console.error('Failed to load GSC properties:', error);
+      setAvailableProperties([]);
+      setSelectedProperty('');
+    }
+  };
+
   const loadSitemaps = async () => {
+    if (!selectedProperty) {
+      setSitemaps([]);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       
       // Try to load real sitemaps data
-      const response = await indexingApi.getIndexedPages('', {
+      const response = await indexingApi.getIndexedPages(selectedProperty, {
         days: 30,
         page: 1,
         pageSize: 100,
@@ -124,6 +157,27 @@ export default function GSCSitemapsPage() {
             </button>
           </div>
         </div>
+
+        {/* Property Selector */}
+        {availableProperties.length > 0 && (
+          <div className="mb-6">
+            <label htmlFor="property-select" className="block text-sm font-medium text-gray-700 mb-2">
+              Select Property
+            </label>
+            <select
+              id="property-select"
+              value={selectedProperty}
+              onChange={(e) => setSelectedProperty(e.target.value)}
+              className="block w-full max-w-md px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              {availableProperties.map((property) => (
+                <option key={property} value={property}>
+                  {property}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {sitemaps.length === 0 ? (
           <div className="text-center py-12">
