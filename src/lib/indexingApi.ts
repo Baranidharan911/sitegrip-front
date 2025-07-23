@@ -1154,6 +1154,40 @@ class IndexingAPI {
       throw error;
     }
   }
+
+  // Get historical performance data from Google Search Console
+  async getPerformanceHistory(property: string, days: number = 30): Promise<any> {
+    try {
+      console.log('📈 Loading performance history from Google Search Console...');
+      
+      const params = new URLSearchParams({
+        days: days.toString()
+      });
+      
+      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/performance-history/${encodeURIComponent(property)}?${params}`);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || `Performance history request failed: ${response.status}`;
+        
+        if (response.status === 401) {
+          console.error('❌ Performance history request failed with 401 - user needs to authenticate with Google Search Console');
+          throw new Error(`Performance history request failed: 401 - ${errorMessage}`);
+        }
+        
+        console.error('❌ Performance history request failed:', errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ Performance history loaded:', data);
+      
+      return data;
+    } catch (error: any) {
+      console.error('❌ Failed to load performance history:', error.message);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance
