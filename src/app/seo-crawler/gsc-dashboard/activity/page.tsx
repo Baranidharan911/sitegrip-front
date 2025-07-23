@@ -119,8 +119,8 @@ const InteractiveBarChart = ({ data, color = "#34a853", height = 200, title = ""
         <div
           className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
           style={{
-            left: tooltipPosition.x + 10,
-            top: tooltipPosition.y - 40,
+            left: `${hoveredBar.x + actualBarWidth / 2}%`,
+            top: `${hoveredBar.y - 10}%`,
             transform: 'translateX(-50%)'
           }}
         >
