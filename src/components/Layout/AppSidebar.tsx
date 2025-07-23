@@ -1,5 +1,5 @@
 'use client';
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
@@ -71,16 +71,24 @@ const AppSidebar = memo(() => {
         <button
           onClick={signOut}
           className="w-full flex items-center justify-center gap-2 px-4 py-2 mt-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-300 rounded-lg font-semibold hover:bg-red-100 dark:hover:bg-red-800 transition-colors"
+          title={!isOpen ? "Sign Out" : undefined}
         >
           <LogOut className="w-5 h-5" />
-          <span className="hidden md:inline">Sign Out</span>
+          {isOpen && <span>Sign Out</span>}
         </button>
       </div>
+      
       {/* Footer */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          © 2025 SiteGrip. All rights reserved.
-        </div>
+        {isOpen ? (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            © 2025 SiteGrip. All rights reserved.
+          </div>
+        ) : (
+          <div className="text-xs text-gray-500 dark:text-gray-400 text-center" title="© 2025 SiteGrip. All rights reserved.">
+            © 2025
+          </div>
+        )}
       </div>
     </div>
   ), [memoizedSidebarItems, isActive, handleClose, toggleSidebar, isOpen, signOut]);
@@ -101,6 +109,7 @@ const SidebarSection = memo(({
   sidebarOpen: boolean;
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(isActive(section.path));
+  const [showTooltip, setShowTooltip] = useState(false);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -114,10 +123,12 @@ const SidebarSection = memo(({
   }, [onItemClick]);
 
   const sectionContent = useMemo(() => (
-    <div className="space-y-1">
+    <div className="space-y-1 relative">
       <button
         onClick={section.disabled ? undefined : toggleExpanded}
         disabled={section.disabled}
+        onMouseEnter={() => !sidebarOpen && setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
           section.disabled
             ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
@@ -125,6 +136,7 @@ const SidebarSection = memo(({
             ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300'
             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
         }`}
+        title={!sidebarOpen ? section.name : undefined}
       >
         <div className="flex items-center space-x-3">
           <section.icon className="w-5 h-5" />
@@ -144,7 +156,47 @@ const SidebarSection = memo(({
         )}
       </button>
 
-      {isExpanded && section.subItems && (
+      {/* Tooltip for collapsed state */}
+      {showTooltip && !sidebarOpen && (
+        <div className="absolute left-full top-0 ml-2 z-50 bg-gray-900 text-white text-sm rounded-lg shadow-lg p-2 min-w-[150px]">
+          {section.subItems && section.subItems.length > 0 ? (
+            <>
+              <div className="font-medium mb-2">{section.name}</div>
+              <div className="space-y-1">
+                {section.subItems.map((item: any) => (
+                  <Link
+                    key={item.path}
+                    href={item.disabled ? '#' : item.path}
+                    prefetch={!item.disabled}
+                    onClick={item.disabled ? (e) => e.preventDefault() : handleItemClick}
+                    className={`block px-2 py-1 rounded text-xs transition-colors ${
+                      item.disabled
+                        ? 'text-gray-400 cursor-not-allowed opacity-50'
+                        : isActive(item.path)
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <item.icon className="w-3 h-3" />
+                      <span>{item.name}</span>
+                      {item.pro && (
+                        <span className="px-1 py-0.5 text-xs bg-yellow-600 text-white rounded">
+                          PRO
+                        </span>
+                      )}
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="font-medium">{section.name}</div>
+          )}
+        </div>
+      )}
+
+      {isExpanded && section.subItems && sidebarOpen && (
         <div className="ml-8 space-y-1">
           {section.subItems.map((item: any) => (
             <Link
@@ -162,8 +214,8 @@ const SidebarSection = memo(({
             >
               <div className="flex items-center space-x-3">
                 <item.icon className="w-4 h-4" />
-                {sidebarOpen && <span>{item.name}</span>}
-                {item.pro && sidebarOpen && (
+                <span>{item.name}</span>
+                {item.pro && (
                   <span className="px-2 py-1 text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 rounded-full">
                     PRO
                   </span>
@@ -174,7 +226,7 @@ const SidebarSection = memo(({
         </div>
       )}
     </div>
-  ), [section, isActive, isExpanded, toggleExpanded, handleItemClick, sidebarOpen]);
+  ), [section, isActive, isExpanded, toggleExpanded, handleItemClick, sidebarOpen, showTooltip]);
 
   return sectionContent;
 });
