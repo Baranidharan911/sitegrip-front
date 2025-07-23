@@ -109,37 +109,55 @@ interface EnhancementsData {
   richResults: any[];
 }
 
-// Interactive bar chart component with hover effects (like Google's design)
-const InteractiveBarChart = ({ data, color = "#34a853", height = 200, title = "" }: { 
-  data: Array<{ date: string; value: number }>, 
-  color?: string, 
+// Enhanced Google Search Console style chart component
+const GSCInteractiveChart = ({
+  data,
+  color = "#1a73e8",
+  height = 200,
+  title = "",
+  showDataLabels = true,
+  showGrid = true
+}: {
+  data: Array<{ date: string; value: number }>,
+  color?: string,
   height?: number,
-  title?: string 
+  title?: string,
+  showDataLabels?: boolean,
+  showGrid?: boolean
 }) => {
-  const [hoveredBar, setHoveredBar] = useState<{ x: number; y: number; data: any } | null>(null);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [hoveredBar, setHoveredBar] = useState<{ x: number; y: number; data: any; index: number } | null>(null);
 
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full text-gray-400">
+        <div className="text-center">
+          <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p className="text-sm">No data available</p>
+        </div>
+      </div>
+    );
+  }
 
   const maxValue = Math.max(...data.map(d => d.value));
+  const minValue = Math.min(...data.map(d => d.value));
+  const range = maxValue - minValue || 1;
   const barWidth = 100 / data.length;
-  const barSpacing = barWidth * 0.1; // 10% spacing between bars
+  const barSpacing = Math.min(barWidth * 0.2, 2); // Adaptive spacing
   const actualBarWidth = barWidth - barSpacing;
 
   const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     
-    // Find which bar we're hovering over
     const barIndex = Math.floor(x / barWidth);
     if (barIndex >= 0 && barIndex < data.length) {
       const barData = data[barIndex];
       const barX = barIndex * barWidth + barSpacing / 2;
-      const barHeight = (barData.value / maxValue) * 100;
-      const barY = 100 - barHeight;
+      const normalizedValue = (barData.value - minValue) / range;
+      const barHeight = normalizedValue * 85; // Use 85% of height for better spacing
+      const barY = 90 - barHeight; // Start from 90% to leave space for labels
       
-      setHoveredBar({ x: barX, y: barY, data: barData });
-      setTooltipPosition({ x: event.clientX, y: event.clientY });
+      setHoveredBar({ x: barX, y: barY, data: barData, index: barIndex });
     }
   };
 
@@ -147,92 +165,175 @@ const InteractiveBarChart = ({ data, color = "#34a853", height = 200, title = ""
     setHoveredBar(null);
   };
 
+  // Generate Y-axis labels
+  const yAxisLabels = [];
+  const steps = 4;
+  for (let i = 0; i <= steps; i++) {
+    const value = minValue + (range * i / steps);
+    yAxisLabels.push({
+      value: Math.round(value),
+      y: 90 - (i / steps * 85)
+    });
+  }
+
   return (
-    <div className="relative" style={{ height }}>
-      <svg 
-        width="100%" 
-        height="100%" 
-        className="absolute inset-0 cursor-crosshair"
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Grid lines */}
-        <defs>
-          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
-          </pattern>
-        </defs>
-        
-        {/* Background grid */}
-        <rect width="100%" height="100%" fill="url(#grid)" />
-        
-        {/* Bars */}
-        {data.map((point, index) => {
-          const barX = index * barWidth + barSpacing / 2;
-          const barHeight = (point.value / maxValue) * 100;
-          const barY = 100 - barHeight;
-          const isHovered = hoveredBar?.data === point;
-          
-          return (
-            <rect
-              key={index}
-              x={`${barX}%`}
-              y={`${barY}%`}
-              width={`${actualBarWidth}%`}
-              height={`${barHeight}%`}
-              fill={color}
-              className="transition-all duration-200"
-              style={{ 
-                opacity: isHovered ? 1 : 0.8,
-                filter: isHovered ? 'brightness(1.1)' : 'none'
-              }}
-            />
-          );
-        })}
-        
-        {/* Hover indicator line */}
-        {hoveredBar && (
-          <line
-            x1={`${hoveredBar.x + actualBarWidth / 2}%`}
-            y1="0"
-            x2={`${hoveredBar.x + actualBarWidth / 2}%`}
-            y2="100%"
-            stroke="#e0e0e0"
-            strokeWidth="1"
-            strokeDasharray="5,5"
-          />
-        )}
-      </svg>
-      
-      {/* Tooltip */}
-      {hoveredBar && (
-        <div
-          className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
-          style={{
-            left: `${hoveredBar.x + actualBarWidth / 2}%`,
-            top: `${hoveredBar.y - 10}%`,
-            transform: 'translateX(-50%)'
-          }}
-        >
-          <div className="font-medium text-gray-900">
-            {new Date(hoveredBar.data.date).toLocaleDateString('en-US', { 
-              weekday: 'long', 
-              day: 'numeric', 
-              month: 'short' 
-            })}
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <div 
-              className="w-3 h-3 rounded-sm" 
-              style={{ backgroundColor: color }}
-            ></div>
-            <span className="text-gray-600">{title}</span>
-          </div>
-          <div className="font-semibold text-gray-900 mt-1">
-            {hoveredBar.data.value.toLocaleString()}
-          </div>
+    <div className="relative w-full bg-white" style={{ height }}>
+      {/* Chart Title */}
+      {title && (
+        <div className="absolute top-2 left-12 text-sm font-medium text-gray-700 z-10">
+          {title}
         </div>
       )}
+      
+      {/* Y-axis labels */}
+      <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500 py-6">
+        {yAxisLabels.reverse().map((label, index) => (
+          <div key={index} className="text-right pr-2" style={{ transform: 'translateY(-50%)' }}>
+            {label.value.toLocaleString()}
+          </div>
+        ))}
+      </div>
+      
+      {/* Main chart area */}
+      <div className="ml-12 mr-4 h-full relative">
+        <svg
+          width="100%"
+          height="100%"
+          className="absolute inset-0 cursor-crosshair overflow-visible"
+          onMouseMove={handleMouseMove}
+          onMouseLeave={handleMouseLeave}
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          {/* Grid lines */}
+          {showGrid && (
+            <defs>
+              <pattern id={`grid-${title}`} width="100" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 0 20 L 100 20" fill="none" stroke="#f3f4f6" strokeWidth="0.5"/>
+              </pattern>
+            </defs>
+          )}
+          
+          {showGrid && <rect width="100%" height="100%" fill={`url(#grid-${title})`} />}
+          
+          {/* Horizontal grid lines */}
+          {showGrid && yAxisLabels.map((label, index) => (
+            <line
+              key={index}
+              x1="0"
+              y1={label.y}
+              x2="100"
+              y2={label.y}
+              stroke="#f3f4f6"
+              strokeWidth="0.5"
+            />
+          ))}
+          
+          {/* Bars */}
+          {data.map((point, index) => {
+            const barX = index * barWidth + barSpacing / 2;
+            const normalizedValue = (point.value - minValue) / range;
+            const barHeight = normalizedValue * 85;
+            const barY = 90 - barHeight;
+            const isHovered = hoveredBar?.index === index;
+            
+            return (
+              <g key={index}>
+                <rect
+                  x={`${barX}%`}
+                  y={`${barY}%`}
+                  width={`${actualBarWidth}%`}
+                  height={`${barHeight}%`}
+                  fill={color}
+                  className="transition-all duration-200"
+                  style={{
+                    opacity: isHovered ? 0.9 : 0.7,
+                    filter: isHovered ? 'brightness(1.1)' : 'none'
+                  }}
+                  rx="1"
+                />
+                
+                {/* Data point indicator */}
+                {isHovered && (
+                  <circle
+                    cx={`${barX + actualBarWidth / 2}%`}
+                    cy={`${barY}%`}
+                    r="2"
+                    fill={color}
+                    className="animate-pulse"
+                  />
+                )}
+              </g>
+            );
+          })}
+          
+          {/* Hover indicator line */}
+          {hoveredBar && (
+            <line
+              x1={`${hoveredBar.x + actualBarWidth / 2}%`}
+              y1="5%"
+              x2={`${hoveredBar.x + actualBarWidth / 2}%`}
+              y2="90%"
+              stroke="#dadce0"
+              strokeWidth="1"
+              strokeDasharray="2,2"
+              className="animate-pulse"
+            />
+          )}
+        </svg>
+        
+        {/* X-axis labels */}
+        {showDataLabels && (
+          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 px-1">
+            {data.map((point, index) => {
+              if (index % Math.ceil(data.length / 6) === 0 || index === data.length - 1) {
+                return (
+                  <div key={index} className="text-center" style={{ width: `${100/data.length}%` }}>
+                    {new Date(point.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric'
+                    })}
+                  </div>
+                );
+              }
+              return null;
+            })}
+          </div>
+        )}
+        
+        {/* Enhanced Tooltip */}
+        {hoveredBar && (
+          <div
+            className="absolute z-20 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-xl pointer-events-none"
+            style={{
+              left: `${hoveredBar.x + actualBarWidth / 2}%`,
+              top: `${Math.max(hoveredBar.y - 15, 5)}%`,
+              transform: 'translateX(-50%)',
+              minWidth: '120px'
+            }}
+          >
+            <div className="font-medium text-gray-900 mb-1">
+              {new Date(hoveredBar.data.date).toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-3 h-3 rounded-sm"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="text-gray-600 text-xs">{title}</span>
+              </div>
+              <div className="font-semibold text-gray-900">
+                {hoveredBar.data.value.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -628,7 +729,7 @@ export default function GSCDashboardPage() {
                 </div>
                 {historicalData && (
                   <div className="h-32 mb-4">
-                    <InteractiveBarChart 
+                    <GSCInteractiveChart
                       data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
                       color="#1a73e8"
                       height={120}
