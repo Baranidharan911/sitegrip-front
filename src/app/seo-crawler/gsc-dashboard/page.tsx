@@ -109,8 +109,16 @@ interface EnhancementsData {
   richResults: any[];
 }
 
-// Simple line chart component to match Google's design
-const SimpleLineChart = ({ data, color = "#1a73e8", height = 200 }: { data: Array<{ date: string; value: number }>, color?: string, height?: number }) => {
+// Interactive line chart component with hover effects
+const InteractiveLineChart = ({ data, color = "#1a73e8", height = 200, title = "" }: { 
+  data: Array<{ date: string; value: number }>, 
+  color?: string, 
+  height?: number,
+  title?: string 
+}) => {
+  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: any } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
   if (!data || data.length === 0) return null;
 
   const maxValue = Math.max(...data.map(d => d.value));
@@ -120,33 +128,115 @@ const SimpleLineChart = ({ data, color = "#1a73e8", height = 200 }: { data: Arra
   const points = data.map((point, index) => {
     const x = (index / (data.length - 1)) * 100;
     const y = 100 - ((point.value - minValue) / range) * 100;
-    return `${x},${y}`;
-  }).join(' ');
+    return { x, y, data: point };
+  });
+
+  const pointsString = points.map(p => `${p.x},${p.y}`).join(' ');
+
+  const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    
+    // Find the closest point
+    const closestPoint = points.reduce((closest, point) => {
+      const distance = Math.abs(point.x - x);
+      return distance < Math.abs(closest.x - x) ? point : closest;
+    }, points[0]);
+
+    setHoveredPoint(closestPoint);
+    setTooltipPosition({ x: event.clientX, y: event.clientY });
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredPoint(null);
+  };
 
   return (
     <div className="relative" style={{ height }}>
-      <svg width="100%" height="100%" className="absolute inset-0">
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          points={points}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        {/* Add subtle gradient fill */}
+      <svg 
+        width="100%" 
+        height="100%" 
+        className="absolute inset-0 cursor-crosshair"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Grid lines */}
         <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
+          </pattern>
           <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={color} stopOpacity="0.3" />
             <stop offset="100%" stopColor={color} stopOpacity="0.05" />
           </linearGradient>
         </defs>
+        
+        {/* Background grid */}
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        
+        {/* Gradient fill */}
         <polyline
           fill={`url(#gradient-${color})`}
           stroke="none"
-          points={`${points} 100,100 0,100`}
+          points={`${pointsString} 100,100 0,100`}
         />
+        
+        {/* Main line */}
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          points={pointsString}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        
+        {/* Data points */}
+        {points.map((point, index) => (
+          <circle
+            key={index}
+            cx={`${point.x}%`}
+            cy={`${point.y}%`}
+            r="3"
+            fill={color}
+            className="transition-all duration-200 hover:r-5"
+            style={{ opacity: hoveredPoint?.data === point.data ? 1 : 0.6 }}
+          />
+        ))}
+        
+        {/* Hover indicator line */}
+        {hoveredPoint && (
+          <line
+            x1={`${hoveredPoint.x}%`}
+            y1="0"
+            x2={`${hoveredPoint.x}%`}
+            y2="100%"
+            stroke="#e0e0e0"
+            strokeWidth="1"
+            strokeDasharray="5,5"
+          />
+        )}
       </svg>
+      
+      {/* Tooltip */}
+      {hoveredPoint && (
+        <div
+          className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 40,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="font-medium text-gray-900">{title}</div>
+          <div className="text-gray-600">
+            {new Date(hoveredPoint.data.date).toLocaleDateString()}
+          </div>
+          <div className="font-semibold text-blue-600">
+            {hoveredPoint.data.value.toLocaleString()}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -395,10 +485,11 @@ export default function GSCDashboardPage() {
                 </div>
                 {historicalData && (
                   <div className="h-32 mb-4">
-                    <SimpleLineChart 
+                    <InteractiveLineChart 
                       data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
                       color="#1a73e8"
                       height={120}
+                      title="Clicks"
                     />
                   </div>
                 )}
@@ -434,10 +525,11 @@ export default function GSCDashboardPage() {
                 
                 {historicalData && (
                   <div className="h-32 mb-4">
-                    <SimpleLineChart 
+                    <InteractiveLineChart 
                       data={historicalData.map(d => ({ date: d.date, value: indexedPages.filter(page => page.indexed).length }))}
                       color="#34a853"
                       height={120}
+                      title="Indexed Pages"
                     />
                   </div>
                 )}
