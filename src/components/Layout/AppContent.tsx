@@ -60,7 +60,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the content area
   const contentArea = useMemo(() => (
-    <div className={`flex-1 flex flex-col overflow-hidden relative z-[9999] lg:ml-${isOpen ? '64' : '20'}`}>
+    <div className={`flex-1 flex flex-col overflow-visible relative z-[9999] lg:ml-${isOpen ? '64' : '20'}`}>
       {headerComponent}
       {mainContent}
     </div>
@@ -78,7 +78,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-hidden">
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-visible">
       {/* Sidebar */}
       <div className={sidebarClasses}>
         {sidebarComponent}

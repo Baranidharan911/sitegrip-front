@@ -1,5 +1,5 @@
 'use client';
-import React, { memo, useMemo, useCallback, useState } from 'react';
+import React, { memo, useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSidebar } from '@/context/SidebarContext';
@@ -30,7 +30,7 @@ const AppSidebar = memo(() => {
 
   // Memoize the sidebar content
   const sidebarContent = useMemo(() => (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} overflow-x-hidden`}>
+    <div className={`flex flex-col h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'} overflow-visible`}>
       {/* Header */}
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
@@ -52,7 +52,7 @@ const AppSidebar = memo(() => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4">
+      <nav className="flex-1 overflow-y-auto overflow-x-visible py-4">
         <div className="px-4 space-y-2">
           {memoizedSidebarItems.map((section) => (
             <SidebarSection
@@ -110,6 +110,7 @@ const SidebarSection = memo(({
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(isActive(section.path));
   const [showTooltip, setShowTooltip] = useState(false);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const toggleExpanded = useCallback(() => {
     setIsExpanded((prev) => !prev);
@@ -122,13 +123,32 @@ const SidebarSection = memo(({
     }
   }, [onItemClick]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (tooltipTimeoutRef.current) {
+        clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+  }, []);
+
   const sectionContent = useMemo(() => (
     <div className="space-y-1 relative">
       <button
         onClick={section.disabled ? undefined : toggleExpanded}
         disabled={section.disabled}
-        onMouseEnter={() => !sidebarOpen && setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
+        onMouseEnter={() => {
+          if (!sidebarOpen) {
+            tooltipTimeoutRef.current = setTimeout(() => setShowTooltip(true), 300);
+          }
+        }}
+        onMouseLeave={() => {
+          if (tooltipTimeoutRef.current) {
+            clearTimeout(tooltipTimeoutRef.current);
+            tooltipTimeoutRef.current = null;
+          }
+          setShowTooltip(false);
+        }}
         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
           section.disabled
             ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed opacity-50'
@@ -158,7 +178,9 @@ const SidebarSection = memo(({
 
       {/* Tooltip for collapsed state */}
       {showTooltip && !sidebarOpen && (
-        <div className="absolute left-full top-0 ml-2 z-[10001] bg-gray-900 text-white text-sm rounded-lg shadow-lg p-2 min-w-[150px]">
+        <div className="absolute left-full top-0 ml-2 z-[10001] bg-gray-900 text-white text-sm rounded-lg shadow-lg p-2 min-w-[150px] pointer-events-auto">
+          {/* Tooltip arrow */}
+          <div className="absolute -left-1 top-3 w-2 h-2 bg-gray-900 transform rotate-45"></div>
           {section.subItems && section.subItems.length > 0 ? (
             <>
               <div className="font-medium mb-2">{section.name}</div>
