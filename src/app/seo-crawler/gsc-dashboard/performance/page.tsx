@@ -1,0 +1,352 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { 
+  BarChart3, 
+  TrendingUp, 
+  Eye, 
+  MousePointer, 
+  Target,
+  RefreshCw,
+  Download,
+  Filter,
+  Calendar,
+  ArrowLeft,
+  Settings,
+  MoreHorizontal
+} from 'lucide-react';
+import { indexingApi } from '@/lib/indexingApi';
+import { toast } from 'sonner';
+import Link from 'next/link';
+
+// Simple line chart component to match Google's design
+const SimpleLineChart = ({ data, color = "#1a73e8", height = 200 }: { data: Array<{ date: string; value: number }>, color?: string, height?: number }) => {
+  if (!data || data.length === 0) return null;
+
+  const maxValue = Math.max(...data.map(d => d.value));
+  const minValue = Math.min(...data.map(d => d.value));
+  const range = maxValue - minValue || 1;
+
+  const points = data.map((point, index) => {
+    const x = (index / (data.length - 1)) * 100;
+    const y = 100 - ((point.value - minValue) / range) * 100;
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <div className="relative" style={{ height }}>
+      <svg width="100%" height="100%" className="absolute inset-0">
+        <polyline
+          fill="none"
+          stroke={color}
+          strokeWidth="2"
+          points={points}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <defs>
+          <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        <polyline
+          fill={`url(#gradient-${color})`}
+          stroke="none"
+          points={`${points} 100,100 0,100`}
+        />
+      </svg>
+    </div>
+  );
+};
+
+export default function GSCPerformancePage() {
+  const [performanceData, setPerformanceData] = useState<any>(null);
+  const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dateRange, setDateRange] = useState('30');
+
+  useEffect(() => {
+    loadPerformanceData();
+  }, [dateRange]);
+
+  const loadPerformanceData = async () => {
+    try {
+      setLoading(true);
+      
+      // Try to load real performance data
+      const response = await indexingApi.getPerformanceHistory('', parseInt(dateRange));
+      
+      if (response.data && response.data.history && response.data.history.length > 0) {
+        setHistoricalData(response.data.history);
+        
+        // Calculate performance metrics from historical data
+        const totalClicks = response.data.history.reduce((sum: number, day: any) => sum + (day.clicks || 0), 0);
+        const totalImpressions = response.data.history.reduce((sum: number, day: any) => sum + (day.impressions || 0), 0);
+        const avgCTR = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
+        const avgPosition = response.data.history.reduce((sum: number, day: any) => sum + (day.position || 0), 0) / response.data.history.length;
+        
+        setPerformanceData({
+          totalClicks,
+          totalImpressions,
+          avgCTR,
+          avgPosition
+        });
+      } else {
+        setPerformanceData(null);
+        setHistoricalData([]);
+      }
+    } catch (error: any) {
+      console.error('Failed to load performance data:', error);
+      setPerformanceData(null);
+      setHistoricalData([]);
+      toast.error('Failed to load performance data: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatNumber = (value: number | undefined | null): string => {
+    if (!value && value !== 0) return '0';
+    return Number(value).toLocaleString('en-US');
+  };
+
+  const formatCTR = (ctr: number | undefined | null): string => {
+    if (!ctr && ctr !== 0) return '0%';
+    return `${(ctr * 100).toFixed(1)}%`;
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="flex items-center gap-4 mb-8">
+            <div className="h-8 w-32 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hasData = performanceData && historicalData.length > 0;
+
+  return (
+    <div className="min-h-screen bg-white">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <Link href="/seo-crawler/gsc-dashboard" className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+            <div>
+              <h1 className="text-2xl font-normal text-gray-900">Performance</h1>
+              <p className="text-sm text-gray-600">Search performance over time</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={loadPerformanceData} 
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+              <Download className="w-4 h-4" />
+              Export
+            </button>
+          </div>
+        </div>
+
+        {/* Date Range Selector */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Date range
+              </label>
+              <select 
+                value={dateRange} 
+                onChange={(e) => setDateRange(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {!hasData ? (
+          <div className="text-center py-12">
+            <BarChart3 className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+            <h2 className="text-xl font-medium text-gray-900 mb-2">No performance data available</h2>
+            <p className="text-gray-500 mb-4">Performance data is not currently available for the selected period.</p>
+            <button 
+              onClick={loadPerformanceData}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Metrics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Total clicks</h3>
+                  <Eye className="w-5 h-5 text-blue-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {formatNumber(performanceData?.totalClicks)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Clicks in selected period
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Total impressions</h3>
+                  <BarChart3 className="w-5 h-5 text-green-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {formatNumber(performanceData?.totalImpressions)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Impressions in selected period
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Average CTR</h3>
+                  <MousePointer className="w-5 h-5 text-purple-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {formatCTR(performanceData?.avgCTR)}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Average click-through rate
+                </div>
+              </div>
+
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-medium text-gray-900">Average position</h3>
+                  <Target className="w-5 h-5 text-orange-600" />
+                </div>
+                <div className="text-3xl font-bold text-gray-900 mb-2">
+                  {performanceData?.avgPosition?.toFixed(1) || '0'}
+                </div>
+                <div className="text-sm text-gray-600">
+                  Average search position
+                </div>
+              </div>
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Clicks Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Clicks</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Clicks over time</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <SimpleLineChart 
+                    data={historicalData.map(d => ({ date: d.date, value: d.clicks || 0 }))}
+                    color="#1a73e8"
+                    height={240}
+                  />
+                </div>
+              </div>
+
+              {/* Impressions Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Impressions</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Impressions over time</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <SimpleLineChart 
+                    data={historicalData.map(d => ({ date: d.date, value: d.impressions || 0 }))}
+                    color="#34a853"
+                    height={240}
+                  />
+                </div>
+              </div>
+
+              {/* CTR Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Click-through rate</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-purple-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">CTR over time</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <SimpleLineChart 
+                    data={historicalData.map(d => ({ 
+                      date: d.date, 
+                      value: d.impressions > 0 ? (d.clicks / d.impressions) * 100 : 0 
+                    }))}
+                    color="#9c27b0"
+                    height={240}
+                  />
+                </div>
+              </div>
+
+              {/* Position Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Average position</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-orange-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Position over time</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <SimpleLineChart 
+                    data={historicalData.map(d => ({ date: d.date, value: d.position || 0 }))}
+                    color="#ff9800"
+                    height={240}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Footer */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between text-sm text-gray-500">
+            <div>
+              <span>Last updated: {new Date().toLocaleString()}</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <a href="/help" className="hover:text-gray-700">Help</a>
+              <a href="/feedback" className="hover:text-gray-700">Send feedback</a>
+              <a href="/privacy" className="hover:text-gray-700">Privacy</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+} 
