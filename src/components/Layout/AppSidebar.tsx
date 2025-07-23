@@ -158,7 +158,7 @@ const SidebarSection = memo(({
 
       {/* Tooltip for collapsed state */}
       {showTooltip && !sidebarOpen && (
-        <div className="absolute left-full top-0 ml-2 z-50 bg-gray-900 text-white text-sm rounded-lg shadow-lg p-2 min-w-[150px]">
+        <div className="absolute left-full top-0 ml-2 z-[10001] bg-gray-900 text-white text-sm rounded-lg shadow-lg p-2 min-w-[150px]">
           {section.subItems && section.subItems.length > 0 ? (
             <>
               <div className="font-medium mb-2">{section.name}</div>

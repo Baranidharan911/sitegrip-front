@@ -35,7 +35,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the sidebar classes
   const sidebarClasses = useMemo(() => 
-    `fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out ${
+    `fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out ${
       isOpen ? 'translate-x-0' : '-translate-x-full'
     } lg:relative lg:translate-x-0 lg:inset-0`, [isOpen]
   );
@@ -60,7 +60,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the content area
   const contentArea = useMemo(() => (
-    <div className="flex-1 flex flex-col overflow-hidden">
+    <div className="flex-1 flex flex-col overflow-hidden relative z-[9999]">
       {headerComponent}
       {mainContent}
     </div>

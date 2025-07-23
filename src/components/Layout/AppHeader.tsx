@@ -191,7 +191,7 @@ const AppHeader = () => {
   return (
     <header
       className={`
-        sticky top-0 left-0 w-full z-50
+        sticky top-0 left-0 w-full z-[10000]
         backdrop-blur-xl
         ${isDark ? 'bg-slate-900/80 text-white' : 'bg-white/80 text-slate-900'}
         shadow-lg border-b border-slate-200/50 dark:border-slate-700/50 transition-all duration-300
