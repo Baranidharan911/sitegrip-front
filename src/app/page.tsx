@@ -234,8 +234,11 @@ const Home = memo(() => {
         toastOptions={{
           duration: 4000,
           style: {
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
+            background: '#ffffff',
+            color: '#374151',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e5e7eb',
           },
         }}
       />

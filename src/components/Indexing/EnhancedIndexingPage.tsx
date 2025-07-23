@@ -269,10 +269,11 @@ export default function EnhancedIndexingPage() {
         toastOptions={{
           duration: 4000,
           style: {
-            background: 'var(--toast-bg)',
-            color: 'var(--toast-color)',
-            borderRadius: '12px',
-            boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+            background: '#ffffff',
+            color: '#374151',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            border: '1px solid #e5e7eb',
           },
         }}
       />
