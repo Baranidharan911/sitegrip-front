@@ -18,46 +18,42 @@ import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
-// Interactive line chart component with hover effects
-const InteractiveLineChart = ({ data, color = "#1a73e8", height = 200, title = "" }: { 
+// Interactive bar chart component with hover effects (like Google's design)
+const InteractiveBarChart = ({ data, color = "#34a853", height = 200, title = "" }: { 
   data: Array<{ date: string; value: number }>, 
   color?: string, 
   height?: number,
   title?: string 
 }) => {
-  const [hoveredPoint, setHoveredPoint] = useState<{ x: number; y: number; data: any } | null>(null);
+  const [hoveredBar, setHoveredBar] = useState<{ x: number; y: number; data: any } | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
 
   if (!data || data.length === 0) return null;
 
   const maxValue = Math.max(...data.map(d => d.value));
-  const minValue = Math.min(...data.map(d => d.value));
-  const range = maxValue - minValue || 1;
-
-  const points = data.map((point, index) => {
-    const x = (index / (data.length - 1)) * 100;
-    const y = 100 - ((point.value - minValue) / range) * 100;
-    return { x, y, data: point };
-  });
-
-  const pointsString = points.map(p => `${p.x},${p.y}`).join(' ');
+  const barWidth = 100 / data.length;
+  const barSpacing = barWidth * 0.1; // 10% spacing between bars
+  const actualBarWidth = barWidth - barSpacing;
 
   const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 100;
     
-    // Find the closest point
-    const closestPoint = points.reduce((closest, point) => {
-      const distance = Math.abs(point.x - x);
-      return distance < Math.abs(closest.x - x) ? point : closest;
-    }, points[0]);
-
-    setHoveredPoint(closestPoint);
-    setTooltipPosition({ x: event.clientX, y: event.clientY });
+    // Find which bar we're hovering over
+    const barIndex = Math.floor(x / barWidth);
+    if (barIndex >= 0 && barIndex < data.length) {
+      const barData = data[barIndex];
+      const barX = barIndex * barWidth + barSpacing / 2;
+      const barHeight = (barData.value / maxValue) * 100;
+      const barY = 100 - barHeight;
+      
+      setHoveredBar({ x: barX, y: barY, data: barData });
+      setTooltipPosition({ x: event.clientX, y: event.clientY });
+    }
   };
 
   const handleMouseLeave = () => {
-    setHoveredPoint(null);
+    setHoveredBar(null);
   };
 
   return (
@@ -74,51 +70,41 @@ const InteractiveLineChart = ({ data, color = "#1a73e8", height = 200, title = "
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
             <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
           </pattern>
-          <linearGradient id={`gradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-            <stop offset="100%" stopColor={color} stopOpacity="0.05" />
-          </linearGradient>
         </defs>
         
         {/* Background grid */}
         <rect width="100%" height="100%" fill="url(#grid)" />
         
-        {/* Gradient fill */}
-        <polyline
-          fill={`url(#gradient-${color})`}
-          stroke="none"
-          points={`${pointsString} 100,100 0,100`}
-        />
-        
-        {/* Main line */}
-        <polyline
-          fill="none"
-          stroke={color}
-          strokeWidth="2"
-          points={pointsString}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        
-        {/* Data points */}
-        {points.map((point, index) => (
-          <circle
-            key={index}
-            cx={`${point.x}%`}
-            cy={`${point.y}%`}
-            r="3"
-            fill={color}
-            className="transition-all duration-200 hover:r-5"
-            style={{ opacity: hoveredPoint?.data === point.data ? 1 : 0.6 }}
-          />
-        ))}
+        {/* Bars */}
+        {data.map((point, index) => {
+          const barX = index * barWidth + barSpacing / 2;
+          const barHeight = (point.value / maxValue) * 100;
+          const barY = 100 - barHeight;
+          const isHovered = hoveredBar?.data === point;
+          
+          return (
+            <rect
+              key={index}
+              x={`${barX}%`}
+              y={`${barY}%`}
+              width={`${actualBarWidth}%`}
+              height={`${barHeight}%`}
+              fill={color}
+              className="transition-all duration-200"
+              style={{ 
+                opacity: isHovered ? 1 : 0.8,
+                filter: isHovered ? 'brightness(1.1)' : 'none'
+              }}
+            />
+          );
+        })}
         
         {/* Hover indicator line */}
-        {hoveredPoint && (
+        {hoveredBar && (
           <line
-            x1={`${hoveredPoint.x}%`}
+            x1={`${hoveredBar.x + actualBarWidth / 2}%`}
             y1="0"
-            x2={`${hoveredPoint.x}%`}
+            x2={`${hoveredBar.x + actualBarWidth / 2}%`}
             y2="100%"
             stroke="#e0e0e0"
             strokeWidth="1"
@@ -128,7 +114,7 @@ const InteractiveLineChart = ({ data, color = "#1a73e8", height = 200, title = "
       </svg>
       
       {/* Tooltip */}
-      {hoveredPoint && (
+      {hoveredBar && (
         <div
           className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
           style={{
@@ -137,12 +123,22 @@ const InteractiveLineChart = ({ data, color = "#1a73e8", height = 200, title = "
             transform: 'translateX(-50%)'
           }}
         >
-          <div className="font-medium text-gray-900">{title}</div>
-          <div className="text-gray-600">
-            {new Date(hoveredPoint.data.date).toLocaleDateString()}
+          <div className="font-medium text-gray-900">
+            {new Date(hoveredBar.data.date).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              day: 'numeric', 
+              month: 'short' 
+            })}
           </div>
-          <div className="font-semibold text-blue-600">
-            {hoveredPoint.data.value.toLocaleString()}
+          <div className="flex items-center gap-2 mt-1">
+            <div 
+              className="w-3 h-3 rounded-sm" 
+              style={{ backgroundColor: color }}
+            ></div>
+            <span className="text-gray-600">{title}</span>
+          </div>
+          <div className="font-semibold text-gray-900 mt-1">
+            {hoveredBar.data.value.toLocaleString()}
           </div>
         </div>
       )}
@@ -462,7 +458,7 @@ export default function GSCIndexingPage() {
 
                 {/* Indexing Chart */}
                 <div className="h-64">
-                  <InteractiveLineChart 
+                  <InteractiveBarChart 
                     data={[
                       { date: '2025-01-20', value: indexingData?.totalIndexed || 0 },
                       { date: '2025-01-21', value: indexingData?.totalIndexed || 0 },

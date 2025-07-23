@@ -19,6 +19,134 @@ import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
+// Interactive bar chart component with hover effects (like Google's design)
+const InteractiveBarChart = ({ data, color = "#34a853", height = 200, title = "" }: { 
+  data: Array<{ date: string; value: number }>, 
+  color?: string, 
+  height?: number,
+  title?: string 
+}) => {
+  const [hoveredBar, setHoveredBar] = useState<{ x: number; y: number; data: any } | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+
+  if (!data || data.length === 0) return null;
+
+  const maxValue = Math.max(...data.map(d => d.value));
+  const barWidth = 100 / data.length;
+  const barSpacing = barWidth * 0.1; // 10% spacing between bars
+  const actualBarWidth = barWidth - barSpacing;
+
+  const handleMouseMove = (event: React.MouseEvent<SVGSVGElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    
+    // Find which bar we're hovering over
+    const barIndex = Math.floor(x / barWidth);
+    if (barIndex >= 0 && barIndex < data.length) {
+      const barData = data[barIndex];
+      const barX = barIndex * barWidth + barSpacing / 2;
+      const barHeight = (barData.value / maxValue) * 100;
+      const barY = 100 - barHeight;
+      
+      setHoveredBar({ x: barX, y: barY, data: barData });
+      setTooltipPosition({ x: event.clientX, y: event.clientY });
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredBar(null);
+  };
+
+  return (
+    <div className="relative" style={{ height }}>
+      <svg 
+        width="100%" 
+        height="100%" 
+        className="absolute inset-0 cursor-crosshair"
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Grid lines */}
+        <defs>
+          <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
+          </pattern>
+        </defs>
+        
+        {/* Background grid */}
+        <rect width="100%" height="100%" fill="url(#grid)" />
+        
+        {/* Bars */}
+        {data.map((point, index) => {
+          const barX = index * barWidth + barSpacing / 2;
+          const barHeight = (point.value / maxValue) * 100;
+          const barY = 100 - barHeight;
+          const isHovered = hoveredBar?.data === point;
+          
+          return (
+            <rect
+              key={index}
+              x={`${barX}%`}
+              y={`${barY}%`}
+              width={`${actualBarWidth}%`}
+              height={`${barHeight}%`}
+              fill={color}
+              className="transition-all duration-200"
+              style={{ 
+                opacity: isHovered ? 1 : 0.8,
+                filter: isHovered ? 'brightness(1.1)' : 'none'
+              }}
+            />
+          );
+        })}
+        
+        {/* Hover indicator line */}
+        {hoveredBar && (
+          <line
+            x1={`${hoveredBar.x + actualBarWidth / 2}%`}
+            y1="0"
+            x2={`${hoveredBar.x + actualBarWidth / 2}%`}
+            y2="100%"
+            stroke="#e0e0e0"
+            strokeWidth="1"
+            strokeDasharray="5,5"
+          />
+        )}
+      </svg>
+      
+      {/* Tooltip */}
+      {hoveredBar && (
+        <div
+          className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 40,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="font-medium text-gray-900">
+            {new Date(hoveredBar.data.date).toLocaleDateString('en-US', { 
+              weekday: 'long', 
+              day: 'numeric', 
+              month: 'short' 
+            })}
+          </div>
+          <div className="flex items-center gap-2 mt-1">
+            <div 
+              className="w-3 h-3 rounded-sm" 
+              style={{ backgroundColor: color }}
+            ></div>
+            <span className="text-gray-600">{title}</span>
+          </div>
+          <div className="font-semibold text-gray-900 mt-1">
+            {hoveredBar.data.value.toLocaleString()}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function GSCSitemapsPage() {
   const [sitemaps, setSitemaps] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -244,6 +372,63 @@ export default function GSCSitemapsPage() {
                 </div>
                 <div className="text-sm text-gray-600">
                   Total warnings
+                </div>
+              </div>
+            </div>
+
+            {/* Performance Overview */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+              {/* Sitemaps Performance Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Sitemaps Performance</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Total Sitemaps</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <InteractiveBarChart 
+                    data={[
+                      { date: '2025-01-20', value: sitemaps.length },
+                      { date: '2025-01-21', value: sitemaps.length },
+                      { date: '2025-01-22', value: sitemaps.length },
+                      { date: '2025-01-23', value: sitemaps.length },
+                      { date: '2025-01-24', value: sitemaps.length },
+                      { date: '2025-01-25', value: sitemaps.length },
+                      { date: '2025-01-26', value: sitemaps.length }
+                    ]}
+                    color="#1a73e8"
+                    height={240}
+                    title="Total Sitemaps"
+                  />
+                </div>
+              </div>
+
+              {/* Sitemaps Status Chart */}
+              <div className="bg-white border border-gray-200 rounded-lg p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900">Sitemaps Status</h3>
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 bg-green-600 rounded-full"></div>
+                    <span className="text-sm text-gray-600">Successful Sitemaps</span>
+                  </div>
+                </div>
+                <div className="h-64">
+                  <InteractiveBarChart 
+                    data={[
+                      { date: '2025-01-20', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-21', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-22', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-23', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-24', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-25', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length },
+                      { date: '2025-01-26', value: sitemaps.filter(s => s.errors === 0 && s.warnings === 0).length }
+                    ]}
+                    color="#34a853"
+                    height={240}
+                    title="Successful Sitemaps"
+                  />
                 </div>
               </div>
             </div>
