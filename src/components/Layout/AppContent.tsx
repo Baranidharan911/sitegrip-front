@@ -37,7 +37,7 @@ const AppContent = memo(({ children }: AppContentProps) => {
   const sidebarClasses = useMemo(() => 
     `fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out ${
       isOpen ? 'translate-x-0' : '-translate-x-full'
-    } lg:relative lg:translate-x-0 lg:inset-0`, [isOpen]
+    } lg:translate-x-0`, [isOpen]
   );
 
   // Optimized loading fallback
@@ -60,11 +60,11 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the content area
   const contentArea = useMemo(() => (
-    <div className="flex-1 flex flex-col overflow-hidden relative z-[9999]">
+    <div className={`flex-1 flex flex-col overflow-hidden relative z-[9999] lg:ml-${isOpen ? '64' : '20'}`}>
       {headerComponent}
       {mainContent}
     </div>
-  ), [headerComponent, mainContent]);
+  ), [headerComponent, mainContent, isOpen]);
 
   // Don't render until client-side
   if (!isClient) {
