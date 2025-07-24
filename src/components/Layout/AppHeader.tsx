@@ -202,13 +202,13 @@ const AppHeader = () => {
           {/* Left section */}
           <div className="flex items-center gap-4">
             {/* Sidebar Toggle */}
-            <button
+            {/* <button
               className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200"
               onClick={toggleSidebar}
               aria-label="Toggle sidebar"
             >
               <Menu className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-            </button>
+            </button> */}
 
             {/* Logo */}
             <Link

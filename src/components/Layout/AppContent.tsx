@@ -33,12 +33,20 @@ const AppContent = memo(({ children }: AppContentProps) => {
     isOpen ? <Backdrop /> : null, [isOpen]
   );
 
-  // Memoize the sidebar classes
-  const sidebarClasses = useMemo(() => 
-    `fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ease-in-out ${
-      isOpen ? 'translate-x-0' : '-translate-x-full'
-    } lg:translate-x-0`, [isOpen]
-  );
+  // Memoize the sidebar classes - Fixed positioning with proper z-index
+  const sidebarClasses = useMemo(() => {
+    const baseClasses = 'fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out';
+    const mobileClasses = isOpen ? 'translate-x-0' : '-translate-x-full';
+    const desktopClasses = 'lg:translate-x-0';
+    return `${baseClasses} ${mobileClasses} ${desktopClasses}`;
+  }, [isOpen]);
+
+  // Memoize the content area classes - Fixed margin
+  const contentAreaClasses = useMemo(() => {
+    const baseClasses = 'flex-1 flex flex-col overflow-visible relative z-10';
+    const marginClasses = isOpen ? 'lg:ml-64' : 'lg:ml-20';
+    return `${baseClasses} ${marginClasses}`;
+  }, [isOpen]);
 
   // Optimized loading fallback
   const loadingFallback = useCallback(() => (
@@ -60,11 +68,11 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the content area
   const contentArea = useMemo(() => (
-    <div className={`flex-1 flex flex-col overflow-visible relative z-[9999] lg:ml-${isOpen ? '64' : '20'}`}>
+    <div className={contentAreaClasses}>
       {headerComponent}
       {mainContent}
     </div>
-  ), [headerComponent, mainContent, isOpen]);
+  ), [headerComponent, mainContent, contentAreaClasses]);
 
   // Don't render until client-side
   if (!isClient) {
@@ -79,12 +87,12 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-gray-900 overflow-visible">
-      {/* Sidebar */}
+      {/* Sidebar - Higher z-index to ensure visibility */}
       <div className={sidebarClasses}>
         {sidebarComponent}
       </div>
 
-      {/* Backdrop for mobile */}
+      {/* Backdrop for mobile - Lower z-index than sidebar */}
       {backdropComponent}
 
       {/* Main content area */}
