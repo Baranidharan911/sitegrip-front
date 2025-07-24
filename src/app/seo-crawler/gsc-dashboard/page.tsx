@@ -109,7 +109,7 @@ interface EnhancementsData {
   richResults: any[];
 }
 
-// Enhanced Google Search Console style chart component
+// Enhanced Google Search Console style chart component with dark mode support
 const GSCInteractiveChart = ({
   data,
   color = "#1a73e8",
@@ -129,7 +129,7 @@ const GSCInteractiveChart = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full text-gray-400">
+      <div className="flex items-center justify-center h-full text-gray-400 dark:text-gray-500">
         <div className="text-center">
           <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
           <p className="text-sm">No data available</p>
@@ -177,16 +177,16 @@ const GSCInteractiveChart = ({
   }
 
   return (
-    <div className="relative w-full bg-white" style={{ height }}>
+    <div className="relative w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg" style={{ height }}>
       {/* Chart Title */}
       {title && (
-        <div className="absolute top-2 left-12 text-sm font-medium text-gray-700 z-10">
+        <div className="absolute top-2 left-12 text-sm font-medium text-gray-700 dark:text-gray-300 z-10">
           {title}
         </div>
       )}
       
       {/* Y-axis labels */}
-      <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500 py-6">
+      <div className="absolute left-0 top-0 bottom-0 w-10 flex flex-col justify-between text-xs text-gray-500 dark:text-gray-400 py-6">
         {yAxisLabels.reverse().map((label, index) => (
           <div key={index} className="text-right pr-2" style={{ transform: 'translateY(-50%)' }}>
             {label.value.toLocaleString()}
@@ -209,7 +209,7 @@ const GSCInteractiveChart = ({
           {showGrid && (
             <defs>
               <pattern id={`grid-${title}`} width="100" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 0 20 L 100 20" fill="none" stroke="#f3f4f6" strokeWidth="0.5"/>
+                <path d="M 0 20 L 100 20" fill="none" stroke="#f3f4f6" strokeWidth="0.5" className="dark:stroke-gray-700"/>
               </pattern>
             </defs>
           )}
@@ -226,6 +226,7 @@ const GSCInteractiveChart = ({
               y2={label.y}
               stroke="#f3f4f6"
               strokeWidth="0.5"
+              className="dark:stroke-gray-700"
             />
           ))}
           
@@ -277,14 +278,14 @@ const GSCInteractiveChart = ({
               stroke="#dadce0"
               strokeWidth="1"
               strokeDasharray="2,2"
-              className="animate-pulse"
+              className="animate-pulse dark:stroke-gray-600"
             />
           )}
         </svg>
         
         {/* X-axis labels */}
         {showDataLabels && (
-          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 px-1">
+          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
             {data.map((point, index) => {
               if (index % Math.ceil(data.length / 6) === 0 || index === data.length - 1) {
                 return (
@@ -304,7 +305,7 @@ const GSCInteractiveChart = ({
         {/* Enhanced Tooltip */}
         {hoveredBar && (
           <div
-            className="absolute z-20 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-xl pointer-events-none"
+            className="absolute z-20 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl pointer-events-none"
             style={{
               left: `${hoveredBar.x + actualBarWidth / 2}%`,
               top: `${Math.max(hoveredBar.y - 15, 5)}%`,
@@ -312,7 +313,7 @@ const GSCInteractiveChart = ({
               minWidth: '120px'
             }}
           >
-            <div className="font-medium text-gray-900 mb-1">
+            <div className="font-medium text-gray-900 dark:text-gray-100 mb-1">
               {new Date(hoveredBar.data.date).toLocaleDateString('en-US', {
                 weekday: 'short',
                 month: 'short',
@@ -325,9 +326,9 @@ const GSCInteractiveChart = ({
                   className="w-3 h-3 rounded-sm"
                   style={{ backgroundColor: color }}
                 />
-                <span className="text-gray-600 text-xs">{title}</span>
+                <span className="text-gray-600 dark:text-gray-300 text-xs">{title}</span>
               </div>
-              <div className="font-semibold text-gray-900">
+              <div className="font-semibold text-gray-900 dark:text-gray-100">
                 {hoveredBar.data.value.toLocaleString()}
               </div>
             </div>
@@ -338,7 +339,7 @@ const GSCInteractiveChart = ({
   );
 };
 
-// Interactive stacked bar chart component (like the second image)
+// Interactive stacked bar chart component with dark mode support
 const InteractiveStackedBarChart = ({ 
   data, 
   height = 200, 
@@ -381,7 +382,7 @@ const InteractiveStackedBarChart = ({
   };
 
   return (
-    <div className="relative" style={{ height }}>
+    <div className="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg" style={{ height }}>
       <svg 
         width="100%" 
         height="100%" 
@@ -392,7 +393,7 @@ const InteractiveStackedBarChart = ({
         {/* Grid lines */}
         <defs>
           <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1"/>
+            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#f0f0f0" strokeWidth="1" className="dark:stroke-gray-700"/>
           </pattern>
         </defs>
         
@@ -450,6 +451,7 @@ const InteractiveStackedBarChart = ({
             stroke="#e0e0e0"
             strokeWidth="1"
             strokeDasharray="5,5"
+            className="dark:stroke-gray-600"
           />
         )}
       </svg>
@@ -457,14 +459,14 @@ const InteractiveStackedBarChart = ({
       {/* Tooltip */}
       {hoveredBar && (
         <div
-          className="absolute z-10 px-3 py-2 text-sm bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-none"
+          className="absolute z-10 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg pointer-events-none"
           style={{
             left: `${hoveredBar.x + actualBarWidth / 2}%`,
             top: '10%',
             transform: 'translateX(-50%)'
           }}
         >
-          <div className="font-medium text-gray-900">
+          <div className="font-medium text-gray-900 dark:text-gray-100">
             {new Date(hoveredBar.data.date).toLocaleDateString('en-US', { 
               weekday: 'long', 
               day: 'numeric', 
@@ -473,11 +475,11 @@ const InteractiveStackedBarChart = ({
           </div>
           <div className="flex items-center gap-2 mt-1">
             <div className="w-3 h-3 rounded-sm bg-gray-400"></div>
-            <span className="text-gray-600">Not indexed {hoveredBar.data.notIndexed}</span>
+            <span className="text-gray-600 dark:text-gray-300">Not indexed {hoveredBar.data.notIndexed}</span>
           </div>
           <div className="flex items-center gap-2 mt-1">
             <div className="w-3 h-3 rounded-sm bg-green-500"></div>
-            <span className="text-gray-600">Indexed {hoveredBar.data.indexed}</span>
+            <span className="text-gray-600 dark:text-gray-300">Indexed {hoveredBar.data.indexed}</span>
           </div>
         </div>
       )}
@@ -579,19 +581,19 @@ export default function GSCDashboardPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Submitted and indexed': return 'text-green-600';
-      case 'Discovered – currently not indexed': return 'text-yellow-600';
-      case 'Crawled – currently not indexed': return 'text-orange-600';
-      default: return 'text-gray-600';
+      case 'Submitted and indexed': return 'text-green-600 dark:text-green-400';
+      case 'Discovered – currently not indexed': return 'text-yellow-600 dark:text-yellow-400';
+      case 'Crawled – currently not indexed': return 'text-orange-600 dark:text-orange-400';
+      default: return 'text-gray-600 dark:text-gray-400';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'Submitted and indexed': return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case 'Discovered – currently not indexed': return <Clock className="w-4 h-4 text-yellow-600" />;
-      case 'Crawled – currently not indexed': return <AlertCircle className="w-4 h-4 text-orange-600" />;
-      default: return <XCircle className="w-4 h-4 text-gray-600" />;
+      case 'Submitted and indexed': return <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />;
+      case 'Discovered – currently not indexed': return <Clock className="w-4 h-4 text-yellow-600 dark:text-yellow-400" />;
+      case 'Crawled – currently not indexed': return <AlertCircle className="w-4 h-4 text-orange-600 dark:text-orange-400" />;
+      default: return <XCircle className="w-4 h-4 text-gray-600 dark:text-gray-400" />;
     }
   };
 
@@ -615,15 +617,15 @@ export default function GSCDashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-7xl mx-auto p-6">
           <div className="flex items-center justify-between mb-8">
-            <div className="h-8 w-64 bg-gray-200 rounded animate-pulse"></div>
-            <div className="h-10 w-32 bg-gray-200 rounded animate-pulse"></div>
+            <div className="h-8 w-64 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            <div className="h-10 w-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-64 bg-gray-200 rounded-lg animate-pulse"></div>
+              <div key={i} className="h-64 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
             ))}
           </div>
         </div>
@@ -632,7 +634,7 @@ export default function GSCDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto p-6">
         {/* Google Search Console Style Header */}
         <div className="flex items-center justify-between mb-8">
@@ -641,8 +643,8 @@ export default function GSCDashboardPage() {
               <Search className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-normal text-gray-900">Search Console</h1>
-              <p className="text-sm text-gray-600">Monitor your site's search performance</p>
+              <h1 className="text-2xl font-normal text-gray-900 dark:text-white">Search Console</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Monitor your site's search performance</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -654,7 +656,7 @@ export default function GSCDashboardPage() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
-            <button className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+            <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               <Settings className="w-5 h-5" />
             </button>
           </div>
@@ -664,13 +666,13 @@ export default function GSCDashboardPage() {
         <div className="mb-8">
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Property
               </label>
               <select 
                 value={selectedProperty} 
                 onChange={(e) => setSelectedProperty(e.target.value)}
-                className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full max-w-md px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
                 {properties.map((property) => (
                   <option key={property.site_url} value={property.site_url}>
@@ -681,13 +683,13 @@ export default function GSCDashboardPage() {
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Date range
               </label>
               <select 
                 value={dateRange} 
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
               >
                 <option value="7">Last 7 days</option>
                 <option value="30">Last 30 days</option>
@@ -700,10 +702,10 @@ export default function GSCDashboardPage() {
         {/* Main Dashboard - Google Search Console Style */}
         <div className="space-y-8">
           {/* Overview Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-medium text-gray-900">Overview</h2>
-              <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+              <h2 className="text-xl font-medium text-gray-900 dark:text-white">Overview</h2>
+              <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center gap-1">
                 Explore your insights
                 <ArrowRight className="w-4 h-4" />
               </a>
@@ -711,10 +713,10 @@ export default function GSCDashboardPage() {
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Performance Card */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Performance</h3>
-                  <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Performance</h3>
+                  <a href="/seo-crawler/gsc-dashboard/performance" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center gap-1">
                     Full report
                     <ChevronRight className="w-4 h-4" />
                   </a>
@@ -722,7 +724,7 @@ export default function GSCDashboardPage() {
                 <div className="mb-4">
                   <div className="flex items-center gap-2 mb-2">
                     <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
-                    <span className="text-sm text-gray-700">
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
                       {formatNumber(performanceData?.totalClicks)} total web search clicks
                     </span>
                   </div>
@@ -737,14 +739,14 @@ export default function GSCDashboardPage() {
                     />
                   </div>
                 )}
-                <p className="text-xs text-gray-500">Performance data available for the selected period</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Performance data available for the selected period</p>
               </div>
 
               {/* Indexing Card */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Indexing</h3>
-                  <a href="/seo-crawler/gsc-dashboard/indexing" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Indexing</h3>
+                  <a href="/seo-crawler/gsc-dashboard/indexing" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center gap-1">
                     Full report
                     <ChevronRight className="w-4 h-4" />
                   </a>
@@ -754,13 +756,13 @@ export default function GSCDashboardPage() {
                   <div className="flex items-center gap-4 mb-2">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
                         {indexedPages.filter(page => !page.indexed).length} not indexed pages
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 bg-green-600 rounded-full"></div>
-                      <span className="text-sm text-gray-700">
+                      <span className="text-sm text-gray-700 dark:text-gray-300">
                         {indexedPages.filter(page => page.indexed).length} indexed pages
                       </span>
                     </div>
@@ -780,14 +782,14 @@ export default function GSCDashboardPage() {
                     />
                   </div>
                 )}
-                <p className="text-xs text-gray-500">Indexing status overview for the selected property</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Indexing status overview for the selected property</p>
               </div>
 
               {/* Coverage Card */}
-              <div className="border border-gray-200 rounded-lg p-4">
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-gray-900">Coverage</h3>
-                  <a href="/seo-crawler/gsc-dashboard/coverage" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">Coverage</h3>
+                  <a href="/seo-crawler/gsc-dashboard/coverage" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center gap-1">
                     Full report
                     <ChevronRight className="w-4 h-4" />
                   </a>
@@ -796,28 +798,28 @@ export default function GSCDashboardPage() {
                 {coverageData && (
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total submitted</span>
-                      <span className="font-medium">{coverageData.totalSubmitted}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Total submitted</span>
+                      <span className="font-medium text-gray-900 dark:text-white">{coverageData.totalSubmitted}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total indexed</span>
-                      <span className="font-medium text-green-600">{coverageData.totalIndexed}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Total indexed</span>
+                      <span className="font-medium text-green-600 dark:text-green-400">{coverageData.totalIndexed}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total excluded</span>
-                      <span className="font-medium text-yellow-600">{coverageData.totalExcluded}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Total excluded</span>
+                      <span className="font-medium text-yellow-600 dark:text-yellow-400">{coverageData.totalExcluded}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-gray-600">Total errors</span>
-                      <span className="font-medium text-red-600">{coverageData.totalError}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Total errors</span>
+                      <span className="font-medium text-red-600 dark:text-red-400">{coverageData.totalError}</span>
                     </div>
                   </div>
                 )}
                 
-                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
                   <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 text-yellow-600">💡</div>
-                    <span className="text-sm text-gray-700">Get insights into your site's Search performance</span>
+                    <div className="w-5 h-5 text-yellow-600 dark:text-yellow-400">💡</div>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Get insights into your site's Search performance</span>
                   </div>
                 </div>
               </div>
@@ -825,48 +827,48 @@ export default function GSCDashboardPage() {
           </div>
 
           {/* Quick Actions */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
-            <h2 className="text-xl font-medium text-gray-900 mb-4">Quick actions</h2>
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+            <h2 className="text-xl font-medium text-gray-900 dark:text-white mb-4">Quick actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <a href="/seo-crawler/gsc-dashboard/performance" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <BarChart3 className="w-6 h-6 text-blue-600" />
+              <a href="/seo-crawler/gsc-dashboard/performance" className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <BarChart3 className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 <div>
-                  <h3 className="font-medium text-gray-900">Performance</h3>
-                  <p className="text-sm text-gray-600">View search performance</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Performance</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">View search performance</p>
                 </div>
               </a>
               
-              <a href="/seo-crawler/gsc-dashboard/indexing" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Target className="w-6 h-6 text-green-600" />
+              <a href="/seo-crawler/gsc-dashboard/indexing" className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <Target className="w-6 h-6 text-green-600 dark:text-green-400" />
                 <div>
-                  <h3 className="font-medium text-gray-900">Indexing</h3>
-                  <p className="text-sm text-gray-600">Check indexing status</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Indexing</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Check indexing status</p>
                 </div>
               </a>
               
-              <a href="/seo-crawler/gsc-dashboard/pages" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <FileText className="w-6 h-6 text-purple-600" />
+              <a href="/seo-crawler/gsc-dashboard/pages" className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 <div>
-                  <h3 className="font-medium text-gray-900">Pages</h3>
-                  <p className="text-sm text-gray-600">View indexed pages</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Pages</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">View indexed pages</p>
                 </div>
               </a>
               
-              <a href="/seo-crawler/gsc-dashboard/sitemaps" className="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <Database className="w-6 h-6 text-orange-600" />
+              <a href="/seo-crawler/gsc-dashboard/sitemaps" className="flex items-center gap-3 p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                <Database className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                 <div>
-                  <h3 className="font-medium text-gray-900">Sitemaps</h3>
-                  <p className="text-sm text-gray-600">Manage sitemaps</p>
+                  <h3 className="font-medium text-gray-900 dark:text-white">Sitemaps</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Manage sitemaps</p>
                 </div>
               </a>
             </div>
           </div>
 
           {/* Recent Activity */}
-          <div className="bg-white border border-gray-200 rounded-lg p-6">
+          <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-medium text-gray-900">Recent activity</h2>
-              <a href="/seo-crawler/gsc-dashboard/activity" className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1">
+              <h2 className="text-xl font-medium text-gray-900 dark:text-white">Recent activity</h2>
+              <a href="/seo-crawler/gsc-dashboard/activity" className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm flex items-center gap-1">
                 View all
                 <ChevronRight className="w-4 h-4" />
               </a>
@@ -874,12 +876,12 @@ export default function GSCDashboardPage() {
             
             <div className="space-y-3">
               {indexedPages.slice(0, 5).map((page, index) => (
-                <div key={index} className="flex items-center justify-between p-3 border border-gray-100 rounded-lg">
+                <div key={index} className="flex items-center justify-between p-3 border border-gray-100 dark:border-gray-700 rounded-lg">
                   <div className="flex items-center gap-3">
                     {getStatusIcon(page.coverageState || '')}
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate text-gray-900">{page.url}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium text-sm truncate text-gray-900 dark:text-white">{page.url}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
                         {page.lastCrawled ? `Last crawled: ${new Date(page.lastCrawled).toLocaleDateString()}` : 'Not crawled yet'}
                       </p>
                     </div>
@@ -888,22 +890,22 @@ export default function GSCDashboardPage() {
                   <div className="flex items-center gap-4">
                     {page.clicks !== undefined && (
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{page.clicks}</p>
-                        <p className="text-xs text-gray-500">Clicks</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{page.clicks}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Clicks</p>
                       </div>
                     )}
                     
                     {page.impressions !== undefined && (
                       <div className="text-right">
-                        <p className="text-sm font-medium text-gray-900">{page.impressions}</p>
-                        <p className="text-xs text-gray-500">Impressions</p>
+                        <p className="text-sm font-medium text-gray-900 dark:text-white">{page.impressions}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Impressions</p>
                       </div>
                     )}
                     
                     <span className={`px-2 py-1 rounded text-xs font-medium ${
                       page.indexed 
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300'
                     }`}>
                       {page.coverageState || 'Unknown'}
                     </span>
@@ -912,8 +914,8 @@ export default function GSCDashboardPage() {
               ))}
               
               {indexedPages.length === 0 && (
-                <div className="text-center py-8 text-gray-500">
-                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  <Search className="w-12 h-12 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
                   <p className="text-lg font-medium">No activity found</p>
                   <p className="text-sm">Try refreshing the data or selecting a different property</p>
                 </div>
@@ -923,17 +925,17 @@ export default function GSCDashboardPage() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <div className="flex items-center justify-between text-sm text-gray-500">
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
             <div>
               {indexingSummary && (
                 <span>Last updated: {new Date(indexingSummary.lastUpdated).toLocaleString()}</span>
               )}
             </div>
             <div className="flex items-center gap-4">
-              <a href="/help" className="hover:text-gray-700">Help</a>
-              <a href="/feedback" className="hover:text-gray-700">Send feedback</a>
-              <a href="/privacy" className="hover:text-gray-700">Privacy</a>
+              <a href="/help" className="hover:text-gray-700 dark:hover:text-gray-300">Help</a>
+              <a href="/feedback" className="hover:text-gray-700 dark:hover:text-gray-300">Send feedback</a>
+              <a href="/privacy" className="hover:text-gray-700 dark:hover:text-gray-300">Privacy</a>
             </div>
           </div>
         </div>
