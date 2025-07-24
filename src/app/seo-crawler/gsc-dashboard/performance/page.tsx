@@ -95,7 +95,7 @@ const GSCPerformanceChart = ({
   };
 
   return (
-    <div className="relative w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4" style={{ height }}>
+    <div className="relative w-full bg-transparent rounded-lg p-4" style={{ height }}>
       {/* Chart Title and Legend */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">{title}</h3>
@@ -126,17 +126,6 @@ const GSCPerformanceChart = ({
           preserveAspectRatio="none"
         >
           {/* Grid lines */}
-          {showGrid && (
-            <defs>
-              <pattern id={`grid-${title}`} width="100" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 0 20 L 100 20" fill="none" stroke="#f3f4f6" strokeWidth="0.5" className="dark:stroke-gray-700"/>
-              </pattern>
-            </defs>
-          )}
-          
-          {showGrid && <rect width="100%" height="100%" fill={`url(#grid-${title})`} />}
-          
-          {/* Horizontal grid lines */}
           {showGrid && yAxisLabels.map((label, index) => (
             <line
               key={index}
@@ -144,9 +133,9 @@ const GSCPerformanceChart = ({
               y1={label.y}
               x2="100"
               y2={label.y}
-              stroke="#f3f4f6"
+              stroke="currentColor"
               strokeWidth="0.5"
-              className="dark:stroke-gray-700"
+              className="text-gray-200 dark:text-gray-700"
             />
           ))}
           
@@ -176,13 +165,13 @@ const GSCPerformanceChart = ({
                 
                 {/* Data point indicator */}
                 {isHovered && (
-                  <circle
-                    cx={`${barX + actualBarWidth / 2}%`}
-                    cy={`${barY}%`}
+                    <circle
+                      cx={`${barX + actualBarWidth / 2}%`}
+                      cy={`${barY}%`}
                     r="3"
-                    fill={color}
-                    className="animate-pulse"
-                  />
+                      fill={color}
+                      className="animate-pulse"
+                    />
                 )}
               </g>
             );
@@ -195,10 +184,10 @@ const GSCPerformanceChart = ({
               y1="5%"
               x2={`${hoveredBar.x + actualBarWidth / 2}%`}
               y2="85%"
-              stroke="#dadce0"
+              stroke="currentColor"
               strokeWidth="1"
               strokeDasharray="2,2"
-              className="animate-pulse dark:stroke-gray-600"
+              className="animate-pulse text-gray-400 dark:text-gray-500"
             />
           )}
         </svg>
@@ -208,14 +197,14 @@ const GSCPerformanceChart = ({
           <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 dark:text-gray-400 px-1">
             {data.map((point, index) => {
               if (index % Math.ceil(data.length / 8) === 0 || index === data.length - 1) {
-                return (
-                  <div key={index} className="text-center" style={{ width: `${100/data.length}%` }}>
-                    {new Date(point.date).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric'
-                    })}
-                  </div>
-                );
+              return (
+                <div key={index} className="text-center" style={{ width: `${100/data.length}%` }}>
+                  {new Date(point.date).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </div>
+              );
               }
               return null;
             })}
@@ -451,59 +440,59 @@ export default function GSCPerformancePage() {
         </div>
 
         {/* Performance Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Total Clicks</h3>
               <MousePointer className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-            </div>
+                </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {formatNumber(performanceData?.totalClicks)}
+                  {formatNumber(performanceData?.totalClicks)}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Web search clicks
             </p>
-          </div>
+              </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Total Impressions</h3>
               <Eye className="w-6 h-6 text-green-600 dark:text-green-400" />
-            </div>
+                </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {formatNumber(performanceData?.totalImpressions)}
+                  {formatNumber(performanceData?.totalImpressions)}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Search result views
             </p>
-          </div>
+              </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Average CTR</h3>
               <TrendingUp className="w-6 h-6 text-yellow-600 dark:text-yellow-400" />
-            </div>
+                </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
-              {formatCTR(performanceData?.avgCTR)}
+                  {formatCTR(performanceData?.avgCTR)}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              Click-through rate
+                  Click-through rate
             </p>
-          </div>
+              </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
-            <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900 dark:text-white">Average Position</h3>
               <Target className="w-6 h-6 text-red-600 dark:text-red-400" />
-            </div>
+                </div>
             <p className="text-3xl font-bold text-gray-900 dark:text-white">
               {formatPosition(performanceData?.avgPosition)}
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
               Search result position
             </p>
-          </div>
-        </div>
+              </div>
+            </div>
 
         {/* Metric Selector */}
         <div className="mb-6">
@@ -511,35 +500,47 @@ export default function GSCPerformancePage() {
             Select Metric
           </label>
           <div className="flex gap-2">
-            {['clicks', 'impressions', 'ctr', 'position'].map((metric) => (
+            {[
+              { key: 'clicks', title: 'Clicks', icon: MousePointer, color: 'text-blue-600 dark:text-blue-400' },
+              { key: 'impressions', title: 'Impressions', icon: Eye, color: 'text-green-600 dark:text-green-400' },
+              { key: 'ctr', title: 'Click-through rate', icon: TrendingUp, color: 'text-yellow-600 dark:text-yellow-400' },
+              { key: 'position', title: 'Average position', icon: Target, color: 'text-red-600 dark:text-red-400' }
+            ].map(({ key, title, icon: Icon, color }) => (
               <button
-                key={metric}
-                onClick={() => setSelectedMetric(metric)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedMetric === metric
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                key={key}
+                onClick={() => setSelectedMetric(key)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 ${
+                  selectedMetric === key
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-500'
                 }`}
               >
-                {getMetricTitle()}
+                <Icon className={`w-4 h-4 ${selectedMetric === key ? 'text-white' : color}`} />
+                {title}
               </button>
             ))}
           </div>
         </div>
 
         {/* Performance Chart */}
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-medium text-gray-900 dark:text-white">
-              {getMetricTitle()} Over Time
-            </h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-xl font-medium text-gray-900 dark:text-white">
+                {getMetricTitle()} Over Time
+              </h2>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: getMetricColor() }}></div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">{getMetricTitle()}</span>
+              </div>
+            </div>
             <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
               <Download className="w-4 h-4" />
               Export
             </button>
           </div>
           
-          <div className="h-80">
+          <div className="h-80 bg-gray-50 dark:bg-gray-900/50 rounded-lg p-4">
             <GSCPerformanceChart
               data={getMetricData()}
               color={getMetricColor()}
@@ -569,8 +570,8 @@ export default function GSCPerformancePage() {
                   <p className="text-xs text-gray-600 dark:text-gray-400">Improve your search visibility and rankings</p>
                 </div>
               </div>
-            </div>
-          </div>
+                </div>
+              </div>
 
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Quick Actions</h3>
