@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
+import { getStoredAuthToken } from '@/utils/auth';
 
 interface GSCProperty {
   site_url: string;
@@ -563,6 +564,40 @@ export default function GSCDashboardPage() {
     }
   };
 
+  const refreshGSCProperties = async () => {
+    try {
+      setPropertyLoading(true);
+      setError(null);
+      
+      console.log('🔄 Refreshing GSC properties from API...');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/gsc/properties/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await getStoredAuthToken()}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to refresh properties: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('✅ GSC properties refreshed:', result);
+      
+      // Reload properties after refresh
+      await loadGSCProperties();
+      
+      toast.success(`Successfully refreshed ${result.properties?.length || 0} properties`);
+    } catch (error: any) {
+      console.error('❌ Failed to refresh GSC properties:', error);
+      setError('Failed to refresh GSC properties: ' + error.message);
+      toast.error('Failed to refresh GSC properties: ' + error.message);
+    } finally {
+      setPropertyLoading(false);
+    }
+  };
+
   const handlePropertyChange = (newProperty: string) => {
     console.log('🔄 Property selection changed from', selectedProperty, 'to', newProperty);
     
@@ -874,6 +909,21 @@ export default function GSCDashboardPage() {
                 <option value="30">Last 30 days</option>
                 <option value="90">Last 90 days</option>
               </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                &nbsp;
+              </label>
+              <button 
+                onClick={refreshGSCProperties} 
+                disabled={propertyLoading}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                title="Refresh properties from Google Search Console"
+              >
+                <RefreshCw className={`w-4 h-4 ${propertyLoading ? 'animate-spin' : ''}`} />
+                {propertyLoading ? 'Refreshing...' : 'Refresh Properties'}
+              </button>
             </div>
           </div>
         </div>
