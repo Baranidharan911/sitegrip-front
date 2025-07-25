@@ -160,7 +160,7 @@ export default function OpenGraphCheckerPage() {
                           e.currentTarget.onerror = null;
                           e.currentTarget.style.display = 'none';
                           const fallback = e.currentTarget.nextElementSibling;
-                          if (fallback) fallback.style.display = 'flex';
+                          if (fallback && fallback instanceof HTMLElement) fallback.style.display = 'flex';
                         }}
                       />
                     ) : null}
