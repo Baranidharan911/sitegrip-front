@@ -526,11 +526,11 @@ class IndexingAPI {
       }
       
       const data = await response.json();
-      console.log('✅ [GSC] Verified properties:', data.properties);
+      console.log('✅ [GSC] Verified properties:', data.data?.properties);
       
       return {
-        success: true,
-        properties: data.properties || [],
+        success: data.success,
+        properties: data.data?.properties?.map((prop: any) => prop.site_url) || [],
       };
     } catch (error: any) {
       console.error('❌ [GSC] Error checking properties:', error);
