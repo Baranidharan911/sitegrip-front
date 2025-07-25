@@ -143,7 +143,6 @@ export default function RootLayout({
           <SidebarProvider>
             <I18nProvider>
               {children}
-              <AppTour />
             </I18nProvider>
           </SidebarProvider>
         </ThemeProvider>
