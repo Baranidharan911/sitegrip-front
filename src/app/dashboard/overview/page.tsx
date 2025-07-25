@@ -480,20 +480,22 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
   const renderMetricCard = (title: string, value: string | number, icon: React.ReactNode, color: string, trend?: number) => (
     <motion.div
       variants={fadeInUp}
-      className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-2xl p-6 border border-white/20 dark:border-slate-700/50 hover:bg-white/90 dark:hover:bg-slate-800/90 transition-all duration-300 hover:scale-105 group"
+      className="relative bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl p-7 border border-slate-100 dark:border-slate-800 shadow-xl hover:shadow-2xl hover:scale-[1.03] transition-all duration-300 group overflow-hidden"
     >
-      <div className="flex items-start justify-between">
+      {/* Glassmorphism accent */}
+      <div className="absolute -top-8 -right-8 w-24 h-24 bg-gradient-to-br from-blue-400/20 via-purple-400/20 to-pink-400/10 rounded-full blur-2xl pointer-events-none" />
+      <div className="flex items-start justify-between relative z-10">
         <div className="flex-1">
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">{title}</p>
-          <p className="text-3xl font-bold text-slate-900 dark:text-white mb-2">{value}</p>
+          <p className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-2 tracking-tight">{title}</p>
+          <p className="text-4xl font-extrabold text-slate-900 dark:text-white mb-2 drop-shadow-sm">{value}</p>
           {trend !== undefined && (
-            <div className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              <TrendingUp className={`w-4 h-4 ${trend < 0 ? 'rotate-180' : ''}`} />
+            <div className={`flex items-center gap-1 text-sm ${trend >= 0 ? 'text-green-600' : 'text-red-600'} font-medium mt-1`}>
+              <TrendingUp className={`w-5 h-5 ${trend < 0 ? 'rotate-180' : ''}`} />
               <span>{Math.abs(trend)}%</span>
             </div>
           )}
         </div>
-        <div className={`w-12 h-12 rounded-xl ${color} p-3 group-hover:scale-110 transition-transform duration-300`}>
+        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center bg-gradient-to-br ${color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
           {icon}
         </div>
       </div>
