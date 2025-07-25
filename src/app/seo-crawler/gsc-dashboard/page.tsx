@@ -509,6 +509,11 @@ export default function GSCDashboardPage() {
   const [dateRange, setDateRange] = useState('30');
   const [error, setError] = useState<string | null>(null);
   const [propertyLoading, setPropertyLoading] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    pages: false,
+    summary: false,
+    history: false
+  });
 
   useEffect(() => {
     loadGSCProperties();
@@ -585,43 +590,61 @@ export default function GSCDashboardPage() {
       
       console.log('🔍 Loading GSC data for property:', selectedProperty);
       
-      // Load indexed pages data
-      const pagesResponse = await indexingApi.getIndexedPages(selectedProperty, {
-        days: parseInt(dateRange),
-        page: 1,
-        pageSize: 100,
-        includePerformance: true
-      });
+      // Load all data in parallel instead of sequentially for better performance
+      const [pagesResponse, summaryResponse, historyResponse] = await Promise.allSettled([
+        indexingApi.getIndexedPages(selectedProperty, {
+          days: parseInt(dateRange),
+          page: 1,
+          pageSize: 100,
+          includePerformance: true
+        }),
+        indexingApi.getIndexingSummary(selectedProperty),
+        indexingApi.getPerformanceHistory(selectedProperty, parseInt(dateRange))
+      ]);
       
-      console.log('📊 Pages Response:', pagesResponse);
-      
-      // Handle the response data properly
-      const pagesData = pagesResponse.data || pagesResponse;
-      setIndexedPages(pagesData.pages || []);
-      setPerformanceData(pagesData.performance || null);
-      setCoverageData(pagesData.coverage || null);
-      setSitemapsData(pagesData.sitemaps || []);
-      setEnhancementsData(pagesData.enhancements || null);
-      
-      // Load indexing summary
-      const summaryResponse = await indexingApi.getIndexingSummary(selectedProperty);
-      console.log('📊 Summary Response:', summaryResponse);
-      const summaryData = summaryResponse.data || summaryResponse;
-      setIndexingSummary(summaryData.summary || null);
-      
-      // Load performance history
-      const historyResponse = await indexingApi.getPerformanceHistory(selectedProperty, parseInt(dateRange));
-      console.log('📈 History Response:', historyResponse);
-      const historyData = historyResponse.data || historyResponse;
-      
-      if (historyData.history && historyData.history.length > 0) {
-        setHistoricalData(historyData.history);
-        console.log('✅ Using real historical data:', historyData.history.length, 'days');
+      // Process pages data
+      if (pagesResponse.status === 'fulfilled') {
+        console.log('📊 Pages Response:', pagesResponse.value);
+        const pagesData = pagesResponse.value.data || pagesResponse.value;
+        setIndexedPages(pagesData.pages || []);
+        setPerformanceData(pagesData.performance || null);
+        setCoverageData(pagesData.coverage || null);
+        setSitemapsData(pagesData.sitemaps || []);
+        setEnhancementsData(pagesData.enhancements || null);
       } else {
-        // Generate fallback historical data for charts
-        console.log('⚠️ No historical data available, generating fallback data');
-        const fallbackData = generateFallbackHistoricalData(parseInt(dateRange), pagesData.pages || []);
-        setHistoricalData(fallbackData);
+        console.error('❌ Failed to load pages data:', pagesResponse.reason);
+        toast.error('Failed to load pages data');
+      }
+      
+      // Process summary data
+      if (summaryResponse.status === 'fulfilled') {
+        console.log('📊 Summary Response:', summaryResponse.value);
+        const summaryData = summaryResponse.value.data || summaryResponse.value;
+        setIndexingSummary(summaryData.summary || null);
+      } else {
+        console.error('❌ Failed to load summary data:', summaryResponse.reason);
+        toast.error('Failed to load summary data');
+      }
+      
+      // Process history data
+      if (historyResponse.status === 'fulfilled') {
+        console.log('📈 History Response:', historyResponse.value);
+        const historyData = historyResponse.value.data || historyResponse.value;
+        
+        if (historyData.history && historyData.history.length > 0) {
+          setHistoricalData(historyData.history);
+          console.log('✅ Using real historical data:', historyData.history.length, 'days');
+        } else {
+          // Generate fallback historical data for charts
+          console.log('⚠️ No historical data available, generating fallback data');
+          const fallbackData = generateFallbackHistoricalData(parseInt(dateRange), []);
+          setHistoricalData(fallbackData);
+        }
+      } else {
+        console.error('❌ Failed to load history data:', historyResponse.reason);
+        toast.error('Failed to load history data');
+        // Set fallback data when API fails
+        setHistoricalData(generateFallbackHistoricalData(parseInt(dateRange), []));
       }
       
     } catch (error: any) {
@@ -696,6 +719,42 @@ export default function GSCDashboardPage() {
     return position.toFixed(1);
   };
 
+  // Skeleton loading component
+  const SkeletonCard = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border dark:border-gray-700 animate-pulse">
+      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/3 mb-4"></div>
+      <div className="h-8 bg-gray-300 dark:bg-gray-600 rounded w-1/2 mb-2"></div>
+      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-3/4"></div>
+    </div>
+  );
+
+  const SkeletonChart = () => (
+    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border dark:border-gray-700 animate-pulse">
+      <div className="h-4 bg-gray-300 dark:bg-gray-600 rounded w-1/4 mb-4"></div>
+      <div className="h-32 bg-gray-300 dark:bg-gray-600 rounded"></div>
+    </div>
+  );
+
+  // Loading progress component
+  const LoadingProgress = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-8 max-w-md w-full mx-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            Loading GSC Data...
+          </h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Fetching data from Google Search Console. This may take a few moments.
+          </p>
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -740,6 +799,9 @@ export default function GSCDashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Show loading progress when refreshing */}
+      {refreshing && <LoadingProgress />}
+      
       <div className="max-w-7xl mx-auto p-6">
         {/* Google Search Console Style Header */}
         <div className="flex items-center justify-between mb-8">
