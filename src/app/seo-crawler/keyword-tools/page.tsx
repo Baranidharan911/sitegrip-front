@@ -423,10 +423,6 @@ function KeywordToolsContent() {
             
             <KeywordToolsTabs
               url={currentPage.url}
-              domain={domain}
-              bodyText={currentPage.body_text || ''}
-              title={currentPage.title}
-              metaDescription={currentPage.meta_description}
             />
           </div>
         )}
