@@ -191,8 +191,8 @@ const NewFooter: React.FC = () => {
               Cookie Policy
             </Link>
           </div>
-          {/* Language Selector - only on homepage, styled bottom right */}
-          <div className="hidden md:block absolute right-0 bottom-16">
+          {/* Language Selector - inline with policy links */}
+          <div className="flex items-center ml-6">
             <LanguageSelector />
           </div>
         </div>
