@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Loader2, BarChart3, Globe, Users, Eye, MousePointer, TrendingUp, 
   Sparkles, ArrowRight, Shield, Zap, Clock, Activity, ChevronDown,
-  RefreshCw, Download, Share2, Calendar, Target, Star, Settings
+  RefreshCw, Download, Share2, Calendar, Target, Star, Settings, StickyNote
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, Legend, AreaChart, Area } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -187,6 +187,26 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
   const [analyticsData, setAnalyticsData] = useState<CombinedAnalyticsData | null>(null);
   const [error, setError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Quick Notes/Sticky Notes widget state and logic
+  const [notes, setNotes] = useState<string[]>([]);
+  const [newNote, setNewNote] = useState("");
+  useEffect(() => {
+    const stored = localStorage.getItem("sitegrip_quick_notes");
+    if (stored) setNotes(JSON.parse(stored));
+  }, []);
+  useEffect(() => {
+    localStorage.setItem("sitegrip_quick_notes", JSON.stringify(notes));
+  }, [notes]);
+  const addNote = () => {
+    if (newNote.trim()) {
+      setNotes([newNote.trim(), ...notes]);
+      setNewNote("");
+    }
+  };
+  const deleteNote = (idx: number) => {
+    setNotes(notes.filter((_, i) => i !== idx));
+  };
 
   // Set mounted state
   useEffect(() => {
@@ -1006,6 +1026,45 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
                 </motion.div>
               )}
             </AnimatePresence>
+            {/* Quick Notes Widget */}
+            <div className="mb-8 max-w-md">
+              <div className="bg-white/90 dark:bg-slate-800/90 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <StickyNote className="w-5 h-5 text-yellow-500" />
+                  <span className="font-semibold text-slate-800 dark:text-white">Quick Notes</span>
+                </div>
+                <div className="flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    value={newNote}
+                    onChange={e => setNewNote(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') addNote(); }}
+                    placeholder="Add a note..."
+                    className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+                  />
+                  <button
+                    onClick={addNote}
+                    className="px-3 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-500 text-white font-semibold text-sm transition"
+                    title="Add Note"
+                  >Add</button>
+                </div>
+                <ul className="space-y-2 max-h-40 overflow-y-auto">
+                  {notes.length === 0 && (
+                    <li className="text-xs text-slate-400 italic">No notes yet.</li>
+                  )}
+                  {notes.map((note, idx) => (
+                    <li key={idx} className="flex items-center justify-between bg-yellow-50 dark:bg-yellow-900/20 rounded px-3 py-2">
+                      <span className="text-sm text-slate-800 dark:text-slate-100 break-words flex-1">{note}</span>
+                      <button
+                        onClick={() => deleteNote(idx)}
+                        className="ml-2 text-xs text-red-500 hover:text-red-700 font-bold px-2 py-1 rounded"
+                        title="Delete Note"
+                      >Delete</button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </motion.div>
         )}
       </div>
