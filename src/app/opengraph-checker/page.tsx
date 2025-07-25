@@ -150,11 +150,25 @@ export default function OpenGraphCheckerPage() {
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Social Media Preview</h3>
                 </div>
                 <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-4 max-w-md mx-auto">
-                  {result.socialPreview.image && (
-                    <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded mb-3 flex items-center justify-center">
+                  <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 rounded mb-3 flex items-center justify-center overflow-hidden">
+                    {result.socialPreview.image ? (
+                      <img
+                        src={result.socialPreview.image}
+                        alt={result.socialPreview.title || 'Social preview image'}
+                        className="object-contain w-full h-full"
+                        onError={e => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.style.display = 'none';
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    {/* Fallback icon if image is missing or fails to load */}
+                    {(!result.socialPreview.image) && (
                       <Image className="w-8 h-8 text-gray-400" />
-                    </div>
-                  )}
+                    )}
+                  </div>
                   <div className="space-y-1">
                     <div className="text-sm font-semibold text-gray-900 dark:text-white">{result.socialPreview.title}</div>
                     <div className="text-xs text-gray-600 dark:text-gray-300">{result.socialPreview.description}</div>
