@@ -15,6 +15,39 @@ const AppHeader = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
+  // Notification dropdown state and sample data
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [allRead, setAllRead] = useState(false);
+  const notifications = allRead ? [] : [
+    {
+      type: 'success',
+      title: 'Report generated',
+      description: 'Your SEO report is ready to view.',
+      time: '2m ago',
+      icon: BarChart3 && <BarChart3 className="w-5 h-5" />,
+    },
+    {
+      type: 'warning',
+      title: 'Plan limit reached',
+      description: 'You have reached 90% of your monthly quota.',
+      time: '10m ago',
+      icon: Crown && <Crown className="w-5 h-5" />,
+    },
+    {
+      type: 'error',
+      title: 'Monitor down',
+      description: 'Uptime monitor failed for sitegrip.com.',
+      time: '1h ago',
+      icon: ShieldCheck && <ShieldCheck className="w-5 h-5" />,
+    },
+    {
+      type: 'info',
+      title: 'Welcome to SiteGrip!',
+      description: 'Explore new features and tools in your dashboard.',
+      time: '1d ago',
+      icon: Rocket && <Rocket className="w-5 h-5" />,
+    },
+  ];
   const featuresRef = useRef<HTMLDivElement>(null);
   // Close features dropdown on outside click
   useEffect(() => {
@@ -314,14 +347,47 @@ const AppHeader = () => {
               <Search className="w-5 h-5 text-slate-600 dark:text-slate-400" />
             </button>
 
-            {/* Notifications */}
-            <button
-              className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
-            </button>
+            {/* Notifications Dropdown */}
+            <div className="relative">
+              <button
+                className="relative p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200"
+                aria-label="Notifications"
+                onClick={() => setNotificationsOpen((v) => !v)}
+              >
+                <Bell className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-slate-900"></span>
+              </button>
+              {notificationsOpen && (
+                <div className="absolute right-0 mt-3 w-96 max-w-[95vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-0 animate-fadeIn backdrop-blur-xl" style={{minWidth: 340}}>
+                  <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100 dark:border-slate-800">
+                    <span className="font-semibold text-slate-800 dark:text-slate-100 text-base">Notifications</span>
+                    <button className="text-xs text-blue-600 hover:underline" onClick={() => setAllRead(true)}>Mark all as read</button>
+                  </div>
+                  <ul className="max-h-80 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    {notifications.length === 0 ? (
+                      <li className="px-5 py-6 text-center text-slate-500 dark:text-slate-400 text-sm">No new notifications</li>
+                    ) : (
+                      notifications.map((n, i) => (
+                        <li key={i} className="flex items-start gap-3 px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer">
+                          <div className={`flex-shrink-0 w-9 h-9 rounded-lg flex items-center justify-center ${n.type === 'success' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' : n.type === 'warning' ? 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400' : n.type === 'error' ? 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400' : 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400'}`}>
+                            {n.icon}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-slate-800 dark:text-slate-100 text-sm mb-0.5">{n.title}</div>
+                            <div className="text-xs text-slate-500 dark:text-slate-400">{n.description}</div>
+                          </div>
+                          <div className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap ml-2 mt-1">{n.time}</div>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                  <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 text-center">
+                    <Link href="/notifications" className="text-blue-600 hover:underline text-sm font-medium">View all</Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
 
             {/* Theme Toggle */}
             <button

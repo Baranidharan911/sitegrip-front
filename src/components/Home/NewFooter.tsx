@@ -1,4 +1,7 @@
 import React from 'react';
+import dynamic from 'next/dynamic';
+// Dynamically import LanguageSelector to avoid SSR issues
+const LanguageSelector = dynamic(() => import('./LanguageSelector'), { ssr: false });
 import Link from 'next/link';
 import { Rocket, Twitter, Github, Linkedin, Mail, MessageSquare, Globe, Shield, FileText, Users, Zap, Target } from 'lucide-react';
 
@@ -157,7 +160,7 @@ const NewFooter: React.FC = () => {
         </div>
         
         {/* Bottom section */}
-        <div className="pt-8 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col md:flex-row justify-between items-center">
+        <div className="pt-8 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col md:flex-row justify-between items-center relative">
           <div className="flex items-center gap-6 mb-4 md:mb-0">
             <p className="text-slate-600 dark:text-slate-400">
               © 2025 SiteGrip. All rights reserved.
@@ -187,6 +190,10 @@ const NewFooter: React.FC = () => {
             >
               Cookie Policy
             </Link>
+          </div>
+          {/* Language Selector - only on homepage, styled bottom right */}
+          <div className="hidden md:block absolute right-0 bottom-16">
+            <LanguageSelector />
           </div>
         </div>
       </div>

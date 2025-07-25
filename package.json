@@ -48,6 +48,7 @@
     "react-grid-layout": "^1.5.2",
     "react-hot-toast": "^2.5.2",
     "react-i18next": "^15.6.0",
+    "react-joyride": "^2.9.3",
     "react-resizable": "^3.0.5",
     "react-slick": "^0.30.2",
     "react-tooltip": "^5.29.1",

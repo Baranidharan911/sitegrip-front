@@ -1,0 +1,15 @@
+/*
+Add these IDs to your main sidebar, dashboard, and any new feature elements to enable the tour steps to target them.
+*/
+
+/* Example: */
+#sidebar {
+  /* highlight style for tour */
+  z-index: 10001;
+}
+#dashboard {
+  z-index: 10001;
+}
+#new-feature {
+  z-index: 10001;
+}

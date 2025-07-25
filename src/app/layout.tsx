@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import '../Style/tour-highlights.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { SidebarProvider } from '@/context/SidebarContext'
 import I18nProvider from '@/components/Common/I18nProvider'
+import AppTour from '@/components/Common/AppTour'
 
 const inter = Inter({ 
   subsets: ['latin'],
@@ -141,6 +143,7 @@ export default function RootLayout({
           <SidebarProvider>
             <I18nProvider>
               {children}
+              <AppTour />
             </I18nProvider>
           </SidebarProvider>
         </ThemeProvider>
