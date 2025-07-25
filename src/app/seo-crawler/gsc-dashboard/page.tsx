@@ -649,6 +649,12 @@ export default function GSCDashboardPage() {
       } else {
         console.error('❌ Failed to load pages data:', pagesResponse.reason);
         toast.error('Failed to load pages data');
+        // Set empty arrays instead of mock data
+        setIndexedPages([]);
+        setPerformanceData(null);
+        setCoverageData(null);
+        setSitemapsData([]);
+        setEnhancementsData(null);
       }
       
       // Process summary data
@@ -659,6 +665,7 @@ export default function GSCDashboardPage() {
       } else {
         console.error('❌ Failed to load summary data:', summaryResponse.reason);
         toast.error('Failed to load summary data');
+        setIndexingSummary(null);
       }
       
       // Process history data
@@ -670,53 +677,33 @@ export default function GSCDashboardPage() {
           setHistoricalData(historyData.history);
           console.log('✅ Using real historical data:', historyData.history.length, 'days');
         } else {
-          // Generate fallback historical data for charts
-          console.log('⚠️ No historical data available, generating fallback data');
-          const fallbackData = generateFallbackHistoricalData(parseInt(dateRange), []);
-          setHistoricalData(fallbackData);
+          console.log('⚠️ No historical data available from Google Search Console');
+          setHistoricalData(null);
         }
       } else {
         console.error('❌ Failed to load history data:', historyResponse.reason);
         toast.error('Failed to load history data');
-        // Set fallback data when API fails
-        setHistoricalData(generateFallbackHistoricalData(parseInt(dateRange), []));
+        setHistoricalData(null);
       }
       
     } catch (error: any) {
       console.error('❌ Failed to load GSC data:', error);
       toast.error('Failed to load GSC data: ' + error.message);
       
-      // Set fallback data when API fails
-      setHistoricalData(generateFallbackHistoricalData(parseInt(dateRange), []));
+      // Set empty states instead of mock data
+      setHistoricalData(null);
+      setIndexedPages([]);
+      setIndexingSummary(null);
+      setPerformanceData(null);
+      setCoverageData(null);
+      setSitemapsData([]);
+      setEnhancementsData(null);
     } finally {
       setRefreshing(false);
     }
   };
 
-  // Generate fallback historical data for charts when real data is not available
-  const generateFallbackHistoricalData = (days: number, pages: any[]) => {
-    const data = [];
-    const now = new Date();
-    
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      
-      // Generate realistic fallback data based on available pages
-      const indexedCount = pages.filter(p => p.indexed).length;
-      const totalCount = pages.length;
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        clicks: Math.floor(Math.random() * 100) + (indexedCount * 2),
-        impressions: Math.floor(Math.random() * 1000) + (indexedCount * 20),
-        ctr: (Math.random() * 0.1) + 0.02, // 2-12% CTR
-        position: (Math.random() * 20) + 10 // Position 10-30
-      });
-    }
-    
-    return data;
-  };
+
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -958,7 +945,7 @@ export default function GSCDashboardPage() {
                     </span>
                   </div>
                 </div>
-                {historicalData && (
+                {historicalData && historicalData.length > 0 ? (
                   <div className="h-32 mb-4">
                     <GSCInteractiveChart
                       data={historicalData.map(d => ({ date: d.date, value: d.clicks }))}
@@ -966,6 +953,13 @@ export default function GSCDashboardPage() {
                       height={120}
                       title="Clicks"
                     />
+                  </div>
+                ) : (
+                  <div className="h-32 mb-4 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                    <div className="text-center">
+                      <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No performance data available</p>
+                    </div>
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">Performance data available for the selected period</p>
@@ -998,7 +992,7 @@ export default function GSCDashboardPage() {
                   </div>
                 </div>
                 
-                {historicalData && (
+                {historicalData && historicalData.length > 0 && indexedPages.length > 0 ? (
                   <div className="h-32 mb-4">
                     <InteractiveStackedBarChart 
                       data={historicalData.map(d => ({ 
@@ -1009,6 +1003,13 @@ export default function GSCDashboardPage() {
                       height={120}
                       title="Pages"
                     />
+                  </div>
+                ) : (
+                  <div className="h-32 mb-4 flex items-center justify-center text-gray-400 dark:text-gray-500">
+                    <div className="text-center">
+                      <BarChart3 className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No indexing data available</p>
+                    </div>
                   </div>
                 )}
                 <p className="text-xs text-gray-500 dark:text-gray-400">Indexing status overview for the selected property</p>

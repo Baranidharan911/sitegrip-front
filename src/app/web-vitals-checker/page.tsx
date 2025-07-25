@@ -127,28 +127,7 @@ const METRIC_META: Record<string, { label: string; unit?: string; description: s
   criticalRequestChains: { label: 'Critical Chains', unit: '', description: 'Number of critical request chains.', color: '#22C55E' },
 };
 
-// Mock time series data for demonstration
-const generateTimeSeriesData = (metric: string, baseValue: number, variance: number = 0.1) => {
-  const data = [];
-  const now = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const randomFactor = 1 + (Math.random() - 0.5) * variance;
-    const value = Math.max(0, baseValue * randomFactor);
-    
-    // Generate comparison data (1 week earlier)
-    const weekAgoValue = Math.max(0, baseValue * randomFactor * (0.9 + Math.random() * 0.2));
-    
-    data.push({
-      date: date.toISOString().split('T')[0],
-      value: value,
-      weekAgo: weekAgoValue,
-      timestamp: date.getTime()
-    });
-  }
-  return data;
-};
+
 
 // Enhanced Time Series Chart Component with Recharts
 const TimeSeriesChart = ({ 
@@ -452,13 +431,7 @@ export default function WebVitalsCheckerPage() {
     function: 'median'
   });
 
-  // Mock data for demonstration
-  const [mockData, setMockData] = useState({
-    lcp: generateTimeSeriesData('LCP', 2.1, 0.15),
-    fcp: generateTimeSeriesData('FCP', 1.2, 0.1),
-    cls: generateTimeSeriesData('CLS', 0.05, 0.2),
-    tbt: generateTimeSeriesData('TBT', 150, 0.25)
-  });
+
 
   const [user, setUser] = useState<any>(null);
   const [savedReports, setSavedReports] = useState<any[]>([]);
@@ -650,41 +623,7 @@ export default function WebVitalsCheckerPage() {
               </div>
             )}
 
-            {/* Google Web Vitals Trends */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold text-gray-900">Google Web Vitals Trends</h3>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>Last 7 days</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TimeSeriesChart
-                  data={mockData.lcp}
-                  title="First Contentful Paint (FCP)"
-                  color="#10B981"
-                  unit="s"
-                />
-                <TimeSeriesChart
-                  data={mockData.fcp}
-                  title="Largest Contentful Paint (LCP)"
-                  color="#3B82F6"
-                  unit="s"
-                />
-                <TimeSeriesChart
-                  data={mockData.tbt}
-                  title="Total Blocking Time (TBT)"
-                  color="#F59E0B"
-                  unit="ms"
-                />
-                <TimeSeriesChart
-                  data={mockData.cls}
-                  title="Cumulative Layout Shift (CLS)"
-                  color="#EF4444"
-                  unit=""
-                />
-              </div>
-            </div>
+
 
             {/* Key Metrics */}
             {result[view]?.metrics && (
@@ -761,24 +700,7 @@ export default function WebVitalsCheckerPage() {
               </div>
             )}
 
-            {/* Page Size Trends */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Page Size Trends</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TimeSeriesChart
-                  data={generateTimeSeriesData('Total Size', 2.5, 0.1)}
-                  title="Total Page Size"
-                  color="#8B5CF6"
-                  unit=" MB"
-                />
-                <TimeSeriesChart
-                  data={generateTimeSeriesData('Requests', 96, 0.05)}
-                  title="Total Requests"
-                  color="#06B6D4"
-                  unit=""
-                />
-              </div>
-            </div>
+
 
             {/* CPU Metrics */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">

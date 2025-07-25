@@ -70,12 +70,7 @@ async function fetchTopQueries(propertyId: string, startDate: string, endDate: s
     })) || [];
   } catch (error) {
     console.warn('Search Console top queries not available:', error);
-    // Return mock data as fallback
-    return [
-      { query: 'site audit', clicks: 120, impressions: 1500, ctr: 8.0, position: 12.3 },
-      { query: 'seo tools', clicks: 100, impressions: 1200, ctr: 8.3, position: 10.1 },
-      { query: 'website monitoring', clicks: 80, impressions: 900, ctr: 8.9, position: 9.5 },
-    ];
+    throw new Error(`Failed to fetch top queries: ${error.message}`);
   }
 }
 
@@ -113,11 +108,6 @@ async function fetchSearchTrends(propertyId: string, startDate: string, endDate:
     })) || [];
   } catch (error) {
     console.warn('Search Console trends not available:', error);
-    // Return mock data as fallback
-    return [
-      { date: '2025-01-01', clicks: 120, impressions: 1500, ctr: 8.0, position: 12.3 },
-      { date: '2025-01-02', clicks: 140, impressions: 1700, ctr: 8.2, position: 11.8 },
-      { date: '2025-01-03', clicks: 110, impressions: 1600, ctr: 6.9, position: 13.1 },
-    ];
+    throw new Error(`Failed to fetch search trends: ${error.message}`);
   }
 } 

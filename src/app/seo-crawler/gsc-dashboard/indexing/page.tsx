@@ -390,31 +390,14 @@ export default function GSCIndexingPage() {
   // Generate chart data for indexing status over time
   const generateIndexingChartData = () => {
     if (!indexedPages.length) {
-      // Generate fallback data
-      const data = [];
-      const now = new Date();
-      
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        
-        data.push({
-          date: date.toISOString().split('T')[0],
-          value: Math.floor(Math.random() * 50) + 10 // Random indexed pages 10-60
-        });
-      }
-      
-      return data;
+      return [];
     }
     
     // Use real data if available
     const indexedCount = indexedPages.filter(page => page.indexed).length;
-    const notIndexedCount = indexedPages.filter(page => !page.indexed).length;
     
     return [
-      { date: new Date().toISOString().split('T')[0], value: indexedCount },
-      { date: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0], value: Math.max(0, indexedCount - Math.floor(Math.random() * 5)) },
-      { date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], value: Math.max(0, indexedCount - Math.floor(Math.random() * 10)) }
+      { date: new Date().toISOString().split('T')[0], value: indexedCount }
     ];
   };
 

@@ -89,79 +89,12 @@ interface CrUXData {
   };
   sampleCount: number;
   timestamp: string;
-  isMockData?: boolean; // Added for new logic
+
 }
 
-// Generate mock CrUX data
-const generateMockCrUXData = (): CrUXData => {
-  return {
-    url: 'https://www.sitegrip.com',
-    formFactor: 'desktop',
-    period: '2024-01-01',
-    metrics: {
-      lcp: {
-        p75: 2400,
-        histogram: [
-          { start: 0, end: 2500, density: 0.65 },
-          { start: 2500, end: 4000, density: 0.25 },
-          { start: 4000, end: Infinity, density: 0.10 }
-        ]
-      },
-      fid: {
-        p75: 85,
-        histogram: [
-          { start: 0, end: 100, density: 0.70 },
-          { start: 100, end: 300, density: 0.25 },
-          { start: 300, end: Infinity, density: 0.05 }
-        ]
-      },
-      cls: {
-        p75: 0.08,
-        histogram: [
-          { start: 0, end: 0.1, density: 0.75 },
-          { start: 0.1, end: 0.25, density: 0.20 },
-          { start: 0.25, end: Infinity, density: 0.05 }
-        ]
-      },
-      ttfb: {
-        p75: 450,
-        histogram: [
-          { start: 0, end: 800, density: 0.80 },
-          { start: 800, end: 1800, density: 0.15 },
-          { start: 1800, end: Infinity, density: 0.05 }
-        ]
-      },
-      inp: {
-        p75: 180,
-        histogram: [
-          { start: 0, end: 200, density: 0.75 },
-          { start: 200, end: 500, density: 0.20 },
-          { start: 500, end: Infinity, density: 0.05 }
-        ]
-      }
-    },
-    sampleCount: 15420,
-    timestamp: new Date().toISOString(),
-    isMockData: true // Added for new logic
-  };
-};
 
-// Generate time series data for trends
-const generateTimeSeriesData = (metric: string, baseValue: number, variance: number = 0.1) => {
-  const data = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    const randomFactor = 1 + (Math.random() - 0.5) * variance;
-    data.push({
-      date: date.toISOString().split('T')[0],
-      value: Math.max(0, baseValue * randomFactor),
-      timestamp: date.getTime()
-    });
-  }
-  return data;
-};
+
+
 
 // Metric Card Component
 const MetricCard = ({ 
@@ -419,14 +352,7 @@ export default function ChromeUserExperienceReportPage() {
     formFactor: 'ALL'
   });
 
-  // Mock time series data
-  const [timeSeriesData] = useState({
-    lcp: generateTimeSeriesData('LCP', 2400, 0.15),
-    fid: generateTimeSeriesData('FID', 85, 0.1),
-    cls: generateTimeSeriesData('CLS', 0.08, 0.2),
-    ttfb: generateTimeSeriesData('TTFB', 450, 0.1),
-    inp: generateTimeSeriesData('INP', 180, 0.1)
-  });
+
 
   const [user, setUser] = useState<any>(null);
   const [savedReports, setSavedReports] = useState<any[]>([]);
@@ -453,9 +379,7 @@ export default function ChromeUserExperienceReportPage() {
       const data = await response.json();
       setCruxData(data);
       
-      if (data.isMockData) {
-        setError('Real data unavailable for this URL. Showing sample data.');
-      }
+
     } catch (err: any) {
       setError(err.message || 'Failed to fetch CrUX data');
     } finally {
@@ -561,9 +485,7 @@ export default function ChromeUserExperienceReportPage() {
                     Sample size: {cruxData.sampleCount.toLocaleString()} users • 
                     Form factor: {cruxData.formFactor} • 
                     Last updated: {new Date(cruxData.timestamp).toLocaleString()}
-                    {cruxData.isMockData && (
-                      <span className="ml-2 text-yellow-600 font-medium">(Sample Data)</span>
-                    )}
+
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -649,41 +571,7 @@ export default function ChromeUserExperienceReportPage() {
               </div>
             </div>
 
-            {/* Time Series Trends */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Performance Trends (30 days)</h3>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>Last 30 days</span>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <TimeSeriesChart
-                  data={timeSeriesData.lcp}
-                  title="LCP Trend"
-                  color="#3B82F6"
-                  unit="ms"
-                />
-                <TimeSeriesChart
-                  data={timeSeriesData.fid}
-                  title="FID Trend"
-                  color="#10B981"
-                  unit="ms"
-                />
-                <TimeSeriesChart
-                  data={timeSeriesData.cls}
-                  title="CLS Trend"
-                  color="#F59E0B"
-                  unit=""
-                />
-                <TimeSeriesChart
-                  data={timeSeriesData.inp}
-                  title="INP Trend"
-                  color="#EF4444"
-                  unit="ms"
-                />
-              </div>
-            </div>
+
 
             {/* User Experience Metrics */}
             <div className="bg-white rounded-lg border border-gray-200 p-6">

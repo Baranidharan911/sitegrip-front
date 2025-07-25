@@ -416,42 +416,13 @@ export default function GSCCoveragePage() {
   // Generate chart data for coverage over time
   const generateCoverageChartData = () => {
     if (!coverageData) {
-      // Generate fallback data
-      const data = [];
-      const now = new Date();
-      
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(now);
-        date.setDate(date.getDate() - i);
-        
-        data.push({
-          date: date.toISOString().split('T')[0],
-          value: Math.floor(Math.random() * 100) + 50 // Random coverage 50-150
-        });
-      }
-      
-      return data;
+      return [];
     }
     
     // Use real data if available
-    const data = [];
-    const now = new Date();
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(now);
-      date.setDate(date.getDate() - i);
-      
-      // Generate realistic trend based on current coverage
-      const baseValue = coverageData.totalIndexed;
-      const variation = Math.floor(Math.random() * 20) - 10; // ±10 variation
-      
-      data.push({
-        date: date.toISOString().split('T')[0],
-        value: Math.max(0, baseValue + variation)
-      });
-    }
-    
-    return data;
+    return [
+      { date: new Date().toISOString().split('T')[0], value: coverageData.totalIndexed }
+    ];
   };
 
   const formatNumber = (value: number | undefined | null): string => {
