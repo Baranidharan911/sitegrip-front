@@ -41,16 +41,49 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
+    const Comp = asChild ? Slot : "button";
+    // Ripple effect state
+    const [ripples, setRipples] = React.useState<{x: number, y: number, key: number}[]>([]);
+    const rippleKey = React.useRef(0);
+    const handleRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setRipples(ripples => [...ripples, { x, y, key: rippleKey.current++ }]);
+      setTimeout(() => {
+        setRipples(ripples => ripples.slice(1));
+      }, 500);
+      if (props.onClick) props.onClick(e);
+    };
     return (
       <Comp
-        className={cn(buttonVariants({ variant, size, className }))}
+        className={cn(
+          buttonVariants({ variant, size, className }),
+          "transition-transform duration-100 active:scale-95 hover:shadow-lg focus:shadow-lg relative overflow-hidden"
+        )}
         ref={ref}
         {...props}
-      />
-    )
+        onClick={handleRipple}
+      >
+        {props.children}
+        {/* Ripple effect */}
+        {ripples.map(ripple => (
+          <span
+            key={ripple.key}
+            className="absolute pointer-events-none rounded-full bg-white/40 dark:bg-white/20 animate-ripple"
+            style={{
+              left: ripple.x - 16,
+              top: ripple.y - 16,
+              width: 32,
+              height: 32,
+              opacity: 0.7,
+            }}
+          />
+        ))}
+      </Comp>
+    );
   }
-)
+);
 Button.displayName = "Button"
 
 export { Button, buttonVariants } 

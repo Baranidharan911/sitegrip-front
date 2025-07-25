@@ -120,6 +120,14 @@
   .focus-ring:focus {
     outline-color: #8b5cf6;
   }
+
+  .animate-ripple {
+    animation: ripple 0.5s linear;
+  }
+  @keyframes ripple {
+    0% { transform: scale(0); opacity: 0.7; }
+    100% { transform: scale(2); opacity: 0; }
+  }
 }
 
 /* Dark mode optimizations */
