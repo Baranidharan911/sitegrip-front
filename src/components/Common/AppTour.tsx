@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import Joyride, { CallBackProps, Step, Styles } from 'react-joyride';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -89,25 +90,50 @@ export default function AppTour() {
     buttonClose: {
       color: theme === 'dark' ? '#f4f4f5' : '#18181b',
       opacity: 0.7,
+      fontSize: 20,
+      fontWeight: 600,
+      borderRadius: 6,
+      transition: 'background 0.2s',
     },
     buttonNext: {
       backgroundColor: theme === 'dark' ? '#38bdf8' : '#2563eb',
       color: '#fff',
+      fontWeight: 600,
+      borderRadius: 6,
+      fontSize: 16,
+      padding: '0.5rem 1.5rem',
+      boxShadow: theme === 'dark'
+        ? '0 2px 8px 0 rgba(56,189,248,0.15)'
+        : '0 2px 8px 0 rgba(37,99,235,0.10)',
+      transition: 'background 0.2s',
     },
     buttonBack: {
       color: theme === 'dark' ? '#f4f4f5' : '#18181b',
+      fontWeight: 500,
+      fontSize: 15,
+      borderRadius: 6,
+      marginRight: 8,
     },
     tooltip: {
       boxShadow: theme === 'dark'
-        ? '0 2px 16px 0 rgba(0,0,0,0.7)'
-        : '0 2px 16px 0 rgba(0,0,0,0.12)',
-      borderRadius: 12,
-      fontSize: 16,
-      padding: '1.5rem',
-      maxWidth: 340,
+        ? '0 8px 32px 0 rgba(0,0,0,0.85)'
+        : '0 8px 32px 0 rgba(0,0,0,0.10)',
+      borderRadius: 16,
+      fontSize: 17,
+      padding: '2.5rem 2rem 2rem 2rem',
+      maxWidth: 420,
+      minWidth: 320,
+      border: theme === 'dark' ? '1.5px solid #262626' : '1.5px solid #e5e7eb',
+      fontFamily: 'Segoe UI, Arial, sans-serif',
+      color: theme === 'dark' ? '#f4f4f5' : '#18181b',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: '1.2rem',
+      position: 'relative',
     },
     spotlight: {
-      borderRadius: 10,
+      borderRadius: 12,
       boxShadow: theme === 'dark'
         ? '0 0 0 4px #38bdf8, 0 2px 16px 0 rgba(0,0,0,0.7)'
         : '0 0 0 4px #2563eb, 0 2px 16px 0 rgba(0,0,0,0.12)',
