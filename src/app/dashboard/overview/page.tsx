@@ -540,22 +540,22 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
         <motion.div 
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
+          className="mb-6"
         >
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div>
-              <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-slate-200/50 dark:border-white/20 rounded-full px-4 py-2 mb-4">
+          <div className="flex flex-col gap-2 sm:gap-4 md:flex-row md:items-end md:justify-between md:gap-6">
+            <div className="flex flex-col gap-2 md:gap-1">
+              <div className="inline-flex items-center gap-2 bg-white/70 dark:bg-white/10 backdrop-blur-xl border border-slate-200/50 dark:border-white/20 rounded-full px-3 py-1 mb-1 w-max">
                 <Sparkles className="w-4 h-4 text-yellow-500 dark:text-yellow-400" />
-                <span className="text-sm font-medium text-slate-700 dark:text-white/90">Analytics Dashboard</span>
+                <span className="text-xs font-medium text-slate-700 dark:text-white/90">Analytics Dashboard</span>
               </div>
-              <h1 className="text-4xl lg:text-5xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 dark:from-white dark:via-purple-200 dark:to-pink-200 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-slate-800 via-blue-700 to-purple-700 dark:from-white dark:via-purple-200 dark:to-pink-200 bg-clip-text text-transparent leading-tight">
                 Dashboard Overview
               </h1>
-              <p className="text-lg text-slate-600 dark:text-slate-400 mt-2">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
                 Monitor your website performance and analytics in real-time
               </p>
               {currentUser && dateRange.from && dateRange.to && (
-                <div className="inline-flex items-center gap-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-3 py-1 rounded-full text-sm mt-3">
+                <div className="inline-flex items-center gap-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full text-xs mt-1 w-max">
                   <Calendar className="w-4 h-4" />
                   <span>
                     {dateRange.from === dateRange.to 
@@ -566,91 +566,75 @@ const DashboardOverviewPage = React.memo(function DashboardOverviewPage() {
                 </div>
               )}
             </div>
-            
             {currentUser && (
               <motion.div 
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-3"
+                className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 mt-2 md:mt-0"
               >
                 {/* Date Range Picker */}
                 <div className="flex items-center gap-2">
-                                     {/* Quick Preset Buttons */}
-                   <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-2 py-1">
-                     <button
-                       onClick={() => setDateRange({ from: getToday(), to: getToday() })}
-                       className={`px-2 py-1 text-xs rounded transition-all ${
-                         dateRange.from === getToday() && dateRange.to === getToday()
-                           ? 'bg-purple-500 text-white' 
-                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                       }`}
-                     >
-                       Today
-                     </button>
-                     <button
-                       onClick={() => setDateRange({ from: getDaysAgo(7), to: getToday() })}
-                       className={`px-2 py-1 text-xs rounded transition-all ${
-                         isActivePreset(7) 
-                           ? 'bg-purple-500 text-white' 
-                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                       }`}
-                     >
-                       7D
-                     </button>
-                     <button
-                       onClick={() => setDateRange({ from: getDaysAgo(30), to: getToday() })}
-                       className={`px-2 py-1 text-xs rounded transition-all ${
-                         isActivePreset(30) 
-                           ? 'bg-purple-500 text-white' 
-                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                       }`}
-                     >
-                       30D
-                     </button>
-                     <button
-                       onClick={() => setDateRange({ from: getDaysAgo(90), to: getToday() })}
-                       className={`px-2 py-1 text-xs rounded transition-all ${
-                         isActivePreset(90) 
-                           ? 'bg-purple-500 text-white' 
-                           : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
-                       }`}
-                     >
-                       90D
-                     </button>
-                   </div>
-                  
+                  {/* Quick Preset Buttons */}
+                  <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-2 py-1">
+                    <button
+                      onClick={() => setDateRange({ from: getToday(), to: getToday() })}
+                      className={`px-2 py-1 text-xs rounded transition-all ${
+                        dateRange.from === getToday() && dateRange.to === getToday()
+                          ? 'bg-purple-500 text-white' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      Today
+                    </button>
+                    <button
+                      onClick={() => setDateRange({ from: getDaysAgo(7), to: getToday() })}
+                      className={`px-2 py-1 text-xs rounded transition-all ${
+                        isActivePreset(7) 
+                          ? 'bg-purple-500 text-white' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      7D
+                    </button>
+                    <button
+                      onClick={() => setDateRange({ from: getDaysAgo(30), to: getToday() })}
+                      className={`px-2 py-1 text-xs rounded transition-all ${
+                        isActivePreset(30) 
+                          ? 'bg-purple-500 text-white' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      30D
+                    </button>
+                    <button
+                      onClick={() => setDateRange({ from: getDaysAgo(90), to: getToday() })}
+                      className={`px-2 py-1 text-xs rounded transition-all ${
+                        isActivePreset(90) 
+                          ? 'bg-purple-500 text-white' 
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      90D
+                    </button>
+                  </div>
                   {/* Custom Date Range */}
-                  <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-4 py-2">
+                  <div className="flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl px-3 py-1">
                     <Calendar className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                     <input
                       type="date"
                       value={dateRange.from}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
-                      className="bg-transparent text-sm text-slate-700 dark:text-slate-300 border-none outline-none w-32"
+                      onChange={e => setDateRange({ from: e.target.value, to: dateRange.to })}
+                      className="bg-transparent border-none outline-none text-xs text-slate-700 dark:text-slate-200 w-24"
                     />
-                    <span className="text-slate-400">to</span>
+                    <span className="text-xs text-slate-400">-</span>
                     <input
                       type="date"
                       value={dateRange.to}
-                      max={getToday()}
-                      onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
-                      className="bg-transparent text-sm text-slate-700 dark:text-slate-300 border-none outline-none w-32"
+                      onChange={e => setDateRange({ from: dateRange.from, to: e.target.value })}
+                      className="bg-transparent border-none outline-none text-xs text-slate-700 dark:text-slate-200 w-24"
                     />
                   </div>
                 </div>
-
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 disabled:opacity-50"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                  Refresh
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl hover:from-purple-600 hover:to-pink-600 transition-all duration-300">
-                  <Download className="w-4 h-4" />
-                  Export
-                </button>
               </motion.div>
             )}
           </div>
