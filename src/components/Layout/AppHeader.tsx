@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { Rocket, LogOut, Moon, Sun, Menu, User, Settings, Bell, Search, Crown, Sparkles } from 'lucide-react';
+import { Rocket, LogOut, Moon, Sun, Menu, User, Settings, Bell, Search, Crown, Sparkles, ShieldCheck, TrendingUp, BarChart3, Globe, Layers, Zap } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -14,6 +14,19 @@ const AppHeader = () => {
   const [userTier, setUserTier] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [featuresOpen, setFeaturesOpen] = useState(false);
+  const featuresRef = useRef<HTMLDivElement>(null);
+  // Close features dropdown on outside click
+  useEffect(() => {
+    if (!mounted) return;
+    const handleClick = (e: MouseEvent) => {
+      if (featuresRef.current && !featuresRef.current.contains(e.target as Node)) {
+        setFeaturesOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [mounted]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const { toggleSidebar } = useSidebar();
@@ -220,6 +233,60 @@ const AppHeader = () => {
               </div>
               SiteGrip
             </Link>
+
+            {/* Main Nav */}
+            <nav className="ml-6 flex items-center gap-2 relative">
+              <div ref={featuresRef} className="relative">
+                <button
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 ${featuresOpen ? 'bg-slate-100 dark:bg-slate-800 shadow' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}`}
+                  onClick={() => setFeaturesOpen((v) => !v)}
+                  aria-haspopup="true"
+                  aria-expanded={featuresOpen}
+                  id="features-menu-trigger"
+                >
+                  Features
+                </button>
+                {featuresOpen && (
+                  <div className="absolute left-0 mt-3 w-[540px] max-w-[95vw] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl z-50 p-6 flex flex-row gap-8 animate-fadeIn backdrop-blur-xl" style={{minWidth: 420}} role="menu" aria-labelledby="features-menu-trigger">
+                    {/* Column 1 */}
+                    <div className="flex-1 min-w-[180px] flex flex-col gap-3">
+                      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">SEO & Analytics</div>
+                      <Link href="/seo-tools" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <TrendingUp className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">SEO Tools</span>
+                      </Link>
+                      <Link href="/reporting-analytics" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <BarChart3 className="w-5 h-5 text-green-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">Analytics</span>
+                      </Link>
+                      <Link href="/performance-monitoring" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <Zap className="w-5 h-5 text-yellow-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">Performance</span>
+                      </Link>
+                    </div>
+                    {/* Column 2 */}
+                    <div className="flex-1 min-w-[180px] flex flex-col gap-3">
+                      <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Site Health</div>
+                      <Link href="/uptime" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <ShieldCheck className="w-5 h-5 text-indigo-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">Uptime Monitoring</span>
+                      </Link>
+                      <Link href="/screen-responsiveness" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <Globe className="w-5 h-5 text-cyan-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">Responsiveness</span>
+                      </Link>
+                      <Link href="/meta-tag-analyzer" className="flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-blue-50 dark:hover:bg-slate-800 transition-all group">
+                        <Layers className="w-5 h-5 text-pink-500 group-hover:scale-110 transition-transform" />
+                        <span className="font-medium text-slate-800 dark:text-slate-100">Meta Tag Analyzer</span>
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <Link href="/pricing" className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-800">Pricing</Link>
+              <Link href="/faq" className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-800">FAQ</Link>
+              <Link href="/contact" className="px-4 py-2 rounded-xl font-medium transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-800">Contact</Link>
+            </nav>
           </div>
 
           {/* Center section - Search */}
