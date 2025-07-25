@@ -369,6 +369,12 @@ export default function GSCCoveragePage() {
       if (error.message && error.message.includes('401')) {
         setAuthError('Google Search Console authentication required. Please connect your Google account.');
         toast.error('Please connect your Google account to access Search Console data');
+      } else if (error.message && error.message.includes('Failed to fetch')) {
+        setError('Unable to connect to the server. Please check your internet connection and try again.');
+        toast.error('Network error: Unable to connect to the server');
+      } else if (error.message && error.message.includes('500')) {
+        setError('Server error occurred. Please try again later or contact support.');
+        toast.error('Server error: Please try again later');
       } else {
         setError('Failed to load GSC properties: ' + error.message);
         toast.error('Failed to load GSC properties: ' + error.message);
@@ -536,6 +542,53 @@ export default function GSCCoveragePage() {
     return null;
   };
 
+  const debugAPI = async () => {
+    try {
+      console.log('🔍 Debugging API...');
+      const userId = getUserId();
+      console.log('🔍 User ID:', userId);
+      
+      // Get auth token
+      const { getAuthInstance } = await import('@/lib/firebase');
+      const auth = getAuthInstance();
+      let token = null;
+      
+      if (auth && auth.currentUser) {
+        token = await auth.currentUser.getIdToken();
+        console.log('🔍 Got Firebase token');
+      }
+      
+      if (!token) {
+        console.log('❌ No Firebase token available');
+        return;
+      }
+      
+      // Test API directly
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      const response = await fetch(`${API_BASE_URL}/api/gsc/properties`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('🔍 API Response status:', response.status);
+      console.log('🔍 API Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      const data = await response.json();
+      console.log('🔍 API Response data:', data);
+      
+      if (response.ok) {
+        toast.success('API test successful! Check console for details.');
+      } else {
+        toast.error(`API test failed: ${response.status} - ${data.error || 'Unknown error'}`);
+      }
+    } catch (error: any) {
+      console.error('❌ API debug failed:', error);
+      toast.error('API debug failed: ' + error.message);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -632,6 +685,21 @@ export default function GSCCoveragePage() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+            <button 
+              onClick={loadGSCProperties} 
+              disabled={propertyLoading}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            >
+              <Database className={`w-4 h-4 ${propertyLoading ? 'animate-spin' : ''}`} />
+              {propertyLoading ? 'Loading...' : 'Test API'}
+            </button>
+            <button 
+              onClick={debugAPI} 
+              className="flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Debug API
+            </button>
           </div>
         </div>
 
@@ -663,6 +731,11 @@ export default function GSCCoveragePage() {
               {selectedProperty && (
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   Currently viewing data for: <span className="font-medium">{selectedProperty}</span>
+                </p>
+              )}
+              {properties.length === 0 && !propertyLoading && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-1">
+                  No Search Console properties found. Please connect your Google account.
                 </p>
               )}
             </div>
