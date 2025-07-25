@@ -1,67 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import KeywordAnalysisPanel from '@/components/seo-crawler/KeywordAnalysisPanel';
-import KeywordRecommendationPanel from '@/components/seo-crawler/KeywordRecommendationPanel';
-import KeywordComparisonCard from '@/components/seo-crawler/KeywordComparisonCard';
-import KeywordRankingPanel from '@/components/seo-crawler/KeywordRankingPanel';
-import KeywordVolumePanel from '@/components/seo-crawler/KeywordVolumePanel';
-import TrendingKeywordsPanel from '@/components/seo-crawler/TrendingKeywordsPanel';
-import KeywordGapsPanel from '@/components/seo-crawler/KeywordGapsPanel';
 import KeywordTrackingPanel from '@/components/seo-crawler/KeywordTrackingPanel';
-import KeywordPerformanceChart from '@/components/seo-crawler/KeywordPerformanceChart';
-import DomainKeywordProfile from '@/components/seo-crawler/DomainKeywordProfile';
-import KeywordStatsPanel from '@/components/seo-crawler/KeywordStatsPanel';
 
 interface KeywordToolsTabsProps {
   url: string;
-  domain: string;
-  bodyText?: string;
-  title?: string;
-  metaDescription?: string;
 }
 
 const tabs = [
-  { id: 'analysis', label: '🔍 Analysis', icon: '🔍' },
-  { id: 'recommendations', label: '💡 Recommendations', icon: '💡' },
-  { id: 'ranking', label: '📊 Ranking', icon: '📊' },
-  { id: 'volume', label: '📈 Volume', icon: '📈' },
-  { id: 'comparison', label: '⚖️ Comparison', icon: '⚖️' },
-  { id: 'tracking', label: '📍 Tracking', icon: '📍' },
-  { id: 'performance', label: '📉 Performance', icon: '📉' },
-  { id: 'trending', label: '🔥 Trending', icon: '🔥' },
-  { id: 'gaps', label: '🕳️ Gaps', icon: '🕳️' },
-  { id: 'domain', label: '🌐 Domain Profile', icon: '🌐' },
-  { id: 'stats', label: '📊 Statistics', icon: '📊' }
+  { id: 'tracking', label: '📍 Tracking', icon: '📍' }
 ];
 
-export default function KeywordToolsTabs({ url, domain, bodyText, title, metaDescription }: KeywordToolsTabsProps) {
-  const [activeTab, setActiveTab] = useState('analysis');
+export default function KeywordToolsTabs({ url }: KeywordToolsTabsProps) {
+  const [activeTab, setActiveTab] = useState('tracking');
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case 'analysis':
-        return <KeywordAnalysisPanel url={url} bodyText={bodyText || ''} title={title} metaDescription={metaDescription} />;
-      case 'recommendations':
-        return <KeywordRecommendationPanel url={url} bodyText={bodyText || ''} />;
-      case 'ranking':
-        return <KeywordRankingPanel url={url} domain={domain} />;
-      case 'volume':
-        return <KeywordVolumePanel />;
-      case 'comparison':
-        return <KeywordComparisonCard current="web development" proposed="professional full-stack development" />;
       case 'tracking':
         return <KeywordTrackingPanel url={url} />;
-      case 'performance':
-        return <KeywordPerformanceChart keyword="web development" url={url} />;
-      case 'trending':
-        return <TrendingKeywordsPanel domain={domain} />;
-      case 'gaps':
-        return <KeywordGapsPanel url={url} />;
-      case 'domain':
-        return <DomainKeywordProfile domain={domain} />;
-      case 'stats':
-        return <KeywordStatsPanel />;
       default:
         return <div>Select a tab to view keyword tools</div>;
     }
