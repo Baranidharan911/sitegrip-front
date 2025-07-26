@@ -9,9 +9,10 @@ import AppTour from '@/components/Common/AppTour'
 
 const inter = Inter({ 
   subsets: ['latin'],
-  display: 'swap', // Optimize font loading
+  display: 'swap',
   preload: true,
-  fallback: ['system-ui', 'arial'],
+  fallback: ['Google Sans', 'Inter', 'system-ui', 'arial'],
+  variable: '--font-inter',
 })
 
 export const metadata: Metadata = {
@@ -74,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable}`}>
       <head>
         {/* Preload critical resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -138,7 +139,7 @@ export default function RootLayout({
           />
         )}
       </head>
-      <body className={inter.className}>
+      <body className={`${inter.className} font-google`}>
         <ThemeProvider>
           <SidebarProvider>
             <I18nProvider>
