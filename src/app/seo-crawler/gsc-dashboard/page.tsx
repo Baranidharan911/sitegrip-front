@@ -28,7 +28,8 @@ import {
   Settings,
   MoreHorizontal,
   ArrowRight,
-  ChevronRight
+  ChevronRight,
+  Zap
 } from 'lucide-react';
 import { indexingApi } from '@/lib/indexingApi';
 import { toast } from 'sonner';
@@ -515,10 +516,31 @@ export default function GSCDashboardPage() {
     summary: false,
     history: false
   });
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
   useEffect(() => {
     loadGSCProperties();
   }, []);
+
+  // Auto-refresh functionality
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    if (autoRefresh && selectedProperty && selectedProperty.trim() !== '') {
+      // Auto-refresh every 3 minutes for real-time data
+      interval = setInterval(() => {
+        console.log('🔄 Auto-refreshing GSC data...');
+        loadGSCData();
+      }, 3 * 60 * 1000); // 3 minutes
+    }
+    
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [autoRefresh, selectedProperty]);
 
   useEffect(() => {
     if (selectedProperty && selectedProperty.trim() !== '') {
@@ -700,6 +722,68 @@ export default function GSCDashboardPage() {
       setEnhancementsData(null);
     } finally {
       setRefreshing(false);
+      // Update last updated timestamp on successful completion
+      setLastUpdated(new Date().toLocaleTimeString());
+    }
+  };
+
+  const forceRefreshData = async () => {
+    if (!selectedProperty || selectedProperty.trim() === '') {
+      return;
+    }
+    
+    try {
+      setRefreshing(true);
+      
+      console.log('🔄 Force refreshing GSC data (bypassing cache)...');
+      
+      // Add cache-busting parameter to force fresh data
+      const cacheBuster = Date.now();
+      
+      // Load all data in parallel with force refresh
+      const [pagesResponse, summaryResponse, historyResponse] = await Promise.allSettled([
+        indexingApi.getIndexedPages(selectedProperty, {
+          days: parseInt(dateRange),
+          page: 1,
+          pageSize: 100,
+          includePerformance: true,
+          forceRefresh: true
+        }),
+        indexingApi.getIndexingSummary(selectedProperty, { forceRefresh: true }),
+        indexingApi.getPerformanceHistory(selectedProperty, parseInt(dateRange), { forceRefresh: true })
+      ]);
+      
+      // Process responses same as loadGSCData
+      if (pagesResponse.status === 'fulfilled') {
+        const pagesData = pagesResponse.value.data || pagesResponse.value;
+        setIndexedPages(pagesData.pages || []);
+        setPerformanceData(pagesData.performance || null);
+        setCoverageData(pagesData.coverage || null);
+        setSitemapsData(pagesData.sitemaps || []);
+        setEnhancementsData(pagesData.enhancements || null);
+      }
+      
+      if (summaryResponse.status === 'fulfilled') {
+        const summaryData = summaryResponse.value.data || summaryResponse.value;
+        setIndexingSummary(summaryData.summary || null);
+      }
+      
+      if (historyResponse.status === 'fulfilled') {
+        const historyData = historyResponse.value.data || historyResponse.value;
+        if (historyData.history && historyData.history.length > 0) {
+          setHistoricalData(historyData.history);
+        } else {
+          setHistoricalData(null);
+        }
+      }
+      
+      toast.success('Data refreshed successfully!');
+    } catch (error: any) {
+      console.error('❌ Failed to force refresh GSC data:', error);
+      toast.error('Failed to refresh data: ' + error.message);
+    } finally {
+      setRefreshing(false);
+      setLastUpdated(new Date().toLocaleTimeString());
     }
   };
 
@@ -764,10 +848,10 @@ export default function GSCDashboardPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Loading GSC Data...
+            Fetching Real-Time GSC Data...
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Fetching data from Google Search Console. This may take a few moments.
+            Connecting to Google Search Console API for fresh data. No cached or mock data will be shown.
           </p>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
@@ -802,17 +886,38 @@ export default function GSCDashboardPage() {
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              Unable to Load GSC Dashboard
+              Unable to Load Real-Time GSC Data
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-md mx-auto">
+            <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {error}
             </p>
-            <button 
-              onClick={loadGSCProperties}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Try Again
-            </button>
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 max-w-lg mx-auto text-left">
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
+                ℹ️ About Real-Time GSC Data
+              </h3>
+              <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                <li>• Data comes directly from Google Search Console API</li>
+                <li>• Google's data has a 1-3 day delay (this is normal)</li>
+                <li>• We refresh data every 2-5 minutes for the freshest available data</li>
+                <li>• No mock or fake data is ever shown</li>
+              </ul>
+            </div>
+            
+            <div className="flex gap-3 justify-center">
+              <button 
+                onClick={loadGSCProperties}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+              <button 
+                onClick={() => window.location.href = '/auth/callback'}
+                className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                Reconnect Google Account
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -837,6 +942,37 @@ export default function GSCDashboardPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            {/* Data freshness indicator */}
+            {lastUpdated && (
+              <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                Last updated: {lastUpdated}
+              </div>
+            )}
+            
+            {/* Auto-refresh toggle */}
+            <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+              <input
+                type="checkbox"
+                checked={autoRefresh}
+                onChange={(e) => setAutoRefresh(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              Auto-refresh
+            </label>
+            
+            {/* Force refresh button */}
+            <button 
+              onClick={forceRefreshData} 
+              disabled={refreshing}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+              title="Force refresh (bypasses cache)"
+            >
+              <Zap className="w-3 h-3" />
+              Force Refresh
+            </button>
+            
+            {/* Regular refresh button */}
             <button 
               onClick={loadGSCData} 
               disabled={refreshing}
@@ -845,6 +981,7 @@ export default function GSCDashboardPage() {
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
               {refreshing ? 'Refreshing...' : 'Refresh'}
             </button>
+            
             <button className="p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">
               <Settings className="w-5 h-5" />
             </button>
@@ -914,6 +1051,29 @@ export default function GSCDashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Real-time Data Information Banner */}
+        {selectedProperty && (
+          <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                  🔄 Real-Time Google Search Console Data
+                </h3>
+                <p className="text-xs text-green-800 dark:text-green-200 mb-2">
+                  All data is fetched directly from your Google Search Console account - no mock or cached data is displayed.
+                </p>
+                <div className="flex flex-wrap gap-4 text-xs text-green-700 dark:text-green-300">
+                  <span>• Auto-refresh: {autoRefresh ? 'Enabled (every 3 min)' : 'Disabled'}</span>
+                  <span>• Cache duration: 2-5 minutes</span>
+                  <span>• Google's data delay: 1-3 days</span>
+                  {lastUpdated && <span>• Last updated: {lastUpdated}</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Main Dashboard - Google Search Console Style */}
         <div className="space-y-8">

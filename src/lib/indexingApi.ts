@@ -1088,6 +1088,7 @@ class IndexingAPI {
       page?: number;
       pageSize?: number;
       includePerformance?: boolean;
+      forceRefresh?: boolean;
     } = {}
   ): Promise<any> {
     try {
@@ -1097,7 +1098,8 @@ class IndexingAPI {
         days: (options.days || 30).toString(),
         page: (options.page || 1).toString(),
         pageSize: (options.pageSize || 100).toString(),
-        includePerformance: (options.includePerformance || false).toString()
+        includePerformance: (options.includePerformance || false).toString(),
+        forceRefresh: (options.forceRefresh || false).toString()
       });
       
       const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/indexed-pages/${encodeURIComponent(property)}?${params}`);
@@ -1126,11 +1128,17 @@ class IndexingAPI {
   }
 
   // Get indexing summary statistics from Google Search Console
-  async getIndexingSummary(property: string): Promise<any> {
+  async getIndexingSummary(property: string, options: { forceRefresh?: boolean } = {}): Promise<any> {
     try {
       console.log('📊 Loading indexing summary from Google Search Console...');
       
-      const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/indexing-summary/${encodeURIComponent(property)}`);
+      const params = new URLSearchParams();
+      if (options.forceRefresh) {
+        params.append('forceRefresh', 'true');
+      }
+      
+      const url = `${API_BASE_URL}/api/gsc/indexing-summary/${encodeURIComponent(property)}${params.toString() ? '?' + params.toString() : ''}`;
+      const response = await fetchWithAuth(url);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -1156,13 +1164,17 @@ class IndexingAPI {
   }
 
   // Get historical performance data from Google Search Console
-  async getPerformanceHistory(property: string, days: number = 30): Promise<any> {
+  async getPerformanceHistory(property: string, days: number = 30, options: { forceRefresh?: boolean } = {}): Promise<any> {
     try {
       console.log('📈 Loading performance history from Google Search Console...');
       
       const params = new URLSearchParams({
         days: days.toString()
       });
+      
+      if (options.forceRefresh) {
+        params.append('forceRefresh', 'true');
+      }
       
       const response = await fetchWithAuth(`${API_BASE_URL}/api/gsc/performance-history/${encodeURIComponent(property)}?${params}`);
 

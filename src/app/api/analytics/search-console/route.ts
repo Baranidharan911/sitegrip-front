@@ -70,7 +70,8 @@ async function fetchTopQueries(propertyId: string, startDate: string, endDate: s
     })) || [];
   } catch (error) {
     console.warn('Search Console top queries not available:', error);
-    throw new Error(`Failed to fetch top queries: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to fetch top queries: ${errorMessage}`);
   }
 }
 
@@ -108,6 +109,7 @@ async function fetchSearchTrends(propertyId: string, startDate: string, endDate:
     })) || [];
   } catch (error) {
     console.warn('Search Console trends not available:', error);
-    throw new Error(`Failed to fetch search trends: ${error.message}`);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    throw new Error(`Failed to fetch search trends: ${errorMessage}`);
   }
 } 
