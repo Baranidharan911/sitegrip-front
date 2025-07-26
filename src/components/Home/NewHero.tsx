@@ -135,16 +135,47 @@ const NewHero: React.FC = () => {
             </div>
           </div>
 
-          {/* Social proof */}
-          <div className="text-center">
-            <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
-              Join thousands of businesses already using SiteGrip
-            </p>
-            <div className="flex items-center justify-center gap-6 opacity-60">
-              <img src="/images/companies/logo1.png" alt="Company 1" className="w-16 h-8 object-contain" />
-              <img src="/images/companies/logo2.png" alt="Company 2" className="w-16 h-8 object-contain" />
-              <img src="/images/companies/logo3.png" alt="Company 3" className="w-16 h-8 object-contain" />
-              <img src="/images/companies/logo4.png" alt="Company 4" className="w-16 h-8 object-contain" />
+          {/* Enterprise Capabilities */}
+          <div className="text-center max-w-4xl mx-auto">
+            <h3 className="text-2xl font-semibold text-slate-900 dark:text-white mb-6">
+              Enterprise-Grade SEO Platform
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">99.9% Uptime</h4>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  Enterprise-grade reliability with guaranteed uptime
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">SOC 2 Compliant</h4>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  Bank-level security and data protection
+                </p>
+              </div>
+              
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </div>
+                <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Team Collaboration</h4>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">
+                  Multi-user access with role-based permissions
+                </p>
+              </div>
             </div>
           </div>
         </div>
