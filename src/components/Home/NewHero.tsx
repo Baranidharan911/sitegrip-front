@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, Play, Sparkles, TrendingUp, Target, Zap } from 'lucide-react';
+import { ArrowRight, Play, Sparkles, TrendingUp, Target, Zap, Globe, BarChart3 } from 'lucide-react';
 import { isAuthenticated } from '@/utils/auth';
 
 const NewHero: React.FC = () => {
@@ -41,7 +41,7 @@ const NewHero: React.FC = () => {
 
         <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 dark:text-white mb-8 leading-tight drop-shadow-xl">
           <span className="block">Supercharge Your</span>
-          <span className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">Local SEO Growth</span>
+          <span className="bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent animate-gradient-x">Enterprise SEO Growth</span>
         </h1>
         <p className="text-2xl md:text-3xl text-slate-600 dark:text-slate-300 mb-10 max-w-3xl mx-auto leading-relaxed font-medium">
           The all-in-one platform to <span className="font-bold text-blue-600 dark:text-blue-400">get found</span>, <span className="font-bold text-purple-600 dark:text-purple-400">get leads</span>, and <span className="font-bold text-pink-600 dark:text-pink-400">grow your business</span> with ease.
@@ -51,7 +51,7 @@ const NewHero: React.FC = () => {
         <div className="flex flex-wrap justify-center gap-4 mb-10">
           <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-green-100/80 to-green-200/60 dark:from-green-900/40 dark:to-green-800/30 text-green-800 dark:text-green-200 text-base font-semibold shadow-sm hover:scale-105 transition-transform">
             <TrendingUp className="w-5 h-5" />
-            <span>Increase Local Rankings</span>
+            <span>Increase Global Rankings</span>
           </div>
           <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-gradient-to-r from-blue-100/80 to-blue-200/60 dark:from-blue-900/40 dark:to-blue-800/30 text-blue-800 dark:text-blue-200 text-base font-semibold shadow-sm hover:scale-105 transition-transform">
             <Target className="w-5 h-5" />
@@ -63,17 +63,36 @@ const NewHero: React.FC = () => {
           </div>
         </div>
 
-        {/* Product mockup/dashboard preview */}
-        <div className="relative w-full flex justify-center mb-14">
-          <div className="relative bg-white/80 dark:bg-slate-900/80 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-2 md:p-4 max-w-3xl w-full mx-auto overflow-hidden backdrop-blur-lg hover:shadow-blue-400/20 transition-all duration-300">
-            {/* Replace with real dashboard screenshot or animated preview if available */}
-            <img
-              src="/images/hero-dashboard-mockup.png"
-              alt="SiteGrip Dashboard Preview"
-              className="rounded-2xl w-full h-auto object-cover shadow-lg border border-slate-100 dark:border-slate-800"
-              style={{ minHeight: 220, background: 'linear-gradient(90deg, #e0e7ff 0%, #f3e8ff 100%)' }}
-            />
-            {/* Optional: Add animated sparkles or floating icons here for extra flair */}
+        {/* Enterprise SEO Features Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 backdrop-blur-lg hover:shadow-lg transition-all duration-300">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <Globe className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Global SEO</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              Optimize for international markets with multi-language and multi-region support
+            </p>
+          </div>
+          
+          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 backdrop-blur-lg hover:shadow-lg transition-all duration-300">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <BarChart3 className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Advanced Analytics</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              Deep insights into performance, competitors, and market opportunities
+            </p>
+          </div>
+          
+          <div className="bg-white/80 dark:bg-slate-900/80 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 backdrop-blur-lg hover:shadow-lg transition-all duration-300">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-4 mx-auto">
+              <Target className="w-6 h-6 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">Enterprise Tools</h3>
+            <p className="text-slate-600 dark:text-slate-400 text-sm">
+              Professional-grade tools for large-scale SEO operations and team collaboration
+            </p>
           </div>
         </div>
 
