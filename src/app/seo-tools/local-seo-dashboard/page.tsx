@@ -39,6 +39,15 @@ interface Report {
   geminiAnalysis?: string;
 }
 
+interface GMBLocation {
+  id: string;
+  name: string;
+  address: string;
+  status: string;
+  reviews: number;
+  rating: number;
+}
+
 export default function LocalSEODashboardPage() {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [searchQueries, setSearchQueries] = useState(['', '', '', '', '']);
@@ -48,37 +57,38 @@ export default function LocalSEODashboardPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [showMap, setShowMap] = useState(true);
   const [activeTab, setActiveTab] = useState('scan');
-  const [selectedGMBLocation, setSelectedGMBLocation] = useState<any>(null);
+  const [selectedGMBLocation, setSelectedGMBLocation] = useState<GMBLocation | null>(null);
   const [showHelp, setShowHelp] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   
   // Real data state
-  const [gmbLocations, setGmbLocations] = useState([]);
+  const [gmbLocations, setGmbLocations] = useState<GMBLocation[]>([]);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [geminiAnalysis, setGeminiAnalysis] = useState('');
 
-  // Mock GMB locations for demo
-  const mockGmbLocations = [
-    { id: '1', name: 'Cheesecake Factory', address: 'New York, NY', status: 'active', reviews: 1250, rating: 4.2 },
-    { id: '2', name: 'Pizza Palace', address: 'Los Angeles, CA', status: 'active', reviews: 890, rating: 4.5 },
-    { id: '3', name: 'Burger Joint', address: 'Chicago, IL', status: 'pending', reviews: 650, rating: 4.1 }
-  ];
-
-  // API functions with Gemini integration
+  // API functions with real data
   const fetchGMBLocations = async () => {
     try {
       setLoading(true);
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setGmbLocations(mockGmbLocations);
-      if (mockGmbLocations.length > 0) {
-        setSelectedGMBLocation(mockGmbLocations[0]);
+      setError('');
+      
+      const response = await fetch('/api/local-seo?action=gmb-locations');
+      const data = await response.json();
+      
+      if (data.success) {
+        setGmbLocations(data.data || []);
+        if (data.data && data.data.length > 0) {
+          setSelectedGMBLocation(data.data[0]);
+        }
+      } else {
+        setError(data.error || 'Failed to fetch GMB locations');
       }
     } catch (error) {
-      setError('Failed to fetch GMB locations');
+      console.error('Error fetching GMB locations:', error);
+      setError('Failed to fetch GMB locations. Please check your connection.');
     } finally {
       setLoading(false);
     }
@@ -101,52 +111,71 @@ export default function LocalSEODashboardPage() {
       if (response.ok) {
         const data = await response.json();
         return data.analysis;
+      } else {
+        console.error('Gemini API Error:', response.status, response.statusText);
+        return null;
       }
     } catch (error) {
       console.error('Gemini API Error:', error);
+      return null;
     }
-    return null;
+  };
+
+  const fetchSearchResults = async (query: string, location: string) => {
+    try {
+      setError('');
+      const response = await fetch(`/api/local-seo?action=search-results&query=${encodeURIComponent(query)}&location=${encodeURIComponent(location)}`);
+      const data = await response.json();
+      
+      if (data.success) {
+        return data.data || [];
+      } else {
+        setError(data.error || 'Failed to fetch search results');
+        return [];
+      }
+    } catch (error) {
+      console.error('Error fetching search results:', error);
+      setError('Failed to fetch search results. Please check your connection.');
+      return [];
+    }
   };
 
   const runScan = async () => {
-    if (!selectedLocation || !searchQueries[0]) return;
+    if (!selectedLocation || !searchQueries[0]) {
+      setError('Please select a location and enter a search query.');
+      return;
+    }
     
     setIsScanning(true);
     setScanProgress(0);
     setError('');
     
     try {
-      // Simulate scan progress
-      for (let i = 0; i <= 100; i += 10) {
-        setScanProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 200));
+      // Step 1: Initialize scan
+      setScanProgress(10);
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Step 2: Fetch real search results
+      setScanProgress(30);
+      const realSearchResults = await fetchSearchResults(searchQueries[0], selectedLocation);
+      
+      if (realSearchResults.length === 0) {
+        setError('No search results found for the specified location and query.');
+        setIsScanning(false);
+        setScanProgress(0);
+        return;
       }
 
-      // Generate mock search results
-      const mockResults: SearchResult[] = Array.from({ length: 20 }, (_, i) => ({
-        id: `result-${i}`,
-        name: `Business ${i + 1}`,
-        address: `${Math.floor(Math.random() * 1000)} Main St, ${selectedLocation}`,
-        rating: 3.5 + Math.random() * 1.5,
-        reviews: Math.floor(Math.random() * 1000) + 50,
-        rank: i + 1,
-        image: `https://picsum.photos/60/60?random=${i}`,
-        coordinates: { lat: 40.7300 + (Math.random() - 0.5) * 0.1, lng: -72.9850 + (Math.random() - 0.5) * 0.1 },
-        distance: Math.random() * 2,
-        gridPosition: { x: Math.floor(Math.random() * 9), y: Math.floor(Math.random() * 9) },
-        category: 'Restaurant',
-        phone: `+1-555-${Math.floor(Math.random() * 9000) + 1000}`,
-        website: `https://business${i}.com`,
-        openingHours: ['Mon-Fri: 9AM-10PM', 'Sat-Sun: 10AM-11PM']
-      }));
+      setScanProgress(60);
+      setSearchResults(realSearchResults);
 
-      setSearchResults(mockResults);
+      // Step 3: Generate Gemini insights with real data
+      setScanProgress(80);
+      const insights = await generateGeminiInsights(realSearchResults, searchQueries[0], selectedLocation);
+      setGeminiAnalysis(insights || 'AI analysis completed. No specific insights available at this time.');
 
-      // Generate Gemini insights
-      const insights = await generateGeminiInsights(mockResults, searchQueries[0], selectedLocation);
-      setGeminiAnalysis(insights || 'AI analysis will be available soon.');
-
-      // Create new report
+      // Step 4: Create report with real data
+      setScanProgress(90);
       const newReport: Report = {
         id: Date.now(),
         location: selectedLocation,
@@ -154,31 +183,53 @@ export default function LocalSEODashboardPage() {
         searchSettings: `${gridSize} Grid | ${distance} ${distanceUnit}`,
         lastScan: new Date().toLocaleString(),
         status: "completed",
-        results: mockResults,
+        results: realSearchResults,
         gridData: [],
-        coordinates: { lat: 40.7300, lng: -72.9850 },
+        coordinates: realSearchResults[0]?.coordinates || { lat: 40.7300, lng: -72.9850 },
         geminiAnalysis: insights
       };
 
       setReports(prev => [newReport, ...prev]);
       setActiveTab('results');
+      setScanProgress(100);
+      
+      // Brief delay to show completion
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
     } catch (error) {
-      setError('Failed to run scan');
+      console.error('Error running scan:', error);
+      setError('Failed to complete scan. Please try again.');
     } finally {
       setIsScanning(false);
       setScanProgress(0);
     }
   };
 
+  const fetchReports = async () => {
+    try {
+      const response = await fetch('/api/local-seo?action=reports');
+      const data = await response.json();
+      
+      if (data.success) {
+        setReports(data.data || []);
+      } else {
+        console.error('Failed to fetch reports:', data.error);
+      }
+    } catch (error) {
+      console.error('Error fetching reports:', error);
+    }
+  };
+
   useEffect(() => {
     fetchGMBLocations();
+    fetchReports();
   }, []);
 
-  // Stats data
+  // Stats data based on real data
   const stats = [
     {
       label: 'Active Locations',
-      value: gmbLocations.filter((l: any) => l.status === 'active').length,
+      value: gmbLocations.filter((l: GMBLocation) => l.status === 'active').length,
       icon: Building2,
       color: 'from-blue-500 to-cyan-500',
       trend: '+12%',
@@ -186,7 +237,7 @@ export default function LocalSEODashboardPage() {
     },
     {
       label: 'Total Reviews',
-      value: gmbLocations.reduce((sum: number, loc: any) => sum + (loc.reviews || 0), 0).toLocaleString(),
+      value: gmbLocations.reduce((sum: number, loc: GMBLocation) => sum + (loc.reviews || 0), 0).toLocaleString(),
       icon: Users,
       color: 'from-green-500 to-emerald-500',
       trend: '+8%',
@@ -194,7 +245,7 @@ export default function LocalSEODashboardPage() {
     },
     {
       label: 'Avg. Rating',
-      value: gmbLocations.length > 0 ? (gmbLocations.reduce((sum: number, loc: any) => sum + (loc.rating || 0), 0) / gmbLocations.length).toFixed(1) : '0.0',
+      value: gmbLocations.length > 0 ? (gmbLocations.reduce((sum: number, loc: GMBLocation) => sum + (loc.rating || 0), 0) / gmbLocations.length).toFixed(1) : '0.0',
       icon: Star,
       color: 'from-yellow-500 to-orange-500',
       trend: '+0.2',
@@ -202,7 +253,7 @@ export default function LocalSEODashboardPage() {
     },
     {
       label: 'Completed Scans',
-      value: reports.filter((r: any) => r.status === 'completed').length,
+      value: reports.filter((r: Report) => r.status === 'completed').length,
       icon: CheckCircle,
       color: 'from-purple-500 to-pink-500',
       trend: '+25%',
@@ -252,6 +303,22 @@ export default function LocalSEODashboardPage() {
       </div>
 
       <div className="p-6">
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              <span className="text-red-700 dark:text-red-300 font-medium">{error}</span>
+              <button 
+                onClick={() => setError('')}
+                className="ml-auto text-red-500 hover:text-red-700 dark:hover:text-red-300"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Help Section */}
         {showHelp && (
           <HowToUseSection
@@ -353,9 +420,10 @@ export default function LocalSEODashboardPage() {
                     className="w-full pl-12 pr-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     value={selectedLocation}
                     onChange={(e) => setSelectedLocation(e.target.value)}
+                    disabled={loading}
                   >
-                    <option value="">Select business name/location</option>
-                    {gmbLocations.map((location: any) => (
+                    <option value="">{loading ? 'Loading locations...' : 'Select business name/location'}</option>
+                    {gmbLocations.map((location: GMBLocation) => (
                       <option key={location.id} value={location.name}>
                         {location.name} - {location.address}
                       </option>
@@ -379,6 +447,7 @@ export default function LocalSEODashboardPage() {
                         newQueries[index] = e.target.value;
                         setSearchQueries(newQueries);
                       }}
+                      disabled={isScanning}
                     />
                     {index === 0 && (
                       <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
@@ -397,6 +466,7 @@ export default function LocalSEODashboardPage() {
                     className="w-full px-4 py-3 border border-slate-300 dark:border-slate-600 rounded-xl bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     value={gridSize}
                     onChange={(e) => setGridSize(e.target.value)}
+                    disabled={isScanning}
                   >
                     <option value="9 x 9">9 x 9 grid</option>
                     <option value="15 x 15">15 x 15 grid</option>
@@ -412,17 +482,20 @@ export default function LocalSEODashboardPage() {
                       value={distance}
                       onChange={(e) => setDistance(parseFloat(e.target.value))}
                       step="0.1"
+                      disabled={isScanning}
                     />
                     <div className="flex border border-l-0 border-slate-300 dark:border-slate-600 rounded-r-xl overflow-hidden">
                       <button
                         className={`px-4 py-3 text-sm font-medium transition-all duration-200 ${distanceUnit === 'KM' ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}
                         onClick={() => setDistanceUnit('KM')}
+                        disabled={isScanning}
                       >
                         KM
                       </button>
                       <button
                         className={`px-4 py-3 text-sm font-medium transition-all duration-200 ${distanceUnit === 'Miles' ? 'bg-blue-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300'}`}
                         onClick={() => setDistanceUnit('Miles')}
+                        disabled={isScanning}
                       >
                         Miles
                       </button>
@@ -451,7 +524,7 @@ export default function LocalSEODashboardPage() {
               <button
                 className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-bold py-4 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 onClick={runScan}
-                disabled={isScanning || !selectedLocation || !searchQueries[0]}
+                disabled={isScanning || !selectedLocation || !searchQueries[0] || loading}
               >
                 {isScanning ? (
                   <>
@@ -507,7 +580,7 @@ export default function LocalSEODashboardPage() {
                   gridSize={9}
                   distance={distance}
                   distanceUnit={distanceUnit}
-                  coordinates={{ lat: 40.7300, lng: -72.9850 }}
+                  coordinates={searchResults[0]?.coordinates || { lat: 40.7300, lng: -72.9850 }}
                   searchResults={searchResults}
                   onLocationClick={(location) => {
                     console.log('Location clicked:', location);
