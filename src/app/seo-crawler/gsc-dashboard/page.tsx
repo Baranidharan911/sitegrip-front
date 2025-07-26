@@ -662,12 +662,34 @@ export default function GSCDashboardPage() {
       // Process pages data
       if (pagesResponse.status === 'fulfilled') {
         console.log('📊 Pages Response:', pagesResponse.value);
-        const pagesData = pagesResponse.value.data || pagesResponse.value;
-        setIndexedPages(pagesData.pages || []);
-        setPerformanceData(pagesData.performance || null);
-        setCoverageData(pagesData.coverage || null);
-        setSitemapsData(pagesData.sitemaps || []);
-        setEnhancementsData(pagesData.enhancements || null);
+        const pagesData = pagesResponse.value?.data || pagesResponse.value;
+        
+        // Ensure pagesData exists before accessing properties
+        if (pagesData) {
+          setIndexedPages(pagesData.pages || []);
+          setPerformanceData(pagesData.performance || null);
+          setCoverageData(pagesData.coverage || null);
+          setSitemapsData(pagesData.sitemaps || []);
+          setEnhancementsData(pagesData.enhancements || null);
+          
+          // Debug performance data structure
+          console.log('✅ Pages data processed successfully:', {
+            pages: pagesData.pages?.length || 0,
+            hasPerformance: !!pagesData.performance,
+            performanceData: pagesData.performance,
+            performanceStructure: pagesData.performance ? Object.keys(pagesData.performance) : 'null',
+            hasCoverage: !!pagesData.coverage,
+            sitemaps: pagesData.sitemaps?.length || 0
+          });
+        } else {
+          console.error('❌ Pages data is undefined or null');
+          toast.error('Invalid pages data received');
+          setIndexedPages([]);
+          setPerformanceData(null);
+          setCoverageData(null);
+          setSitemapsData([]);
+          setEnhancementsData(null);
+        }
       } else {
         console.error('❌ Failed to load pages data:', pagesResponse.reason);
         toast.error('Failed to load pages data');
@@ -682,8 +704,15 @@ export default function GSCDashboardPage() {
       // Process summary data
       if (summaryResponse.status === 'fulfilled') {
         console.log('📊 Summary Response:', summaryResponse.value);
-        const summaryData = summaryResponse.value.data || summaryResponse.value;
-        setIndexingSummary(summaryData.summary || null);
+        const summaryData = summaryResponse.value?.data || summaryResponse.value;
+        
+        if (summaryData) {
+          setIndexingSummary(summaryData.summary || null);
+          console.log('✅ Summary data processed successfully:', !!summaryData.summary);
+        } else {
+          console.error('❌ Summary data is undefined or null');
+          setIndexingSummary(null);
+        }
       } else {
         console.error('❌ Failed to load summary data:', summaryResponse.reason);
         toast.error('Failed to load summary data');
@@ -693,13 +722,16 @@ export default function GSCDashboardPage() {
       // Process history data
       if (historyResponse.status === 'fulfilled') {
         console.log('📈 History Response:', historyResponse.value);
-        const historyData = historyResponse.value.data || historyResponse.value;
+        const historyData = historyResponse.value?.data || historyResponse.value;
         
-        if (historyData.history && historyData.history.length > 0) {
+        if (historyData && historyData.history && historyData.history.length > 0) {
           setHistoricalData(historyData.history);
           console.log('✅ Using real historical data:', historyData.history.length, 'days');
-        } else {
+        } else if (historyData) {
           console.log('⚠️ No historical data available from Google Search Console');
+          setHistoricalData(null);
+        } else {
+          console.error('❌ History data is undefined or null');
           setHistoricalData(null);
         }
       } else {
@@ -755,24 +787,44 @@ export default function GSCDashboardPage() {
       
       // Process responses same as loadGSCData
       if (pagesResponse.status === 'fulfilled') {
-        const pagesData = pagesResponse.value.data || pagesResponse.value;
-        setIndexedPages(pagesData.pages || []);
-        setPerformanceData(pagesData.performance || null);
-        setCoverageData(pagesData.coverage || null);
-        setSitemapsData(pagesData.sitemaps || []);
-        setEnhancementsData(pagesData.enhancements || null);
+        const pagesData = pagesResponse.value?.data || pagesResponse.value;
+        
+        // Ensure pagesData exists before accessing properties
+        if (pagesData) {
+          setIndexedPages(pagesData.pages || []);
+          setPerformanceData(pagesData.performance || null);
+          setCoverageData(pagesData.coverage || null);
+          setSitemapsData(pagesData.sitemaps || []);
+          setEnhancementsData(pagesData.enhancements || null);
+          console.log('✅ Force refresh data processed successfully:', {
+            pages: pagesData.pages?.length || 0,
+            hasPerformance: !!pagesData.performance,
+            hasCoverage: !!pagesData.coverage,
+            sitemaps: pagesData.sitemaps?.length || 0
+          });
+        } else {
+          console.error('❌ Force refresh data is undefined or null');
+        }
       }
       
       if (summaryResponse.status === 'fulfilled') {
-        const summaryData = summaryResponse.value.data || summaryResponse.value;
-        setIndexingSummary(summaryData.summary || null);
+        const summaryData = summaryResponse.value?.data || summaryResponse.value;
+        if (summaryData) {
+          setIndexingSummary(summaryData.summary || null);
+        } else {
+          console.error('❌ Force refresh summary data is undefined or null');
+          setIndexingSummary(null);
+        }
       }
       
       if (historyResponse.status === 'fulfilled') {
-        const historyData = historyResponse.value.data || historyResponse.value;
-        if (historyData.history && historyData.history.length > 0) {
+        const historyData = historyResponse.value?.data || historyResponse.value;
+        if (historyData && historyData.history && historyData.history.length > 0) {
           setHistoricalData(historyData.history);
+        } else if (historyData) {
+          setHistoricalData(null);
         } else {
+          console.error('❌ Force refresh history data is undefined or null');
           setHistoricalData(null);
         }
       }
@@ -848,10 +900,10 @@ export default function GSCDashboardPage() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Fetching Real-Time GSC Data...
+            Fetching Web Interface Data...
           </h3>
           <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Connecting to Google Search Console API for fresh data. No cached or mock data will be shown.
+            Using exact same API parameters as search.google.com to match your web interface data.
           </p>
           <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
             <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
@@ -886,7 +938,7 @@ export default function GSCDashboardPage() {
           <div className="text-center py-12">
             <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">
-              Unable to Load Real-Time GSC Data
+              Unable to Load Web Interface GSC Data
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
               {error}
@@ -894,13 +946,13 @@ export default function GSCDashboardPage() {
             
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6 max-w-lg mx-auto text-left">
               <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2">
-                ℹ️ About Real-Time GSC Data
+                ℹ️ About Web Interface Matching
               </h3>
               <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-1">
-                <li>• Data comes directly from Google Search Console API</li>
-                <li>• Google's data has a 1-3 day delay (this is normal)</li>
-                <li>• We refresh data every 2-5 minutes for the freshest available data</li>
-                <li>• No mock or fake data is ever shown</li>
+                <li>• Data uses exact same API parameters as search.google.com</li>
+                <li>• Fresh data enabled with dataState='all' parameter</li>
+                <li>• Auto aggregation matches web interface calculations</li>
+                <li>• Numbers should match your web interface exactly</li>
               </ul>
             </div>
             
@@ -1059,10 +1111,10 @@ export default function GSCDashboardPage() {
               <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
-                  🔄 Real-Time Google Search Console Data
+                  🔄 Exact Web Interface Data (search.google.com)
                 </h3>
                 <p className="text-xs text-green-800 dark:text-green-200 mb-2">
-                  All data is fetched directly from your Google Search Console account - no mock or cached data is displayed.
+                  Data matches exactly what you see in Google Search Console web interface using fresh data API parameters.
                 </p>
                 <div className="flex flex-wrap gap-4 text-xs text-green-700 dark:text-green-300">
                   <span>• Auto-refresh: {autoRefresh ? 'Enabled (every 3 min)' : 'Disabled'}</span>
