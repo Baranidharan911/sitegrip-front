@@ -26,14 +26,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://sitegrip.io'),
+  metadataBase: new URL('https://www.sitegrip.com'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: 'SiteGrip - Advanced SEO & Performance Monitoring Platform',
     description: 'Professional SEO tools, performance monitoring, and analytics platform for businesses.',
-    url: 'https://sitegrip.io',
+    url: 'https://www.sitegrip.com',
     siteName: 'SiteGrip',
     images: [
       {
@@ -146,26 +146,6 @@ export default function RootLayout({
             </I18nProvider>
           </SidebarProvider>
         </ThemeProvider>
-        {/* Service Worker for caching */}
-        {process.env.NODE_ENV === 'production' && (
-          <script
-            dangerouslySetInnerHTML={{
-              __html: `
-                if ('serviceWorker' in navigator) {
-                  window.addEventListener('load', function() {
-                    navigator.serviceWorker.register('/sw.js')
-                      .then(function(registration) {
-                        console.log('SW registered: ', registration);
-                      })
-                      .catch(function(registrationError) {
-                        console.log('SW registration failed: ', registrationError);
-                      });
-                  });
-                }
-              `,
-            }}
-          />
-        )}
       </body>
     </html>
   )

@@ -2,40 +2,69 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const revalidate = 300; // Cache for 5 minutes when deployed on Vercel
 
-export async function GET(req: NextRequest) {
-  const searchParams = req.nextUrl.searchParams;
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
   const url = searchParams.get('url');
 
   if (!url) {
-    return NextResponse.json({ error: 'Missing "url" query parameter' }, { status: 400 });
+    return NextResponse.json({ error: 'URL parameter is required' }, { status: 400 });
   }
 
   try {
-    // Basic validation to allow only http/https
-    if (!/^https?:\/\//i.test(url)) {
-      return NextResponse.json({ error: 'Invalid URL' }, { status: 400 });
+    // Validate URL
+    const parsedUrl = new URL(url);
+    
+    // Fetch the sitemap
+    const response = await fetch(url, {
+      headers: {
+        'Accept': 'application/xml, text/xml, */*',
+        'Accept-Encoding': 'gzip, deflate',
+        'User-Agent': 'SiteGrip Sitemap Fetcher (+https://www.sitegrip.com)',
+        'Cache-Control': 'no-cache',
+      },
+      // Add timeout
+      signal: AbortSignal.timeout(10000), // 10 second timeout
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
 
-    const res = await fetch(url, {
-      // Identify ourselves politely
+    const contentType = response.headers.get('content-type');
+    const content = await response.text();
+
+    // Return the sitemap content with appropriate headers
+    return new NextResponse(content, {
+      status: 200,
       headers: {
-        'User-Agent': 'SiteGrip Sitemap Fetcher (+https://sitegrip.io)'
+        'Content-Type': contentType || 'application/xml',
+        'Cache-Control': 'public, max-age=3600',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
-      // 10-second timeout using AbortController
-      cache: 'no-store'
     });
 
-    const body = await res.text();
-
-    return new NextResponse(body, {
-      status: res.status,
-      headers: {
-        'Content-Type': res.headers.get('content-type') ?? 'text/xml; charset=utf-8',
-        // Allow this response to be used on the client
-        'Access-Control-Allow-Origin': '*'
-      }
-    });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Upstream fetch failed' }, { status: 502 });
+  } catch (error) {
+    console.error('Sitemap proxy error:', error);
+    
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch sitemap',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, 
+      { status: 500 }
+    );
   }
+}
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    },
+  });
 } 

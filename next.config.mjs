@@ -4,7 +4,7 @@ import withBundleAnalyzer from '@next/bundle-analyzer';
 const nextConfig = withBundleAnalyzer({
   enabled: process.env.BUNDLE_ANALYZE === 'both',
 })({
-  // Performance optimizations for 50+ concurrent users
+  // Performance optimizations
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hot-toast', 'framer-motion'],
     serverComponentsExternalPackages: ['firebase'],
@@ -23,6 +23,18 @@ const nextConfig = withBundleAnalyzer({
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'via.placeholder.com',
         port: '',
         pathname: '/**',
       },
@@ -79,20 +91,6 @@ const nextConfig = withBundleAnalyzer({
             name: 'recharts',
             chunks: 'all',
             priority: 15,
-          },
-          // Separate utilities
-          utils: {
-            test: /[\\/]src[\\/]utils[\\/]/,
-            name: 'utils',
-            chunks: 'all',
-            priority: 8,
-          },
-          // Separate components
-          components: {
-            test: /[\\/]src[\\/]components[\\/]/,
-            name: 'components',
-            chunks: 'all',
-            priority: 8,
           },
         },
       };
@@ -230,16 +228,16 @@ const nextConfig = withBundleAnalyzer({
   // Redirects for performance
   async redirects() {
     return [
-      // Redirect www to non-www for better caching
+      // Redirect non-www to www for consistency
       {
         source: '/:path*',
         has: [
           {
             type: 'host',
-            value: 'www.sitegrip.io',
+            value: 'sitegrip.com',
           },
         ],
-        destination: 'https://sitegrip.io/:path*',
+        destination: 'https://www.sitegrip.com/:path*',
         permanent: true,
       },
     ];
@@ -265,9 +263,6 @@ const nextConfig = withBundleAnalyzer({
     NEXT_PUBLIC_ENABLE_RATE_LIMITING: 'true',
   },
 
-  // Output configuration
-  output: 'standalone',
-  
   // Enable SWC minification for better performance
   swcMinify: true,
 });
