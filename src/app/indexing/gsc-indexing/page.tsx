@@ -228,9 +228,37 @@ export default function GSCIndexingPage() {
 
       const data = await response.json();
       
+      console.log('🔍 [GSC Indexing] Raw API response:', data);
+      
       if (data.success) {
-        setIndexingData(data.data);
-        console.log('📄 [GSC Indexing] Loaded REAL comprehensive indexing data:', data.data);
+        // Transform the backend data to match frontend interface
+        const transformedData = {
+          indexing: {
+            indexedPages: data.data.indexedPages || 0,
+            notIndexedPages: data.data.notIndexedPages || 0,
+            totalPages: data.data.totalPages || 0,
+            indexedPercentage: data.data.indexingRate || 0,
+            chartData: data.data.chartData || [],
+            detailedReasons: data.data.indexingReasons || [], // Map indexingReasons to detailedReasons
+            sitemaps: data.data.sitemaps || []
+          },
+          metadata: data.data.metadata || {
+            property: selectedProperty,
+            timestamp: new Date().toISOString()
+          }
+        };
+        
+        console.log('📄 [GSC Indexing] Transformed data:', transformedData);
+        console.log('📊 [GSC Indexing] Key metrics:', {
+          indexedPages: transformedData.indexing.indexedPages,
+          notIndexedPages: transformedData.indexing.notIndexedPages,
+          totalPages: transformedData.indexing.totalPages,
+          indexingRate: transformedData.indexing.indexedPercentage,
+          reasonsCount: transformedData.indexing.detailedReasons.length,
+          sitemapsCount: transformedData.indexing.sitemaps.length
+        });
+        
+        setIndexingData(transformedData);
         toast.success('Real GSC indexing data loaded successfully');
       } else {
         throw new Error(data.message || 'Failed to load GSC indexing data');
@@ -597,6 +625,18 @@ export default function GSCIndexingPage() {
               <div>Response Time: {indexingData.metadata.responseTime}ms</div>
               <div>Date Range: {indexingData.metadata.dateRange.startDate} to {indexingData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(indexingData.metadata.timestamp).toLocaleString()}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {process.env.NODE_ENV === 'development' && indexingData && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-sm text-gray-600">Debug Info (Development Only)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xs font-mono bg-gray-100 p-4 rounded overflow-auto">
+              <pre>{JSON.stringify(indexingData, null, 2)}</pre>
             </div>
           </CardContent>
         </Card>
