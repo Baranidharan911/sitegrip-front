@@ -176,7 +176,11 @@ export const sidebarItems: SidebarSection[] = [
     subItems: [
       { name: 'Google Indexing', path: '/indexing', icon: Search, description: 'Submit URLs to search engines', pro: false },
       { name: 'Index Analytics', path: '/indexing/analytics', icon: BarChart3, description: 'Check indexing status', pro: false },
-      { name: 'GSC Dashboard', path: '/seo-crawler/gsc-dashboard', icon: BarChart3, description: 'Google Search Console data & reports', pro: false, badge: 'New' },
+      { name: 'GSC Dashboard', path: '/indexing/gsc-dashboard', icon: Database, description: 'Google Search Console overview', pro: false, badge: 'New' },
+      { name: 'GSC Performance', path: '/indexing/gsc-performance', icon: TrendingUp, description: 'Search performance metrics', pro: false },
+      { name: 'GSC Experience', path: '/indexing/gsc-experience', icon: Zap, description: 'Core Web Vitals & UX', pro: false },
+      { name: 'GSC Security', path: '/indexing/gsc-security', icon: Shield, description: 'HTTPS & security analysis', pro: false },
+      { name: 'GSC Connect', path: '/indexing/gsc-connect', icon: Globe, description: 'Manage GSC connection', pro: false },
     ],
   },
 
