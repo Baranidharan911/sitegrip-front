@@ -52,64 +52,93 @@ const nextConfig = withBundleAnalyzer({
   webpack: (config, { dev, isServer }) => {
     // Production optimizations
     if (!dev && !isServer) {
-      // Enhanced chunk splitting for better caching
+      // Enhanced chunk splitting for better mobile performance
       config.optimization.splitChunks = {
         chunks: 'all',
+        minSize: 20000,
+        maxSize: 244000, // Optimize for mobile networks
         cacheGroups: {
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
+          // Critical vendor code
+          criticalVendor: {
+            test: /[\\/]node_modules[\\/](react|react-dom|next)[\\/]/,
+            name: 'critical-vendor',
+            chunks: 'all',
+            priority: 30,
+            enforce: true,
+          },
+          // UI libraries
+          uiLibs: {
+            test: /[\\/]node_modules[\\/](@headlessui|@radix-ui|lucide-react|clsx|class-variance-authority)[\\/]/,
+            name: 'ui-libs',
+            chunks: 'all',
+            priority: 25,
+          },
+          // Chart libraries (lazy loaded)
+          chartLibs: {
+            test: /[\\/]node_modules[\\/](recharts|react-chartjs-2|chart\.js)[\\/]/,
+            name: 'chart-libs',
+            chunks: 'async',
+            priority: 20,
+          },
+          // Animation libraries (lazy loaded)
+          animationLibs: {
+            test: /[\\/]node_modules[\\/](framer-motion|aos)[\\/]/,
+            name: 'animation-libs',
+            chunks: 'async',
+            priority: 20,
+          },
+          // Firebase (separate for caching)
+          firebase: {
+            test: /[\\/]node_modules[\\/](firebase|@firebase)[\\/]/,
+            name: 'firebase',
+            chunks: 'all',
+            priority: 15,
+          },
+          // Utilities
+          utils: {
+            test: /[\\/]node_modules[\\/](date-fns|axios|lodash)[\\/]/,
+            name: 'utils',
             chunks: 'all',
             priority: 10,
-            reuseExistingChunk: true,
           },
-          common: {
-            name: 'common',
-            minChunks: 2,
+          // Default vendor
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendor',
             chunks: 'all',
             priority: 5,
             reuseExistingChunk: true,
           },
-          firebase: {
-            test: /[\\/]node_modules[\\/]firebase/,
-            name: 'firebase',
+          // Common code
+          common: {
+            name: 'common',
+            minChunks: 2,
             chunks: 'all',
-            priority: 20,
-          },
-          react: {
-            test: /[\\/]node_modules[\\/]react/,
-            name: 'react',
-            chunks: 'all',
-            priority: 20,
-          },
-          // Separate large libraries
-          framer: {
-            test: /[\\/]node_modules[\\/]framer-motion/,
-            name: 'framer',
-            chunks: 'all',
-            priority: 15,
-          },
-          recharts: {
-            test: /[\\/]node_modules[\\/]recharts/,
-            name: 'recharts',
-            chunks: 'all',
-            priority: 15,
+            priority: 1,
+            reuseExistingChunk: true,
           },
         },
       };
       
-      // Enable tree shaking
+      // Aggressive optimization for mobile
       config.optimization.usedExports = true;
       config.optimization.sideEffects = false;
-      
-      // Optimize bundle size
       config.optimization.minimize = true;
-      
-      // Enable module concatenation
       config.optimization.concatenateModules = true;
-      
-      // Optimize runtime
       config.optimization.runtimeChunk = 'single';
+      config.optimization.moduleIds = 'deterministic';
+      config.optimization.chunkIds = 'deterministic';
+      
+      // Mobile-specific optimizations
+      config.optimization.splitChunks.maxAsyncRequests = 6;
+      config.optimization.splitChunks.maxInitialRequests = 4;
+      
+      // Aggressive compression
+      config.performance = {
+        maxAssetSize: 250000,
+        maxEntrypointSize: 400000,
+        hints: 'warning'
+      };
     }
 
     // Development optimizations

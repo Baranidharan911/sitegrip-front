@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { SidebarProvider } from '@/context/SidebarContext'
 import I18nProvider from '@/components/Common/I18nProvider'
 import AppTour from '@/components/Common/AppTour'
+// Critical CSS is now inlined statically for better SSR performance
 
 // Optimized font loading for better mobile performance
 const inter = Inter({ 
@@ -89,6 +90,27 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className={`${inter.variable} ${roboto.variable}`}>
       <head>
+        {/* Critical CSS for above-the-fold content */}
+        <style
+          id="critical-css"
+          dangerouslySetInnerHTML={{
+            __html: `
+              /* Critical CSS for above-the-fold content - Mobile optimized */
+              html, body { margin: 0; padding: 0; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+              .flex { display: flex; } .flex-col { flex-direction: column; } .flex-1 { flex: 1 1 0%; } .items-center { align-items: center; } .justify-center { justify-content: center; } .justify-between { justify-content: space-between; } .h-screen { height: 100vh; } .w-full { width: 100%; } .min-h-screen { min-height: 100vh; }
+              .p-4 { padding: 1rem; } .p-6 { padding: 1.5rem; } .px-4 { padding-left: 1rem; padding-right: 1rem; } .py-2 { padding-top: 0.5rem; padding-bottom: 0.5rem; } .m-0 { margin: 0; } .mb-4 { margin-bottom: 1rem; } .mt-4 { margin-top: 1rem; }
+              .bg-white { background-color: #ffffff; } .bg-gray-50 { background-color: #f9fafb; } .bg-gray-900 { background-color: #111827; } .text-gray-900 { color: #111827; } .text-gray-600 { color: #4b5563; } .text-white { color: #ffffff; }
+              .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.5rem 1rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.15s ease-in-out; text-decoration: none; border: none; cursor: pointer; } .btn-primary { background-color: #3b82f6; color: #ffffff; } .btn-primary:hover { background-color: #2563eb; }
+              .text-sm { font-size: 0.875rem; } .text-base { font-size: 1rem; } .text-lg { font-size: 1.125rem; } .text-xl { font-size: 1.25rem; } .text-2xl { font-size: 1.5rem; } .text-3xl { font-size: 1.875rem; } .font-medium { font-weight: 500; } .font-semibold { font-weight: 600; } .font-bold { font-weight: 700; }
+              @media (max-width: 768px) { .text-3xl { font-size: 1.5rem; } .text-2xl { font-size: 1.25rem; } .p-6 { padding: 1rem; } }
+              .app-header { position: sticky; top: 0; z-index: 50; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; backdrop-filter: blur(8px); }
+              @media (max-width: 1024px) { .app-sidebar { position: fixed; inset-y: 0; left: 0; z-index: 50; width: 16rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; background-color: #ffffff; } .app-sidebar.open { transform: translateX(0); } }
+              @media (prefers-color-scheme: dark) { .bg-white { background-color: #111827; } .bg-gray-50 { background-color: #030712; } .text-gray-900 { color: #f9fafb; } .text-gray-600 { color: #9ca3af; } .app-header { background-color: #111827; border-bottom-color: #374151; } .app-sidebar { background-color: #111827; } }
+              .app-header, .app-sidebar, .btn { transform: translateZ(0); will-change: transform; }
+            `
+          }}
+        />
+        
         {/* Critical resource hints for mobile performance */}
         <link rel="preconnect" href="https://sitegrip-backend-pu22v4ao5a-uc.a.run.app" />
         <link rel="preconnect" href="https://sitegrip-backend.firebaseapp.com" />
@@ -101,13 +123,52 @@ export default function RootLayout({
         <link rel="preload" href="/images/logo/logo.svg" as="image" type="image/svg+xml" />
         
         {/* Mobile-specific optimizations */}
-        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" />
         <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+        
+        {/* Preload critical fonts */}
+        <link
+          rel="preload"
+          href="/_next/static/media/inter-latin-400-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/_next/static/media/inter-latin-500-normal.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
         
         {/* Resource hints - load after critical content */}
         <link rel="prefetch" href="/dashboard" />
         <link rel="prefetch" href="/seo-tools" />
         <link rel="prefetch" href="/uptime" />
+        
+        {/* Web App Manifest */}
+        <link rel="manifest" href="/manifest.json" />
+        
+        {/* Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Register Service Worker for mobile performance
+              if ('serviceWorker' in navigator && '${process.env.NODE_ENV}' === 'production') {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('SW registered: ', registration);
+                  }).catch(function(registrationError) {
+                    console.log('SW registration failed: ', registrationError);
+                  });
+                });
+              }
+            `
+          }}
+        />
         
         {/* Performance monitoring script */}
         {process.env.NODE_ENV === 'production' && (
