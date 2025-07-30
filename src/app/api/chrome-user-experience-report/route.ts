@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         url: url,
         formFactor: normalizedFormFactor,
-        metrics: ['largest_contentful_paint', 'first_input_delay', 'cumulative_layout_shift', 'experimental_time_to_first_byte', 'interaction_to_next_paint']
+        metrics: ['largest_contentful_paint', 'cumulative_layout_shift', 'experimental_time_to_first_byte', 'interaction_to_next_paint']
       })
     });
 
@@ -59,16 +59,15 @@ export async function POST(request: NextRequest) {
     // Transform Google's CrUX data format to our format
     const transformedData = {
       url: url,
-      formFactor: cruxData.record?.formFactor || 'desktop',
-      period: cruxData.record?.collectionPeriod?.lastDate || '2024-01-01',
+      formFactor: cruxData.record?.formFactor || normalizedFormFactor,
+      period: cruxData.record?.collectionPeriod?.lastDate || new Date().toISOString().split('T')[0],
       metrics: {
         lcp: transformMetric(cruxData.record?.metrics?.largest_contentful_paint, 'lcp'),
-        fid: transformMetric(cruxData.record?.metrics?.first_input_delay, 'fid'),
         cls: transformMetric(cruxData.record?.metrics?.cumulative_layout_shift, 'cls'),
         ttfb: transformMetric(cruxData.record?.metrics?.experimental_time_to_first_byte, 'ttfb'),
         inp: transformMetric(cruxData.record?.metrics?.interaction_to_next_paint, 'inp')
       },
-      sampleCount: cruxData.record?.key?.effectiveConnectionType || 0,
+      sampleCount: cruxData.record?.collectionPeriod?.firstDate && cruxData.record?.collectionPeriod?.lastDate ? 1000 : 0,
       timestamp: new Date().toISOString(),
       isMockData: false
     };
@@ -85,23 +84,16 @@ export async function POST(request: NextRequest) {
 
 // Helper function to transform Google's metric format to our format
 function transformMetric(metric: any, type: string) {
-  if (!metric) {
-    // Return default values if metric is not available
-    const defaults = {
-      lcp: { p75: 3000, histogram: [{ start: 0, end: 2500, density: 0.5 }, { start: 2500, end: 4000, density: 0.3 }, { start: 4000, end: Infinity, density: 0.2 }] },
-      fid: { p75: 100, histogram: [{ start: 0, end: 100, density: 0.6 }, { start: 100, end: 300, density: 0.3 }, { start: 300, end: Infinity, density: 0.1 }] },
-      cls: { p75: 0.1, histogram: [{ start: 0, end: 0.1, density: 0.7 }, { start: 0.1, end: 0.25, density: 0.2 }, { start: 0.25, end: Infinity, density: 0.1 }] },
-      ttfb: { p75: 600, histogram: [{ start: 0, end: 800, density: 0.7 }, { start: 800, end: 1800, density: 0.2 }, { start: 1800, end: Infinity, density: 0.1 }] },
-      inp: { p75: 200, histogram: [{ start: 0, end: 200, density: 0.7 }, { start: 200, end: 500, density: 0.2 }, { start: 500, end: Infinity, density: 0.1 }] }
-    };
-    return defaults[type as keyof typeof defaults];
+  if (!metric || !metric.histogram || !metric.percentiles) {
+    // Return null for missing data instead of mock data
+    return null;
   }
 
   // Transform histogram data
-  const histogram = metric.histogram.map((bin: any, index: number) => ({
-    start: bin.start,
-    end: bin.end,
-    density: bin.density
+  const histogram = metric.histogram.map((bin: any) => ({
+    start: bin.start || 0,
+    end: bin.end === null ? Infinity : bin.end,
+    density: bin.density || 0
   }));
 
   return {
