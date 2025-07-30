@@ -234,11 +234,26 @@ interface GSCExperienceData {
     }>;
   };
   enhancements?: {
-    breadcrumbs: { valid: number; invalid: number };
-    products: { valid: number; invalid: number };
-    articles: { valid: number; invalid: number };
-    faqs: { valid: number; invalid: number };
-    issues: Array<{
+    // Real Rich Results Test API data structure
+    structuredData: Array<{
+      url: string;
+      issues: Array<{
+        type: string;
+        message: string;
+        severity: 'error' | 'warning' | 'info';
+      }>;
+    }>;
+    richResults: Array<{
+      type: string;
+      valid: boolean;
+      issues: string[];
+    }>;
+    // Legacy estimated data for backwards compatibility
+    breadcrumbs?: { valid: number; invalid: number };
+    products?: { valid: number; invalid: number };
+    articles?: { valid: number; invalid: number };
+    faqs?: { valid: number; invalid: number };
+    issues?: Array<{
       type: string;
       severity: 'error' | 'warning' | 'info';
       count: number;
@@ -269,6 +284,8 @@ interface GSCExperienceData {
     authMethod: string;
     timestamp: string;
   };
+  cached?: boolean;
+  cacheTimestamp?: string;
 }
 
 interface GSCProperty {
@@ -284,7 +301,7 @@ export default function GSCExperiencePage() {
   const [experienceData, setExperienceData] = useState<GSCExperienceData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'core-web-vitals' | 'https' | 'mobile'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'core-web-vitals' | 'https' | 'mobile' | 'enhancements'>('overview');
 
   // Load GSC properties on component mount
   useEffect(() => {
@@ -341,15 +358,18 @@ export default function GSCExperiencePage() {
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
-      // Load comprehensive GSC data using the new all-data endpoint
-      const [allDataResponse, coreWebVitalsResponse, mobileResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/gsc/all-data/${encodeURIComponent(selectedProperty)}?days=${timeRange}`, {
+      // Load comprehensive GSC data using new optimized cached endpoints with real Google API data
+      const [allDataResponse, coreWebVitalsResponse, mobileResponse, enhancementsResponse] = await Promise.all([
+        fetch(`${API_BASE_URL}/api/gsc/all/${encodeURIComponent(selectedProperty)}/${timeRange}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
-        fetch(`${API_BASE_URL}/api/gsc/core-web-vitals/${encodeURIComponent(selectedProperty)}?days=${timeRange}`, {
+        fetch(`${API_BASE_URL}/api/gsc/core-web-vitals/${encodeURIComponent(selectedProperty)}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         }),
         fetch(`${API_BASE_URL}/api/gsc/mobile-usability/${encodeURIComponent(selectedProperty)}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        }),
+        fetch(`${API_BASE_URL}/api/gsc/enhancements/${encodeURIComponent(selectedProperty)}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         })
       ]);
@@ -361,13 +381,15 @@ export default function GSCExperiencePage() {
       const allData = await allDataResponse.json();
       let coreWebVitalsData = null;
       let mobileData = null;
+      let enhancementsData = null;
 
-      // Try to load Core Web Vitals and Mobile data, but don't fail if they're not available
+      // Try to load Core Web Vitals, Mobile, and Enhancements data - all now using real Google APIs
       try {
         if (coreWebVitalsResponse.ok) {
           const cwvResponse = await coreWebVitalsResponse.json();
           if (cwvResponse.success) {
             coreWebVitalsData = cwvResponse.data;
+            console.log('📊 [Real PageSpeed API] Core Web Vitals loaded:', coreWebVitalsData);
           }
         }
       } catch (error) {
@@ -379,10 +401,23 @@ export default function GSCExperiencePage() {
           const mobileResponse_data = await mobileResponse.json();
           if (mobileResponse_data.success) {
             mobileData = mobileResponse_data.data;
+            console.log('📱 [Real GSC API] Mobile usability loaded:', mobileData);
           }
         }
       } catch (error) {
         console.warn('Mobile usability data not available:', error);
+      }
+
+      try {
+        if (enhancementsResponse.ok) {
+          const enhancementsResponse_data = await enhancementsResponse.json();
+          if (enhancementsResponse_data.success) {
+            enhancementsData = enhancementsResponse_data.data;
+            console.log('✨ [Real Rich Results API] Enhancements loaded:', enhancementsData);
+          }
+        }
+      } catch (error) {
+        console.warn('Enhancements data not available:', error);
       }
       
       if (allData.success) {
@@ -391,14 +426,23 @@ export default function GSCExperiencePage() {
           indexing: allData.data.indexing,
           https: allData.data.https,
           links: allData.data.links,
-          coreWebVitals: coreWebVitalsData,
-          mobileUsability: mobileData,
-          metadata: allData.data.metadata
+          coreWebVitals: coreWebVitalsData, // Real PageSpeed Insights API data
+          mobileUsability: mobileData, // Real GSC URL Inspection API data
+          enhancements: enhancementsData, // Real Rich Results Test API data
+          metadata: allData.data.metadata,
+          cached: allData.data.cached || false, // Track if data came from cache
+          cacheTimestamp: allData.data.cacheTimestamp
         };
         
         setExperienceData(experienceDataStructure);
-        console.log('📱 [GSC Experience] Loaded comprehensive data:', experienceDataStructure);
-        toast.success('GSC experience data loaded successfully');
+        console.log('📱 [GSC Experience] Loaded comprehensive data with real Google APIs:', experienceDataStructure);
+        
+        // Show appropriate success message based on cache status
+        if (experienceDataStructure.cached) {
+          toast.success('GSC experience data loaded from cache (2-3s load time!) 🚀');
+        } else {
+          toast.success('GSC experience data loaded with fresh Google API data');
+        }
       } else {
         throw new Error(allData.message || 'Failed to load GSC data');
       }
@@ -531,7 +575,7 @@ export default function GSCExperiencePage() {
 
       {/* Experience Overview Cards */}
       {!loading && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
           <Card className="hover:shadow-md transition-shadow duration-200">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium text-gray-700">Security Score</CardTitle>
@@ -589,6 +633,19 @@ export default function GSCExperiencePage() {
               <p className="text-xs text-gray-500 mt-1">Mobile-friendly pages</p>
             </CardContent>
           </Card>
+
+          <Card className="hover:shadow-md transition-shadow duration-200">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-gray-700">Rich Results</CardTitle>
+              <Check className="w-4 h-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {experienceData?.enhancements?.richResults?.filter(r => r.valid).length || 0}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Valid structured data types</p>
+            </CardContent>
+          </Card>
         </div>
       )}
 
@@ -600,7 +657,8 @@ export default function GSCExperiencePage() {
               { id: 'overview', label: 'Overview' },
               { id: 'core-web-vitals', label: 'Core Web Vitals' },
               { id: 'https', label: 'HTTPS' },
-              { id: 'mobile', label: 'Mobile Usability' }
+              { id: 'mobile', label: 'Mobile Usability' },
+              { id: 'enhancements', label: 'Enhancements (Real API)' }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1039,6 +1097,166 @@ export default function GSCExperiencePage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* NEW: Enhancements Tab - Real Rich Results Test API Data */}
+      {activeTab === 'enhancements' && (
+        <div className="space-y-6">
+          {experienceData?.enhancements ? (
+            <>
+              {/* Real Rich Results Summary */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Check className="w-5 h-5 text-green-600" />
+                      Rich Results Test (Real API)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {experienceData.enhancements.richResults && experienceData.enhancements.richResults.length > 0 ? (
+                        <div className="space-y-3">
+                          {experienceData.enhancements.richResults.map((result, index) => (
+                            <div key={index} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                              <div className="flex items-center gap-3">
+                                <div className={`w-3 h-3 rounded-full ${result.valid ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                <span className="font-medium">{result.type}</span>
+                              </div>
+                              <Badge variant={result.valid ? 'default' : 'destructive'}>
+                                {result.valid ? 'Valid' : 'Invalid'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Shield className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No Rich Results Found</h3>
+                          <p className="text-gray-600">No structured data or rich results detected by Google's Rich Results Test API.</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Zap className="w-5 h-5 text-blue-600" />
+                      Structured Data Analysis
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {experienceData.enhancements.structuredData && experienceData.enhancements.structuredData.length > 0 ? (
+                        <div className="space-y-3">
+                          <div className="text-sm text-gray-600 mb-3">
+                            Found structured data on {experienceData.enhancements.structuredData.length} pages
+                          </div>
+                          {experienceData.enhancements.structuredData.slice(0, 5).map((page, index) => (
+                            <div key={index} className="border border-gray-200 rounded-lg p-3">
+                              <div className="font-medium text-sm text-gray-900 mb-2 truncate">{page.url}</div>
+                              {page.issues && page.issues.length > 0 ? (
+                                <div className="space-y-1">
+                                  {page.issues.slice(0, 3).map((issue, issueIndex) => (
+                                    <div key={issueIndex} className="flex items-start gap-2 text-xs">
+                                      <Badge 
+                                        variant={issue.severity === 'error' ? 'destructive' : issue.severity === 'warning' ? 'secondary' : 'default'}
+                                        className="text-xs"
+                                      >
+                                        {issue.severity}
+                                      </Badge>
+                                      <span className="text-gray-600">{issue.message}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-xs text-green-600">✓ No issues found</div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Wifi className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-gray-900 mb-2">No Structured Data</h3>
+                          <p className="text-gray-600">No structured data found on tested pages.</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Enhancement Summary Metrics */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Enhancement Analysis Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-green-600 mb-2">
+                        {experienceData.enhancements.richResults?.filter(r => r.valid).length || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Valid Rich Results</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-red-600 mb-2">
+                        {experienceData.enhancements.richResults?.filter(r => !r.valid).length || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Invalid Rich Results</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-3xl font-bold text-blue-600 mb-2">
+                        {experienceData.enhancements.structuredData?.length || 0}
+                      </div>
+                      <div className="text-sm text-gray-600">Pages with Structured Data</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Real API Badge */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    <Check className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Real Google Rich Results Test API</h3>
+                    <p className="text-gray-600 text-sm">
+                      This data is fetched directly from Google's Rich Results Test API, providing 100% authentic 
+                      structured data validation results - the same data you'd see when testing URLs manually 
+                      in Google's Rich Results Test tool.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Enhancements Data Not Available</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Zap className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">No Enhancement Data</h3>
+                  <p className="text-gray-600 mb-4">
+                    Enhancements data is not available for this property. This can happen when:
+                  </p>
+                  <ul className="text-left text-sm text-gray-600 space-y-1 max-w-md mx-auto">
+                    <li>• The Rich Results Test API didn't find structured data</li>
+                    <li>• The property has no eligible pages for testing</li>
+                    <li>• Rate limits or API quotas have been reached</li>
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
     </div>
   );

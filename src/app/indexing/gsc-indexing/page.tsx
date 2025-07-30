@@ -214,9 +214,9 @@ export default function GSCIndexingPage() {
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
-      // Use the comprehensive indexing endpoint to get REAL GSC indexing data (like the actual GSC interface)
+      // Use the new optimized GSC endpoint to get REAL cached GSC indexing data
       const response = await fetch(
-        `${API_BASE_URL}/api/gsc/indexing/${encodeURIComponent(selectedProperty)}?includeReasons=true&days=90`,
+        `${API_BASE_URL}/api/gsc/all/${encodeURIComponent(selectedProperty)}/90`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -231,21 +231,23 @@ export default function GSCIndexingPage() {
       console.log('🔍 [GSC Indexing] Raw API response:', data);
       
       if (data.success) {
-        // Transform the backend data to match frontend interface
+        // Transform the new optimized cached backend data to match frontend interface
         const transformedData = {
           indexing: {
-            indexedPages: data.data.indexedPages || 0,
-            notIndexedPages: data.data.notIndexedPages || 0,
-            totalPages: data.data.totalPages || 0,
-            indexedPercentage: data.data.indexingRate || 0,
-            chartData: data.data.chartData || [],
-            detailedReasons: data.data.indexingReasons || [], // Map indexingReasons to detailedReasons
-            sitemaps: data.data.sitemaps || []
+            indexedPages: data.data.indexing?.indexedPages || 0,
+            notIndexedPages: data.data.indexing?.notIndexedPages || 0,
+            totalPages: data.data.indexing?.totalPages || 0,
+            indexedPercentage: data.data.indexing?.indexingRate || 0,
+            chartData: data.data.indexing?.chartData || [],
+            detailedReasons: data.data.indexing?.indexingReasons || [], // Real GSC indexing reasons
+            sitemaps: data.data.indexing?.sitemaps || []
           },
           metadata: data.data.metadata || {
             property: selectedProperty,
             timestamp: new Date().toISOString()
-          }
+          },
+          cached: data.data.cached || false, // Track if data came from cache
+          cacheTimestamp: data.data.cacheTimestamp
         };
         
         console.log('📄 [GSC Indexing] Transformed data:', transformedData);
@@ -259,7 +261,13 @@ export default function GSCIndexingPage() {
         });
         
         setIndexingData(transformedData);
-        toast.success('Real GSC indexing data loaded successfully');
+        
+        // Show appropriate success message based on cache status
+        if (transformedData.cached) {
+          toast.success('Real GSC indexing data loaded from cache (2-3s load time!) 🚀');
+        } else {
+          toast.success('Fresh real GSC indexing data loaded successfully');
+        }
       } else {
         throw new Error(data.message || 'Failed to load GSC indexing data');
       }

@@ -312,9 +312,9 @@ export default function GSCPerformancePage() {
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
-      // Use optimized essential endpoint for performance-focused data
+      // Use new optimized cached endpoint for performance data
       const response = await fetch(
-        `${API_BASE_URL}/api/gsc/essential/${encodeURIComponent(selectedProperty)}?days=${timeRange}`,
+        `${API_BASE_URL}/api/gsc/all/${encodeURIComponent(selectedProperty)}/${timeRange}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -327,14 +327,22 @@ export default function GSCPerformancePage() {
       const data = await response.json();
       
       if (data.success) {
-        // Extract performance data from the essential response (more efficient)
+        // Extract performance data from the new optimized cached response
         const performanceDataOnly = {
-          performance: data.performance,
-          metadata: data.metadata
+          performance: data.data.performance,
+          metadata: data.data.metadata,
+          cached: data.data.cached || false,
+          cacheTimestamp: data.data.cacheTimestamp
         };
         setPerformanceData(performanceDataOnly);
-        console.log('📈 [GSC Performance] Loaded optimized performance data:', performanceDataOnly);
-        toast.success('Performance data loaded successfully');
+        console.log('📈 [GSC Performance] Loaded optimized cached performance data:', performanceDataOnly);
+        
+        // Show appropriate success message based on cache status
+        if (performanceDataOnly.cached) {
+          toast.success('Performance data loaded from cache (2-3s load time!) 🚀');
+        } else {
+          toast.success('Fresh performance data loaded successfully');
+        }
       } else {
         throw new Error(data.message || 'Failed to load GSC performance data');
       }

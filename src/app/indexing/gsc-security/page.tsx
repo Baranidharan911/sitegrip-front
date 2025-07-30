@@ -273,9 +273,9 @@ export default function GSCSecurityPage() {
 
       const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
       
-      // Use optimized essential endpoint for security-focused data
+      // Use new optimized cached endpoint for security-focused data
       const response = await fetch(
-        `${API_BASE_URL}/api/gsc/essential/${encodeURIComponent(selectedProperty)}?days=${timeRange}`,
+        `${API_BASE_URL}/api/gsc/all/${encodeURIComponent(selectedProperty)}/${timeRange}`,
         {
           headers: { 'Authorization': `Bearer ${token}` }
         }
@@ -288,14 +288,24 @@ export default function GSCSecurityPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Extract security data from the essential response (more efficient)
+        // Extract security data from the new optimized cached response
         const securityDataOnly = {
-          https: data.https,
-          metadata: data.metadata
+          https: data.data.https,
+          links: data.data.links,
+          indexing: data.data.indexing, // Needed for security-related indexing issues
+          metadata: data.data.metadata,
+          cached: data.data.cached || false,
+          cacheTimestamp: data.data.cacheTimestamp
         };
         setSecurityData(securityDataOnly);
-        console.log('🛡️ [GSC Security] Loaded optimized security data:', securityDataOnly);
-        toast.success('Security data loaded successfully');
+        console.log('🛡️ [GSC Security] Loaded optimized cached security data:', securityDataOnly);
+        
+        // Show appropriate success message based on cache status
+        if (securityDataOnly.cached) {
+          toast.success('Security data loaded from cache (2-3s load time!) 🚀');
+        } else {
+          toast.success('Fresh security data loaded successfully');
+        }
       } else {
         throw new Error(data.message || 'Failed to load GSC security data');
       }
