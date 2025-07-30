@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Roboto } from 'next/font/google'
 import './globals.css'
 import '../Style/tour-highlights.css'
 import { ThemeProvider } from '@/contexts/ThemeContext'
@@ -7,12 +7,24 @@ import { SidebarProvider } from '@/context/SidebarContext'
 import I18nProvider from '@/components/Common/I18nProvider'
 import AppTour from '@/components/Common/AppTour'
 
+// Optimized font loading for better mobile performance
 const inter = Inter({ 
   subsets: ['latin'],
   display: 'swap',
   preload: true,
-  fallback: ['Google Sans', 'Inter', 'system-ui', 'arial'],
+  fallback: ['system-ui', 'arial'],
   variable: '--font-inter',
+  weight: ['400', '500', '600', '700'], // Only load needed weights
+})
+
+// Alternative to Google Sans using Roboto (more widely supported)
+const roboto = Roboto({
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false, // Secondary font, load after critical
+  fallback: ['Inter', 'system-ui', 'arial'],
+  variable: '--font-roboto',
+  weight: ['400', '500', '700'], // Reduced weights for performance
 })
 
 export const metadata: Metadata = {
@@ -75,25 +87,28 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${roboto.variable}`}>
       <head>
-        {/* Preload critical resources */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* Critical resource hints for mobile performance */}
         <link rel="preconnect" href="https://sitegrip-backend-pu22v4ao5a-uc.a.run.app" />
         <link rel="preconnect" href="https://sitegrip-backend.firebaseapp.com" />
+        
         {/* DNS prefetch for external domains */}
-        <link rel="dns-prefetch" href="//www.googleapis.com" />
         <link rel="dns-prefetch" href="//firebaseapp.com" />
         <link rel="dns-prefetch" href="//googleapis.com" />
-        {/* Preload critical CSS */}
-        <link rel="preload" href="/globals.css" as="style" />
+        
         {/* Preload critical images */}
         <link rel="preload" href="/images/logo/logo.svg" as="image" type="image/svg+xml" />
-        {/* Resource hints */}
+        
+        {/* Mobile-specific optimizations */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+        <meta name="format-detection" content="telephone=no, date=no, email=no, address=no" />
+        
+        {/* Resource hints - load after critical content */}
         <link rel="prefetch" href="/dashboard" />
         <link rel="prefetch" href="/seo-tools" />
         <link rel="prefetch" href="/uptime" />
+        
         {/* Performance monitoring script */}
         {process.env.NODE_ENV === 'production' && (
           <script

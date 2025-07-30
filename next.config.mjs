@@ -6,8 +6,11 @@ const nextConfig = withBundleAnalyzer({
 })({
   // Performance optimizations
   experimental: {
-    optimizePackageImports: ['lucide-react', 'react-hot-toast', 'framer-motion'],
-    serverComponentsExternalPackages: ['firebase'],
+    optimizePackageImports: ['lucide-react', 'react-hot-toast', 'framer-motion', 'recharts', 'react-chartjs-2'],
+    serverComponentsExternalPackages: ['firebase', 'puppeteer', 'playwright'],
+    optimizeCss: true,
+    scrollRestoration: true,
+    // typedRoutes: true, // Temporarily disabled for build
   },
   
   // Image optimization
@@ -172,6 +175,15 @@ const nextConfig = withBundleAnalyzer({
           {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin',
+          },
+          // Mobile performance headers
+          {
+            key: 'Accept-CH',
+            value: 'DPR, Viewport-Width, Width',
+          },
+          {
+            key: 'Critical-CH',
+            value: 'DPR, Viewport-Width',
           },
         ],
       },

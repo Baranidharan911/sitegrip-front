@@ -5,6 +5,7 @@ import AppHeader from './AppHeader';
 import AppSidebar from './AppSidebar';
 import Backdrop from './Backdrop';
 import Loader from '@/components/Common/Loader';
+import useMobileOptimizations from '@/hooks/useMobileOptimizations';
 
 // Lazy load components for better performance
 const PageTransition = lazy(() => import('@/components/Common/PageTransition'));
@@ -16,6 +17,18 @@ interface AppContentProps {
 const AppContent = memo(({ children }: AppContentProps) => {
   const { isOpen } = useSidebar();
   const [isClient, setIsClient] = useState(false);
+
+  // Mobile optimizations
+  const { 
+    isMobile, 
+    shouldUseReducedMotion, 
+    shouldLazyLoad 
+  } = useMobileOptimizations({
+    enableReducedMotion: true,
+    enableTouchOptimizations: true,
+    enableBatteryOptimizations: true,
+    enableNetworkOptimizations: true,
+  });
 
   // Ensure client-side rendering
   useEffect(() => {
@@ -35,18 +48,23 @@ const AppContent = memo(({ children }: AppContentProps) => {
 
   // Memoize the sidebar classes - Fixed positioning with proper z-index
   const sidebarClasses = useMemo(() => {
-    const baseClasses = 'fixed inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out';
+    const baseClasses = 'fixed inset-y-0 left-0 z-50 transform';
+    const transitionClasses = shouldUseReducedMotion() 
+      ? 'transition-transform duration-150 ease-out' 
+      : 'transition-transform duration-300 ease-in-out';
     const mobileClasses = isOpen ? 'translate-x-0' : '-translate-x-full';
     const desktopClasses = 'lg:translate-x-0';
-    return `${baseClasses} ${mobileClasses} ${desktopClasses}`;
-  }, [isOpen]);
+    const hardwareAccelerated = isMobile ? 'hardware-accelerated' : '';
+    return `${baseClasses} ${transitionClasses} ${mobileClasses} ${desktopClasses} ${hardwareAccelerated}`;
+  }, [isOpen, shouldUseReducedMotion, isMobile]);
 
   // Memoize the content area classes - Fixed margin
   const contentAreaClasses = useMemo(() => {
     const baseClasses = 'flex-1 flex flex-col overflow-visible relative z-10';
     const marginClasses = isOpen ? 'lg:ml-64' : 'lg:ml-20';
-    return `${baseClasses} ${marginClasses}`;
-  }, [isOpen]);
+    const optimizationClasses = isMobile ? 'above-fold isolate-layer' : '';
+    return `${baseClasses} ${marginClasses} ${optimizationClasses}`;
+  }, [isOpen, isMobile]);
 
   // Optimized loading fallback
   const loadingFallback = useCallback(() => (

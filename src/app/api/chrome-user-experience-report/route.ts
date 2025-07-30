@@ -56,11 +56,28 @@ export async function POST(request: NextRequest) {
 
     const cruxData = await cruxResponse.json();
 
+    // Helper function to format Google's date object to string
+    const formatCruxDate = (dateObj: any) => {
+      if (!dateObj || typeof dateObj !== 'object') {
+        return new Date().toISOString().split('T')[0];
+      }
+      
+      if (dateObj.year && dateObj.month && dateObj.day) {
+        // Google CrUX returns dates as {year: 2024, month: 1, day: 15}
+        const year = dateObj.year;
+        const month = String(dateObj.month).padStart(2, '0');
+        const day = String(dateObj.day).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      }
+      
+      return new Date().toISOString().split('T')[0];
+    };
+
     // Transform Google's CrUX data format to our format
     const transformedData = {
       url: url,
       formFactor: cruxData.record?.formFactor || normalizedFormFactor,
-      period: cruxData.record?.collectionPeriod?.lastDate || new Date().toISOString().split('T')[0],
+      period: formatCruxDate(cruxData.record?.collectionPeriod?.lastDate),
       metrics: {
         lcp: transformMetric(cruxData.record?.metrics?.largest_contentful_paint, 'lcp'),
         cls: transformMetric(cruxData.record?.metrics?.cumulative_layout_shift, 'cls'),

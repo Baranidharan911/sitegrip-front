@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Google+Sans:wght@400;500;600;700&display=swap');
+/* Fonts are now loaded via Next.js font optimization in layout.tsx */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -27,13 +27,17 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-/* Google-style typography */
+/* Optimized typography using font variables */
 .font-google {
-  font-family: 'Google Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-roboto), var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .font-inter {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.font-roboto {
+  font-family: var(--font-roboto), var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* Google-style button animations */
@@ -270,4 +274,169 @@ body {
 
 .font-google-bold {
   font-weight: 700;
+}
+
+/* Mobile Performance Optimizations */
+@media (max-width: 768px) {
+  /* Reduce expensive animations on mobile */
+  .btn-google {
+    @apply transition-colors duration-150 ease-out;
+  }
+  
+  .btn-google:hover {
+    @apply transform-none shadow-sm;
+  }
+  
+  .card-google {
+    @apply transition-colors duration-150 ease-out;
+  }
+  
+  .card-google:hover {
+    @apply transform-none shadow-md;
+  }
+  
+  /* Disable ripple effect on mobile for better performance */
+  .ripple::after {
+    display: none;
+  }
+  
+  /* Optimize scrolling performance */
+  body {
+    -webkit-overflow-scrolling: touch;
+    overflow-scrolling: touch;
+  }
+  
+  /* Reduce motion for users who prefer it */
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* GPU acceleration for key elements */
+.hardware-accelerated {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize paint performance */
+.isolate-layer {
+  isolation: isolate;
+}
+
+/* Mobile-specific scrollbar styling */
+@media (max-width: 768px) {
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 2px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 1px;
+  }
+}
+
+/* Critical above-the-fold optimization */
+.above-fold {
+  contain: layout style paint;
+}
+
+/* Lazy loading optimization */
+.lazy-load {
+  content-visibility: auto;
+  contain-intrinsic-size: 200px;
+}
+
+/* Mobile optimization states */
+.low-power-mode * {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.1s !important;
+}
+
+.slow-connection img {
+  loading: lazy;
+}
+
+.slow-connection .lazy-load {
+  contain-intrinsic-size: 100px;
+}
+
+/* Touch optimizations */
+@media (pointer: coarse) {
+  .btn, button, a, input, textarea, select {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Increase tap targets on mobile */
+  .touch-target {
+    padding: 12px;
+    margin: 4px;
+  }
+}
+
+/* Connection-aware optimizations */
+@media (connection: slow) {
+  .card-google:hover {
+    transform: none;
+  }
+  
+  .btn-google:hover {
+    transform: none;
+  }
+  
+  .animate-google-pulse {
+    animation: none;
+  }
+}
+
+/* Mobile simplified styles */
+.mobile-simplified {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+/* Low-end device optimizations */
+.low-end-device * {
+  animation-duration: 0.5s !important;
+  transition-duration: 0.2s !important;
+}
+
+.low-end-device .backdrop-blur {
+  backdrop-filter: none !important;
+}
+
+.low-end-device .drop-shadow {
+  filter: none !important;
+}
+
+.disabled-on-low-end {
+  backdrop-filter: none !important;
+  filter: none !important;
+}
+
+/* Safe area support for mobile devices */
+.safe-area-top {
+  padding-top: var(--safe-area-inset-top, 0px);
+}
+
+.safe-area-bottom {
+  padding-bottom: var(--safe-area-inset-bottom, 0px);
+}
+
+.safe-area-left {
+  padding-left: var(--safe-area-inset-left, 0px);
+}
+
+.safe-area-right {
+  padding-right: var(--safe-area-inset-right, 0px);
 }
