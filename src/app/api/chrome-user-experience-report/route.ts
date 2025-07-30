@@ -5,11 +5,22 @@ const CRUX_API_BASE = 'https://chromeuxreport.googleapis.com/v1/records:queryRec
 
 export async function POST(request: NextRequest) {
   try {
-    const { url } = await request.json();
+    const { url, formFactor = 'DESKTOP' } = await request.json();
 
     if (!url) {
       return NextResponse.json(
         { error: 'URL is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate form factor
+    const validFormFactors = ['DESKTOP', 'PHONE', 'TABLET'];
+    const normalizedFormFactor = formFactor.toUpperCase();
+    
+    if (!validFormFactors.includes(normalizedFormFactor)) {
+      return NextResponse.json(
+        { error: 'Invalid form factor. Must be DESKTOP, PHONE, or TABLET' },
         { status: 400 }
       );
     }
@@ -32,7 +43,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify({
         url: url,
-        formFactor: 'ALL',
+        formFactor: normalizedFormFactor,
         metrics: ['largest_contentful_paint', 'first_input_delay', 'cumulative_layout_shift', 'experimental_time_to_first_byte', 'interaction_to_next_paint']
       })
     });

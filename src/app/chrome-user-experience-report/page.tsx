@@ -310,7 +310,7 @@ const FilterBar = ({
     testname: ['performance-tools', 'field-data', 'lab-data'],
     group: ['www_sitegrip_com', 'www_google_com', 'www_github_com'],
     page: ['_', 'home', 'about', 'contact'],
-    formFactor: ['ALL', 'desktop', 'mobile', 'tablet']
+    formFactor: ['DESKTOP', 'PHONE', 'TABLET']
   };
 
   return (
@@ -349,7 +349,7 @@ export default function ChromeUserExperienceReportPage() {
     testname: 'performance-tools',
     group: 'www_sitegrip_com',
     page: '_',
-    formFactor: 'ALL'
+    formFactor: 'DESKTOP'
   });
 
 
@@ -368,7 +368,10 @@ export default function ChromeUserExperienceReportPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify({ 
+          url: targetUrl,
+          formFactor: filters.formFactor
+        }),
       });
 
       if (!response.ok) {
