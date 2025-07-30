@@ -65,7 +65,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(transformedData);
   } catch (error) {
     console.error('CrUX API Error:', error);
-    throw new Error(`Failed to fetch CrUX data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return NextResponse.json(
+      { error: `Failed to fetch CrUX data: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { status: 500 }
+    );
   }
 }
 

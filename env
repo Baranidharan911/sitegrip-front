@@ -17,6 +17,7 @@ NEXT_PUBLIC_BACKEND_TYPE=typescript
 API_BASE_URL=https://sitegrip-backend-pu22v4ao5a-uc.a.run.app
 
 GOOGLE_PAGESPEED_API_KEY=AIzaSyD88Y2iFLvtS1i1XgMCalyibZ3vlbp0CO4
+GOOGLE_CRUX_API_KEY=AIzaSyD88Y2iFLvtS1i1XgMCalyibZ3vlbp0CO4
 
 # DEVELOPMENT MODE
 NODE_ENV=development
