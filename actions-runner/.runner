@@ -1,0 +1,11 @@
+﻿{
+  "agentId": 2,
+  "agentName": "BARANIDHARAN",
+  "poolId": 1,
+  "poolName": "Default",
+  "serverUrl": "https://pipelinesghubeus8.actions.githubusercontent.com/oKyC3eyV4FSa9E2ic5vyLkyZ0H5uOS9abLu7tPToDYFX3Rsdf7/",
+  "gitHubUrl": "https://github.com/Baranidharan911/sitegrip-front",
+  "workFolder": "_work",
+  "useV2Flow": true,
+  "serverUrlV2": "https://broker.actions.githubusercontent.com/"
+}
