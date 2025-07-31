@@ -67,6 +67,7 @@ functions/
 .env.production.local
 .env.*.local
 env
+env.*
 
 # ============================
 # 🐛 DEBUG & LOGS
@@ -122,6 +123,7 @@ firebase-adminsdk-*.json
 # ============================
 # 🚀 DEPLOYMENT
 # ============================
+.vercel/
 .vercel
 .netlify
 .now
@@ -150,6 +152,20 @@ public/uploads/
 public/temp/
 uploads/
 temp/
+
+# ============================
+# 📁 BUILD OUTPUTS & CACHE
+# ============================
+out/
+*.tsbuildinfo
+pglite-debug.log
+debug-analytics.js
+quick-memory-fix.js
+
+# ============================
+# 🤖 GITHUB ACTIONS RUNNER
+# ============================
+actions-runner/
 
 # ============================
 # 🔍 SEARCH INDEXES
