@@ -16,7 +16,8 @@ const TrustedBy = lazy(() => import('../components/Home/TrustedBy'));
 const Process = lazy(() => import('../components/Home/Process'));
 
 // Batch 2: Main content (load after initial render)
-const NewFeatures = lazy(() => import('../components/Home/NewFeatures'));
+const CustomerSuccessStories = lazy(() => import('../components/Home/CustomerSuccessStories'));
+const IndustryInnovations = lazy(() => import('../components/Home/IndustryInnovations'));
 const GoogleIndexing = lazy(() => import('../components/Home/GoogleIndexing'));
 const SEOTools = lazy(() => import('../components/Home/SEOTools'));
 
@@ -134,7 +135,10 @@ const Home = memo(() => {
     loadBatch2 ? (
       <>
         <Suspense fallback={<LoadingSpinner />}>
-          <NewFeatures />
+          <CustomerSuccessStories />
+        </Suspense>
+        <Suspense fallback={<LoadingSpinner />}>
+          <IndustryInnovations />
         </Suspense>
         <Suspense fallback={<LoadingSpinner />}>
           <GoogleIndexing />
