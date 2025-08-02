@@ -9,6 +9,7 @@ import useMobileOptimizations from '@/hooks/useMobileOptimizations';
 
 // Lazy load components for better performance
 const PageTransition = lazy(() => import('@/components/Common/PageTransition'));
+const Breadcrumb = lazy(() => import('@/components/Common/Breadcrumb'));
 
 interface AppContentProps {
   children: React.ReactNode;
@@ -40,6 +41,9 @@ const AppContent = memo(({ children }: AppContentProps) => {
   
   // Memoize the header component
   const headerComponent = useMemo(() => <AppHeader />, []);
+
+  // Memoize the breadcrumb component
+  const breadcrumbComponent = useMemo(() => <Breadcrumb />, []);
 
   // Memoize the backdrop component
   const backdropComponent = useMemo(() => 
@@ -88,9 +92,12 @@ const AppContent = memo(({ children }: AppContentProps) => {
   const contentArea = useMemo(() => (
     <div className={contentAreaClasses}>
       {headerComponent}
+      <Suspense fallback={loadingFallback()}>
+        {breadcrumbComponent}
+      </Suspense>
       {mainContent}
     </div>
-  ), [headerComponent, mainContent, contentAreaClasses]);
+  ), [headerComponent, breadcrumbComponent, mainContent, contentAreaClasses, loadingFallback]);
 
   // Don't render until client-side
   if (!isClient) {

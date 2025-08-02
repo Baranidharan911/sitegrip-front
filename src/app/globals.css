@@ -440,3 +440,59 @@ body {
 .safe-area-right {
   padding-right: var(--safe-area-inset-right, 0px);
 }
+
+/* Google-style breadcrumb navigation */
+.breadcrumb-google {
+  @apply bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800;
+}
+
+.breadcrumb-item-google {
+  @apply flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors duration-200;
+}
+
+.breadcrumb-item-active-google {
+  @apply text-gray-900 dark:text-white font-medium;
+}
+
+.breadcrumb-separator-google {
+  @apply text-gray-400 dark:text-gray-600;
+}
+
+.quick-action-google {
+  @apply flex items-center gap-2 px-3 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all duration-200;
+}
+
+.quick-action-google:hover {
+  @apply transform translate-y-[-1px] shadow-sm;
+}
+
+.shortcut-key-google {
+  @apply px-2 py-1 text-xs font-mono bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded border border-gray-300 dark:border-gray-500;
+}
+
+.shortcut-panel-google {
+  @apply mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700;
+}
+
+/* Google-style focus states for breadcrumb */
+.breadcrumb-focus-google:focus {
+  @apply outline-none ring-2 ring-blue-500 ring-offset-2;
+}
+
+/* Google-style breadcrumb animations */
+.breadcrumb-enter-google {
+  @apply opacity-0 transform translate-y-[-10px];
+}
+
+.breadcrumb-enter-active-google {
+  @apply opacity-100 transform translate-y-0 transition-all duration-200 ease-out;
+}
+
+.breadcrumb-exit-google {
+  @apply opacity-100 transform translate-y-0;
+}
+
+.breadcrumb-exit-active-google {
+  @apply opacity-0 transform translate-y-[-10px] transition-all duration-200 ease-in;
+}
+}
