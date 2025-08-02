@@ -49,7 +49,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variantClasses = {
       default: "bg-blue-600 text-white hover:bg-blue-700",
       destructive: "bg-red-600 text-white hover:bg-red-700",
-      outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
+              outline: "border border-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-900 dark:text-white",
       secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
       ghost: "hover:bg-gray-100 hover:text-gray-900",
       link: "text-blue-600 underline-offset-4 hover:underline",
@@ -110,7 +110,7 @@ interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 const SelectTrigger = ({ children, isOpen, className, ...props }: SelectTriggerProps) => (
   <button
-    className={`flex h-10 w-full items-center justify-between rounded-md border bg-white px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${className || 'border-gray-300 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'}`}
+                    className={`flex h-10 w-full items-center justify-between rounded-md border bg-white dark:bg-slate-800 px-3 py-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 ${className || 'border-gray-300 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'}`}
     {...props}
   >
     {children}
@@ -124,7 +124,7 @@ interface SelectContentProps {
   value?: string;
 }
 const SelectContent = ({ children, onSelect, value }: SelectContentProps) => (
-  <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-96 overflow-hidden rounded-md border bg-white shadow-md">
+          <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-96 overflow-hidden rounded-md border bg-white dark:bg-slate-800 shadow-md">
     <div className="p-1">
       {React.Children.map(children, child => {
         if (React.isValidElement(child) && child.type === SelectItem) {
@@ -283,6 +283,16 @@ interface GSCExperienceData {
     responseTime: number;
     authMethod: string;
     timestamp: string;
+    availableDataTypes?: {
+      performance: boolean;
+      indexing: boolean;
+      https: boolean;
+      links: boolean;
+      coreWebVitals: boolean;
+      mobileUsability: boolean;
+      enhancements: boolean;
+      richResultsTest: boolean;
+    };
   };
   cached?: boolean;
   cacheTimestamp?: string;
@@ -426,25 +436,44 @@ export default function GSCExperiencePage() {
           indexing: allData.data.indexing,
           https: allData.data.https,
           links: allData.data.links,
-          coreWebVitals: coreWebVitalsData, // Real PageSpeed Insights API data
-          mobileUsability: mobileData, // Real GSC URL Inspection API data
-          enhancements: enhancementsData, // Real Rich Results Test API data
-          metadata: allData.data.metadata,
-          cached: allData.data.cached || false, // Track if data came from cache
-          cacheTimestamp: allData.data.cacheTimestamp
+          coreWebVitals: coreWebVitalsData,
+          mobileUsability: mobileData,
+          enhancements: enhancementsData,
+          metadata: {
+            ...allData.data.metadata,
+            availableDataTypes: {
+              performance: true,
+              indexing: true,
+              https: true,
+              links: true,
+              coreWebVitals: !!coreWebVitalsData,
+              mobileUsability: !!mobileData,
+              enhancements: !!enhancementsData,
+              richResultsTest: !!enhancementsData
+            }
+          }
         };
-        
-        setExperienceData(experienceDataStructure);
-        console.log('📱 [GSC Experience] Loaded comprehensive data with real Google APIs:', experienceDataStructure);
-        
-        // Show appropriate success message based on cache status
-        if (experienceDataStructure.cached) {
-          toast.success('GSC experience data loaded from cache (2-3s load time!) 🚀');
-        } else {
-          toast.success('GSC experience data loaded with fresh Google API data');
+
+        // Check if any data types are missing due to permissions
+        const availableTypes = experienceDataStructure.metadata.availableDataTypes;
+        const missingTypes = Object.entries(availableTypes)
+          .filter(([_, available]) => !available)
+          .map(([type, _]) => type);
+
+        if (missingTypes.length > 0) {
+          console.warn(`⚠️ [GSC Experience] Missing data types due to permissions: ${missingTypes.join(', ')}`);
+          
+          // Show user-friendly message about missing data
+          const permissionLevel = allData.data.metadata?.permissionLevel || 'unknown';
+          if (permissionLevel === 'siteUnverifiedUser') {
+            toast(`Some data types are not available for ${permissionLevel} permission level`);
+          }
         }
+
+        setExperienceData(experienceDataStructure);
+        setLoading(false);
       } else {
-        throw new Error(allData.message || 'Failed to load GSC data');
+        throw new Error(allData.message || 'Failed to load GSC experience data');
       }
     } catch (error: any) {
       console.error('Error loading GSC experience data:', error);
@@ -514,7 +543,7 @@ export default function GSCExperiencePage() {
             size="sm" 
             onClick={loadExperienceData} 
             disabled={loading}
-            className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 text-gray-700"
+            className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh'}
@@ -535,7 +564,7 @@ export default function GSCExperiencePage() {
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">Time Range</label>
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="bg-white border-indigo-400 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-gray-900" disabled={loading}>
+            <SelectTrigger className="bg-white dark:bg-slate-800 border-indigo-400 dark:border-indigo-500 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-gray-900 dark:text-white" disabled={loading}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -549,7 +578,7 @@ export default function GSCExperiencePage() {
         <div className="flex-1">
           <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
           <Select value={selectedProperty} onValueChange={setSelectedProperty}>
-            <SelectTrigger className="bg-white border-indigo-400 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-gray-900" disabled={loading}>
+            <SelectTrigger className="bg-white dark:bg-slate-800 border-indigo-400 dark:border-indigo-500 focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 text-gray-900 dark:text-white" disabled={loading}>
               <SelectValue placeholder="Select a website" />
             </SelectTrigger>
             <SelectContent>

@@ -140,12 +140,12 @@ export default function EnhancedMapView({
   const gridHeight = gridSize * cellSize;
 
   return (
-    <div className="relative bg-white rounded-xl border border-gray-200 overflow-hidden shadow-lg">
+            <div className="relative bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-lg">
       {/* Map Header */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-white/20 dark:bg-white/10 rounded-lg flex items-center justify-center">
               <MapPin className="w-5 h-5" />
             </div>
             <div>
@@ -158,14 +158,14 @@ export default function EnhancedMapView({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowLegend(!showLegend)}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"
               title="Toggle Legend"
             >
               {showLegend ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
             <button
               onClick={toggleFullscreen}
-              className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+              className="p-2 hover:bg-white/20 dark:hover:bg-white/10 rounded-lg transition-colors"
               title="Toggle Fullscreen"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -308,21 +308,21 @@ export default function EnhancedMapView({
         <div className="absolute top-4 right-4 flex flex-col gap-2">
           <button
             onClick={handleZoomIn}
-            className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+            className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
             title="Zoom In"
           >
             <ZoomIn className="w-4 h-4 text-gray-600" />
           </button>
           <button
             onClick={handleZoomOut}
-            className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+            className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
             title="Zoom Out"
           >
             <ZoomOut className="w-4 h-4 text-gray-600" />
           </button>
           <button
             onClick={handleReset}
-            className="w-10 h-10 bg-white rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+            className="w-10 h-10 bg-white dark:bg-slate-700 rounded-lg shadow-lg flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors"
             title="Reset View"
           >
             <RotateCcw className="w-4 h-4 text-gray-600" />
@@ -331,7 +331,7 @@ export default function EnhancedMapView({
 
         {/* Map Mode Toggle */}
         <div className="absolute top-4 left-4">
-          <div className="bg-white rounded-lg shadow-lg p-1">
+          <div className="bg-white dark:bg-slate-700 rounded-lg shadow-lg p-1">
             <div className="flex">
               {(['grid', 'satellite', 'terrain'] as const).map((mode) => (
                 <button
@@ -351,7 +351,7 @@ export default function EnhancedMapView({
         </div>
 
         {/* Grid Info */}
-        <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3">
+        <div className="absolute bottom-4 left-4 bg-white dark:bg-slate-700 rounded-lg shadow-lg p-3">
           <div className="text-sm text-gray-600">
             <div className="flex items-center gap-2 mb-1">
               <Grid className="w-4 h-4" />
@@ -365,7 +365,7 @@ export default function EnhancedMapView({
         </div>
 
         {/* Zoom Level Indicator */}
-        <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg px-3 py-2">
+        <div className="absolute bottom-4 right-4 bg-white dark:bg-slate-700 rounded-lg shadow-lg px-3 py-2">
           <div className="text-sm font-medium text-gray-600">
             {Math.round(zoom * 100)}%
           </div>
@@ -410,7 +410,7 @@ export default function EnhancedMapView({
 
       {/* Selected Location Details */}
       {selectedCell && selectedCell.business && (
-        <div className="bg-white border-t border-gray-200 p-4">
+        <div className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-gray-700 p-4">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
               <div 

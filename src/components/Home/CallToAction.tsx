@@ -11,7 +11,7 @@ const CallToAction = () => (
         Join thousands of satisfied users who are already boosting their online presence with Site Grip.
       </p>
       <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
-        <button className="bg-white text-purple-700 font-bold py-3.5 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75 text-lg">
+        <button className="bg-white dark:bg-slate-700 text-purple-700 dark:text-purple-300 font-bold py-3.5 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75 text-lg">
           Get Started Free Today
         </button>
         <button className="bg-transparent border-2 border-white text-white font-bold py-3.5 px-10 rounded-full shadow-lg transform hover:scale-105 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-75 text-lg">

@@ -105,7 +105,7 @@ export default function RootLayout({
               @media (max-width: 768px) { .text-3xl { font-size: 1.5rem; } .text-2xl { font-size: 1.25rem; } .p-6 { padding: 1rem; } }
               .app-header { position: sticky; top: 0; z-index: 50; background-color: #ffffff; border-bottom: 1px solid #e5e7eb; backdrop-filter: blur(8px); }
               @media (max-width: 1024px) { .app-sidebar { position: fixed; inset-y: 0; left: 0; z-index: 50; width: 16rem; transform: translateX(-100%); transition: transform 0.3s ease-in-out; background-color: #ffffff; } .app-sidebar.open { transform: translateX(0); } }
-              @media (prefers-color-scheme: dark) { .bg-white { background-color: #111827; } .bg-gray-50 { background-color: #030712; } .text-gray-900 { color: #f9fafb; } .text-gray-600 { color: #9ca3af; } .app-header { background-color: #111827; border-bottom-color: #374151; } .app-sidebar { background-color: #111827; } }
+              .dark .bg-white { background-color: #111827; } .dark .bg-gray-50 { background-color: #030712; } .dark .text-gray-900 { color: #f9fafb; } .dark .text-gray-600 { color: #9ca3af; } .dark .app-header { background-color: #111827; border-bottom-color: #374151; } .dark .app-sidebar { background-color: #111827; }
               .app-header, .app-sidebar, .btn { transform: translateZ(0); will-change: transform; }
             `
           }}

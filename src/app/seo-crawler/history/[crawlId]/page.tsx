@@ -17,7 +17,7 @@ export default function CrawlDetailsPage() {
 
   useEffect(() => {
     const fetchCrawlFromFirestore = async () => {
-      const crawlId = params.crawlId as string;
+      const crawlId = params?.crawlId as string;
       if (!crawlId) return;
 
       try {
@@ -65,7 +65,7 @@ export default function CrawlDetailsPage() {
     };
 
     fetchCrawlFromFirestore();
-  }, [params.crawlId]);
+  }, [params?.crawlId]);
 
   if (loading) {
     return (

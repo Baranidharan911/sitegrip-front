@@ -31,9 +31,10 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     if (saved) {
       setIsDark(saved === 'dark');
     } else {
-      // Force light mode for new users or when no theme is saved
-      setIsDark(false);
-      localStorage.setItem('theme', 'light');
+      // Check system preference for new users
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setIsDark(systemPrefersDark);
+      localStorage.setItem('theme', systemPrefersDark ? 'dark' : 'light');
     }
   }, []);
 

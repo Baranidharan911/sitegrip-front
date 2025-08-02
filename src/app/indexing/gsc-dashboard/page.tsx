@@ -71,7 +71,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variantClasses = {
       default: "bg-blue-600 text-white hover:bg-blue-700",
       destructive: "bg-red-600 text-white hover:bg-red-700",
-      outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
+              outline: "border border-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-900 dark:text-white",
       secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
       ghost: "hover:bg-gray-100 hover:text-gray-900",
       link: "text-blue-600 underline-offset-4 hover:underline",
@@ -190,6 +190,13 @@ interface GSCDashboardData {
     responseTime: number;
     authMethod: string;
     timestamp: string;
+    permissionLevel?: string;
+    availableDataTypes?: {
+      PageSpeed?: boolean;
+      URLInspection?: boolean;
+      RichResults?: boolean;
+      // Add other data types as needed
+    };
   };
   cached?: boolean;
   cacheTimestamp?: string;
@@ -270,7 +277,15 @@ export default function GSCDashboardPage() {
       );
 
       if (!response.ok) {
-        throw new Error('Failed to load GSC dashboard data');
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.message || 'Failed to load GSC dashboard data';
+        
+        // Handle permission-specific errors
+        if (errorMessage.includes('permission') || errorMessage.includes('insufficient')) {
+          throw new Error(`Permission issue: ${errorMessage}. Please check your Google Search Console access for this property.`);
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -279,11 +294,20 @@ export default function GSCDashboardPage() {
         setDashboardData(data.data);
         console.log('📊 [GSC Dashboard] Loaded optimized cached data:', data.data);
         
-        // Show appropriate success message based on cache status
+        // Show appropriate success message based on cache status and permission level
         if (data.data.cached) {
           toast.success('GSC dashboard data loaded from cache (2-3s load time!) 🚀');
         } else {
-          toast.success('Fresh GSC dashboard data loaded successfully');
+          const permissionLevel = data.data.metadata?.permissionLevel || 'unknown';
+          const availableDataTypes = data.data.metadata?.availableDataTypes || {};
+          const availableCount = Object.values(availableDataTypes).filter(Boolean).length;
+          const totalCount = Object.keys(availableDataTypes).length;
+          
+          if (availableCount < totalCount) {
+            toast.success(`GSC data loaded (${availableCount}/${totalCount} data types available for ${permissionLevel} permission)`);
+          } else {
+            toast.success('Fresh GSC dashboard data loaded successfully');
+          }
         }
       } else {
         throw new Error(data.message || 'Failed to load GSC dashboard data');
@@ -291,7 +315,15 @@ export default function GSCDashboardPage() {
     } catch (error: any) {
       console.error('Error loading GSC dashboard data:', error);
       setError(error.message);
-      toast.error('Failed to load GSC dashboard data');
+      
+      // Show appropriate error message based on error type
+      if (error.message.includes('Permission issue')) {
+        toast.error('Permission issue detected. Please check your GSC access.');
+      } else if (error.message.includes('Rate limit')) {
+        toast.error('Rate limit exceeded. Please try again later.');
+      } else {
+        toast.error('Failed to load GSC dashboard data');
+      }
     } finally {
       setLoading(false);
     }
@@ -351,7 +383,7 @@ export default function GSCDashboardPage() {
             size="sm" 
             onClick={loadDashboardData} 
             disabled={loading}
-            className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 text-gray-700"
+            className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh Data'}
@@ -374,7 +406,7 @@ export default function GSCDashboardPage() {
           <select
             value={selectedProperty}
             onChange={(e) => setSelectedProperty(e.target.value)}
-            className="block w-full max-w-md px-3 py-2 border border-indigo-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 bg-white text-gray-900"
+            className="block w-full max-w-md px-3 py-2 border border-indigo-400 dark:border-indigo-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
             disabled={loading}
           >
             {properties.map((property) => (

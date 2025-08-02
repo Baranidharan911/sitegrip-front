@@ -60,7 +60,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const variantClasses = {
       default: "bg-blue-600 text-white hover:bg-blue-700",
       destructive: "bg-red-600 text-white hover:bg-red-700",
-      outline: "border border-gray-300 bg-white hover:bg-gray-50 text-gray-900",
+              outline: "border border-gray-300 bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 text-gray-900 dark:text-white",
       secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
       ghost: "hover:bg-gray-100 hover:text-gray-900",
       link: "text-blue-600 underline-offset-4 hover:underline",
@@ -340,7 +340,7 @@ export default function GSCIndexingPage() {
             size="sm" 
             onClick={loadIndexingData} 
             disabled={loading}
-            className="bg-white hover:bg-gray-50 border-gray-300 hover:border-gray-400 text-gray-700"
+            className="bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             {loading ? 'Refreshing...' : 'Refresh Data'}
@@ -363,7 +363,7 @@ export default function GSCIndexingPage() {
           <select
             value={selectedProperty}
             onChange={(e) => setSelectedProperty(e.target.value)}
-            className="block w-full max-w-md px-3 py-2 border border-indigo-400 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 bg-white text-gray-900"
+            className="block w-full max-w-md px-3 py-2 border border-indigo-400 dark:border-indigo-500 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:border-indigo-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
             disabled={loading}
           >
             {properties.map((property) => (

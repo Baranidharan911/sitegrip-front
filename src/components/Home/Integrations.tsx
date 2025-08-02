@@ -104,7 +104,7 @@ const Integrations = () => {
   ];
 
   return (
-    <section className="relative py-20 bg-white">
+            <section className="relative py-20 bg-white dark:bg-slate-900">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
         {/* Header Section - Google Style */}
         <div className="text-center mb-16">
@@ -139,7 +139,7 @@ const Integrations = () => {
               {integrations.map((integration, index) => (
                 <div
                   key={index}
-                  className="group relative bg-white rounded-xl p-6 border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all duration-200"
+                  className="group relative bg-white dark:bg-slate-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-md transition-all duration-200"
                 >
                   {/* Badge */}
                   {integration.badge && (
@@ -248,11 +248,11 @@ const Integrations = () => {
               Start your free trial today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="inline-flex items-center gap-2 bg-white text-blue-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 transition-colors duration-200">
+                              <button className="inline-flex items-center gap-2 bg-white dark:bg-slate-700 text-blue-600 dark:text-blue-400 px-6 py-3 rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-slate-600 transition-colors duration-200">
                 <Play className="w-4 h-4" />
                 Start Free Trial
               </button>
-              <button className="inline-flex items-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-blue-600 transition-colors duration-200">
+                              <button className="inline-flex items-center gap-2 border-2 border-white text-white px-6 py-3 rounded-lg font-medium hover:bg-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200">
                 <Users className="w-4 h-4" />
                 Schedule Demo
               </button>

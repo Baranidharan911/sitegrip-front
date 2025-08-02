@@ -24,7 +24,7 @@ interface CrawlResult {
 
 function KeywordToolsContent() {
   const searchParams = useSearchParams();
-  const crawlId = searchParams.get('crawlId') || '';
+  const crawlId = searchParams?.get('crawlId') || '';
   
   const [mode, setMode] = useState<'manual' | 'crawl'>('manual');
   const [manualUrl, setManualUrl] = useState('');

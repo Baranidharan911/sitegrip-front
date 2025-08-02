@@ -156,7 +156,7 @@ export default function TestUptimePage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl p-8"
+          className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8"
         >
           <div className="flex items-center justify-between mb-8">
             <div>
@@ -420,8 +420,8 @@ export default function TestUptimePage() {
                 Clear Logs
               </button>
             </div>
-            <div className="bg-black rounded p-4 h-64 overflow-y-auto">
-              <pre className="text-green-400 text-sm font-mono">
+            <div className="bg-slate-800 dark:bg-slate-900 rounded p-4 h-64 overflow-y-auto">
+              <pre className="text-green-400 dark:text-green-300 text-sm font-mono">
                 {logs.length > 0 ? logs.join('\n') : 'No logs yet...'}
               </pre>
             </div>
@@ -433,7 +433,7 @@ export default function TestUptimePage() {
               <h3 className="font-semibold text-gray-900 mb-4">Current Monitors</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {monitors.map((monitor) => (
-                  <div key={monitor.id} className="bg-white border border-gray-200 rounded-lg p-4">
+                                     <div key={monitor.id} className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-gray-900">{monitor.name}</h4>
                       <div className={`w-3 h-3 rounded-full ${

@@ -160,7 +160,7 @@ const TimeSeriesChart = ({
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+                    <div className="bg-white dark:bg-slate-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
           <p className="text-sm font-medium text-gray-900">{label}</p>
           {payload.map((entry: any, index: number) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -174,7 +174,7 @@ const TimeSeriesChart = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
         {showLegend && (
@@ -287,7 +287,7 @@ const MetricCard = ({
   };
 
   return (
-    <div className={`bg-white rounded-lg border border-gray-200 ${sizeClasses[size]} hover:shadow-md transition-shadow`}>
+                  <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 ${sizeClasses[size]} hover:shadow-md transition-shadow`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-gray-600">{label}</h3>
         {getTrendIcon()}
@@ -337,7 +337,7 @@ const PerformanceScoreCard = ({
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-6 text-center">
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center">
       <h3 className="text-sm font-medium text-gray-600 mb-3">{title}</h3>
       <div className="relative inline-flex items-center justify-center mb-3">
         <svg width="100" height="100" className="transform -rotate-90">
@@ -392,7 +392,7 @@ const FilterBar = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 mb-6">
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
       <div className="flex flex-wrap items-center gap-4">
         {Object.entries(filters).map(([key, value]) => (
           <div key={key} className="flex items-center gap-2">
@@ -530,7 +530,7 @@ export default function WebVitalsCheckerPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+                  <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
@@ -588,7 +588,7 @@ export default function WebVitalsCheckerPage() {
         {result && result[view] && !loading && (
           <div className="space-y-6">
             {/* Page Info */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">{result.url}</h2>
@@ -609,8 +609,8 @@ export default function WebVitalsCheckerPage() {
 
             {/* Performance Scores */}
             {result[view]?.scores && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Scores</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Scores</h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   {Object.entries(result[view]?.scores).map(([label, score]) => (
                     <PerformanceScoreCard
@@ -627,8 +627,8 @@ export default function WebVitalsCheckerPage() {
 
             {/* Key Metrics */}
             {result[view]?.metrics && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Key Performance Metrics</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Key Performance Metrics</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {Object.entries(result[view]?.metrics)
                     .filter(([label]) => ['lcp', 'fcp', 'cls', 'tti', 'tbt', 'fid', 'si', 'ttfb'].includes(label))
@@ -667,8 +667,8 @@ export default function WebVitalsCheckerPage() {
 
             {/* Resource Metrics */}
             {result[view]?.metrics && (
-              <div className="bg-white rounded-lg border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Resource Metrics</h3>
+              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resource Metrics</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {Object.entries(result[view]?.metrics)
                     .filter(([label]) => ['totalResources', 'totalSize', 'domSize'].includes(label))
@@ -703,8 +703,8 @@ export default function WebVitalsCheckerPage() {
 
 
             {/* CPU Metrics */}
-            <div className="bg-white rounded-lg border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">CPU Performance [Chrome only]</h3>
+            <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">CPU Performance [Chrome only]</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <MetricCard
                   label="Long Tasks"
