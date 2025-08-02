@@ -495,4 +495,3 @@ body {
 .breadcrumb-exit-active-google {
   @apply opacity-0 transform translate-y-[-10px] transition-all duration-200 ease-in;
 }
-}
