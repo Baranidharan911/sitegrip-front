@@ -470,6 +470,13 @@ export const useAuth = (): UseAuthReturn => {
       const authInstance = getAuthInstance && getAuthInstance();
       const providerInstance = getProvider && getProvider();
       if (!authInstance || !providerInstance) throw new Error('Authentication not available');
+      
+      // Set login flag to prevent auto-logout during login process
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('isLoggingIn', 'true');
+        console.log('🔒 [Security] Login process started - flag set');
+      }
+      
       setLoading(true);
       setError(null);
       console.log('🔐 Signing in with Google (with GSC scopes)...');
@@ -512,15 +519,24 @@ export const useAuth = (): UseAuthReturn => {
           toast.success('Successfully signed in with Google!');
           console.log('🚀 Redirecting to intended destination...');
           
-          // Check if there's a stored redirect path
-          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-          if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
-            sessionStorage.removeItem('redirectAfterLogin');
-            router.push(redirectPath);
-          } else {
-            // Redirect to overview page after successful login
-            router.push('/dashboard/overview');
+          // Clear login flag since login is now complete
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('isLoggingIn');
+            console.log('🔒 [Security] Login process completed - flag cleared');
           }
+          
+          // Wait a moment to ensure the OAuth flow is completely finished
+          setTimeout(() => {
+            // Check if there's a stored redirect path
+            const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+            if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+              sessionStorage.removeItem('redirectAfterLogin');
+              router.push(redirectPath);
+            } else {
+              // Redirect to overview page after successful login
+              router.push('/dashboard/overview');
+            }
+          }, 500); // Small delay to ensure OAuth completion
         }
       } else {
         // Sign out from Firebase if backend verification failed
@@ -530,21 +546,23 @@ export const useAuth = (): UseAuthReturn => {
       }
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
+      setError(getAuthErrorMessage(error.code));
       
-      // Handle specific error cases
-      if (error.code === 'auth/popup-closed-by-user') {
-        toast.error('Sign in was cancelled. Please try again.');
-      } else if (error.code === 'auth/popup-blocked') {
-        toast.error('Pop-up was blocked by your browser. Please allow pop-ups for this site.');
-      } else if (error.code === 'auth/cancelled-popup-request') {
-        toast.error('Sign in was cancelled. Please try again.');
-      } else {
-        setError(getAuthErrorMessage(error.code));
-        toast.error(getAuthErrorMessage(error.code));
+      // Clear login flag on error
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('isLoggingIn');
+        console.log('🔒 [Security] Login process failed - flag cleared');
       }
+      
       throw error;
     } finally {
       setLoading(false);
+      
+      // Clear login flag if not already cleared
+      if (typeof window !== 'undefined' && sessionStorage.getItem('isLoggingIn') === 'true') {
+        sessionStorage.removeItem('isLoggingIn');
+        console.log('🔒 [Security] Login process ended - flag cleared');
+      }
     }
   };
 

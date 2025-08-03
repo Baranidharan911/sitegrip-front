@@ -222,6 +222,16 @@ export default function RootLayout({
               // Auto-clear localStorage when user leaves the site
               function clearUserData() {
                 try {
+                  // Check if user is in the middle of login process
+                  const isLoggingIn = sessionStorage.getItem('isLoggingIn') === 'true';
+                  const hasValidUser = localStorage.getItem('Sitegrip-user') || localStorage.getItem('user');
+                  
+                  // Don't clear if user is logging in or has valid user data
+                  if (isLoggingIn || hasValidUser) {
+                    console.log('🔒 [Security] Skipping clear - user is logging in or has valid data');
+                    return;
+                  }
+                  
                   // Clear all user-related localStorage items
                   localStorage.removeItem('Sitegrip-user');
                   localStorage.removeItem('Sitegrip-temp-user-id');
@@ -260,6 +270,31 @@ export default function RootLayout({
                   console.warn('Failed to clear localStorage:', error);
                 }
               }
+
+              // Set login flag when user starts login process
+              function setLoginFlag() {
+                sessionStorage.setItem('isLoggingIn', 'true');
+                console.log('🔒 [Security] Login process started');
+              }
+
+              // Clear login flag when login is complete
+              function clearLoginFlag() {
+                sessionStorage.removeItem('isLoggingIn');
+                console.log('🔒 [Security] Login process completed');
+              }
+
+              // Listen for login button clicks
+              document.addEventListener('click', function(e) {
+                if (e.target && (e.target.textContent.includes('Login') || 
+                                e.target.textContent.includes('Sign in') ||
+                                e.target.closest('button')?.textContent.includes('Login') ||
+                                e.target.closest('button')?.textContent.includes('Sign in'))) {
+                  setLoginFlag();
+                }
+              });
+
+              // Clear login flag after a delay (login process should be complete)
+              setTimeout(clearLoginFlag, 5 * 60 * 1000); // 5 minutes
 
               // Clear data when page becomes hidden (user switches tabs, minimizes, etc.)
               document.addEventListener('visibilitychange', function() {

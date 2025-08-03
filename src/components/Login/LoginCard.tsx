@@ -19,18 +19,26 @@ export default function LoginCard() {
   const router = useRouter();
 
   useEffect(() => {
-    // Only redirect if user is authenticated and not in the middle of a login process
-    if (user && !loading) {
-      // Check if there's a stored redirect path
-      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-      if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
-        sessionStorage.removeItem('redirectAfterLogin');
-        router.push(redirectPath);
-      } else {
-        router.push('/dashboard/overview');
+    const storedUser = localStorage.getItem('Sitegrip-user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        if (userData && userData.uid) {
+          // Check if there's a stored redirect path
+          const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+          if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+            sessionStorage.removeItem('redirectAfterLogin');
+            router.push(redirectPath);
+          } else {
+          router.push('/dashboard/overview');
+          }
+        }
+      } catch (err) {
+        // Invalid stored data, clear it
+        localStorage.removeItem('Sitegrip-user');
       }
     }
-  }, [user, loading, router]);
+  }, [router]);
 
   const handleEmailLogin = async (e: React.FormEvent) => {
     e.preventDefault();

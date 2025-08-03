@@ -13,19 +13,14 @@ export default function LoginScreen() {
   // Redirect authenticated users to their intended destination or dashboard
   useEffect(() => {
     if (!loading && user) {
-      // Add a small delay to ensure the authentication process is complete
-      const redirectTimer = setTimeout(() => {
-        // Check if there's a stored redirect path
-        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
-        if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
-          sessionStorage.removeItem('redirectAfterLogin');
-          router.push(redirectPath);
-        } else {
-          router.push('/dashboard/overview');
-        }
-      }, 1000); // Wait 1 second to ensure authentication is complete
-
-      return () => clearTimeout(redirectTimer);
+      // Check if there's a stored redirect path
+      const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+      if (redirectPath && redirectPath !== '/login' && redirectPath !== '/signup') {
+        sessionStorage.removeItem('redirectAfterLogin');
+        router.push(redirectPath);
+      } else {
+        router.push('/dashboard/overview');
+      }
     }
   }, [user, loading, router]);
 
