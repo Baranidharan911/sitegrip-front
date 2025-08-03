@@ -530,7 +530,18 @@ export const useAuth = (): UseAuthReturn => {
       }
     } catch (error: any) {
       console.error('❌ Google sign in error:', error);
-      setError(getAuthErrorMessage(error.code));
+      
+      // Handle specific error cases
+      if (error.code === 'auth/popup-closed-by-user') {
+        toast.error('Sign in was cancelled. Please try again.');
+      } else if (error.code === 'auth/popup-blocked') {
+        toast.error('Pop-up was blocked by your browser. Please allow pop-ups for this site.');
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        toast.error('Sign in was cancelled. Please try again.');
+      } else {
+        setError(getAuthErrorMessage(error.code));
+        toast.error(getAuthErrorMessage(error.code));
+      }
       throw error;
     } finally {
       setLoading(false);
