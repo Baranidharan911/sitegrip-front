@@ -25,7 +25,7 @@ const AppSidebar = memo(() => {
 
   // Memoize the active state checker
   const isActive = useCallback((path: string) => {
-    return pathname === path || pathname.startsWith(path + '/');
+    return pathname === path || (pathname ? pathname.startsWith(path + '/') : false);
   }, [pathname]);
 
   // Enhanced toggle handler with smooth animation

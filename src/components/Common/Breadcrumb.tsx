@@ -235,7 +235,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({
   }, [router]);
 
   const breadcrumbs = useMemo(() => {
-    return customBreadcrumbs || generateBreadcrumbs(pathname);
+    return customBreadcrumbs || generateBreadcrumbs(pathname || '');
   }, [pathname, customBreadcrumbs, generateBreadcrumbs]);
 
   // Keyboard shortcuts
