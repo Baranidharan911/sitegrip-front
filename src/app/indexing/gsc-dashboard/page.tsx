@@ -291,15 +291,85 @@ export default function GSCDashboardPage() {
       const data = await response.json();
       
       if (data.success) {
-        setDashboardData(data.data);
-        console.log('📊 [GSC Dashboard] Loaded optimized cached data:', data.data);
+        // Extract and transform the backend data to match frontend expectations
+        const backendData = data.data;
+        const performanceData = backendData.performance || {};
+        const indexingData = backendData.indexing || {};
+        const httpsData = backendData.https || {};
+        const linksData = backendData.links || {};
+        const metadata = backendData.metadata || {};
+        
+        // Log the raw backend data for debugging
+        console.log('🔍 [GSC Dashboard] Backend data structure:', {
+          backendData,
+          performanceData,
+          indexingData,
+          httpsData,
+          linksData,
+          metadata,
+          performance: data.performance
+        });
+        
+        // Transform the backend data to match frontend expectations
+        const transformedData = {
+          performance: {
+            // Map backend performance properties to frontend expectations
+            clicks: performanceData.totalClicks || 0,
+            impressions: performanceData.totalImpressions || 0,
+            ctr: performanceData.avgCTR || 0,
+            position: performanceData.avgPosition || 0,
+            chartData: performanceData.chartData || []
+          },
+          indexing: {
+            // Map backend indexing properties to frontend expectations
+            indexedPages: indexingData.indexedPages || 0,
+            notIndexedPages: indexingData.notIndexedPages || 0,
+            totalPages: indexingData.totalPages || 0,
+            indexedPercentage: indexingData.indexingRate || 0,
+            reasons: indexingData.indexingReasons || []
+          },
+          https: {
+            // Map backend HTTPS properties to frontend expectations
+            securePages: httpsData.httpsUrls || 0,
+            insecurePages: httpsData.nonHttpsUrls || 0,
+            securityScore: httpsData.httpsRate || 0,
+            totalUrls: httpsData.totalUrls || 0
+          },
+          links: {
+            // Map backend links properties to frontend expectations
+            internalLinks: linksData.internalLinks || 0,
+            externalLinks: linksData.externalLinks || 0,
+            topLinkingPages: linksData.topLinkingPages || []
+          },
+          coreWebVitals: backendData.coreWebVitals,
+          enhancements: backendData.enhancements,
+          metadata: {
+            property: metadata.property || selectedProperty,
+            userId: metadata.userId || '',
+            dateRange: metadata.dateRange || {
+              startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+              endDate: new Date().toISOString(),
+              days: 30
+            },
+            responseTime: metadata.responseTime || 0,
+            authMethod: metadata.authMethod || 'unknown',
+            timestamp: metadata.timestamp || new Date().toISOString(),
+            permissionLevel: metadata.permissionLevel,
+            availableDataTypes: metadata.availableDataTypes
+          },
+          cached: backendData.fromCache || false,
+          cacheTimestamp: backendData.lastCachedAt || null
+        };
+        
+        setDashboardData(transformedData);
+        console.log('📊 [GSC Dashboard] Transformed dashboard data:', transformedData);
         
         // Show appropriate success message based on cache status and permission level
-        if (data.data.cached) {
+        if (transformedData.cached) {
           toast.success('GSC dashboard data loaded from cache (2-3s load time!) 🚀');
         } else {
-          const permissionLevel = data.data.metadata?.permissionLevel || 'unknown';
-          const availableDataTypes = data.data.metadata?.availableDataTypes || {};
+          const permissionLevel = transformedData.metadata?.permissionLevel || 'unknown';
+          const availableDataTypes = transformedData.metadata?.availableDataTypes || {};
           const availableCount = Object.values(availableDataTypes).filter(Boolean).length;
           const totalCount = Object.keys(availableDataTypes).length;
           
@@ -634,6 +704,15 @@ export default function GSCDashboardPage() {
               <div>Response Time: {dashboardData.metadata.responseTime}ms</div>
               <div>Date Range: {dashboardData.metadata.dateRange.startDate} to {dashboardData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(dashboardData.metadata.timestamp).toLocaleString()}</div>
+              <div>Data Source: {dashboardData.cached ? 'Cache' : 'Fresh API'}</div>
+              <div>Permission Level: {dashboardData.metadata.permissionLevel || 'Unknown'}</div>
+              <div>Performance - Clicks: {dashboardData.performance?.clicks || 0}</div>
+              <div>Performance - Impressions: {dashboardData.performance?.impressions || 0}</div>
+              <div>Indexing - Total Pages: {dashboardData.indexing?.totalPages || 0}</div>
+              <div>Indexing - Indexed: {dashboardData.indexing?.indexedPages || 0}</div>
+              <div>HTTPS - Security Score: {dashboardData.https?.securityScore || 0}%</div>
+              <div>Links - Internal: {dashboardData.links?.internalLinks || 0}</div>
+              <div>Links - External: {dashboardData.links?.externalLinks || 0}</div>
             </div>
           </CardContent>
         </Card>

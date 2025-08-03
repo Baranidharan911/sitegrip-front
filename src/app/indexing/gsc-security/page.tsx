@@ -190,6 +190,8 @@ interface GSCSecurityData {
     securityScore: number;
     totalUrls: number;
   };
+  links?: any;
+  indexing?: any;
   metadata: {
     property: string;
     userId: string;
@@ -202,6 +204,8 @@ interface GSCSecurityData {
     authMethod: string;
     timestamp: string;
   };
+  cached?: boolean;
+  cacheTimestamp?: string | null;
 }
 
 interface GSCProperty {
@@ -288,17 +292,48 @@ export default function GSCSecurityPage() {
       const data = await response.json();
       
       if (data.success) {
-        // Extract security data from the new optimized cached response
+        // Extract and transform the backend data to match frontend expectations
+        const backendData = data.data;
+        const httpsData = backendData.https || {};
+        const metadata = backendData.metadata || {};
+        
+        // Log the raw backend data for debugging
+        console.log('🔍 [GSC Security] Backend data structure:', {
+          backendData,
+          httpsData,
+          metadata,
+          performance: data.performance
+        });
+        
+        // Transform the backend data to match frontend expectations
         const securityDataOnly = {
-          https: data.data.https,
-          links: data.data.links,
-          indexing: data.data.indexing, // Needed for security-related indexing issues
-          metadata: data.data.metadata,
-          cached: data.data.cached || false,
-          cacheTimestamp: data.data.cacheTimestamp
+          https: {
+            // Map backend properties to frontend expectations
+            securePages: httpsData.httpsUrls || 0,
+            insecurePages: httpsData.nonHttpsUrls || 0,
+            securityScore: httpsData.httpsRate || 0,
+            totalUrls: httpsData.totalUrls || 0
+          },
+          links: backendData.links || {},
+          indexing: backendData.indexing || {},
+          metadata: {
+            property: metadata.property || selectedProperty,
+            userId: metadata.userId || '',
+            dateRange: metadata.dateRange || {
+              startDate: new Date(Date.now() - parseInt(timeRange) * 24 * 60 * 60 * 1000).toISOString(),
+              endDate: new Date().toISOString(),
+              days: parseInt(timeRange)
+            },
+            responseTime: metadata.responseTime || 0,
+            authMethod: metadata.authMethod || 'unknown',
+            timestamp: metadata.timestamp || new Date().toISOString()
+          },
+          cached: backendData.fromCache || false,
+          cacheTimestamp: backendData.lastCachedAt || null
         };
+        
         setSecurityData(securityDataOnly);
-        console.log('🛡️ [GSC Security] Loaded optimized cached security data:', securityDataOnly);
+        console.log('🛡️ [GSC Security] Transformed security data:', securityDataOnly);
         
         // Show appropriate success message based on cache status
         if (securityDataOnly.cached) {
@@ -781,10 +816,15 @@ export default function GSCSecurityPage() {
           </CardHeader>
           <CardContent>
             <div className="text-xs text-gray-500 space-y-1">
+              <div>Property: {securityData.metadata.property}</div>
               <div>Response Time: {securityData.metadata.responseTime}ms</div>
-              <div>Auth Method: {securityData.metadata.authMethod}</div>
               <div>Date Range: {securityData.metadata.dateRange.startDate} to {securityData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(securityData.metadata.timestamp).toLocaleString()}</div>
+              <div>Data Source: {securityData.cached ? 'Cache' : 'Fresh API'}</div>
+              <div>HTTPS Rate: {securityData.https.securityScore}%</div>
+              <div>Secure Pages: {securityData.https.securePages}</div>
+              <div>Insecure Pages: {securityData.https.insecurePages}</div>
+              <div>Total URLs: {securityData.https.totalUrls}</div>
             </div>
           </CardContent>
         </Card>

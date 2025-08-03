@@ -240,6 +240,8 @@ interface GSCPerformanceData {
     authMethod: string;
     timestamp: string;
   };
+  cached?: boolean;
+  cacheTimestamp?: string;
 }
 
 interface GSCProperty {
@@ -328,14 +330,71 @@ export default function GSCPerformancePage() {
       
       if (data.success) {
         // Extract performance data from the new optimized cached response
+        const backendData = data.data;
+        const performanceData = backendData.performance || {};
+        const metadata = backendData.metadata || {};
+        
+        // Log the raw backend data for debugging
+        console.log('🔍 [GSC Performance] Backend data structure:', {
+          backendData,
+          performanceData,
+          metadata,
+          performance: data.performance
+        });
+        
+        // Transform the backend data to match frontend expectations
         const performanceDataOnly = {
-          performance: data.data.performance,
-          metadata: data.data.metadata,
-          cached: data.data.cached || false,
-          cacheTimestamp: data.data.cacheTimestamp
+          performance: {
+            // Map backend property names to frontend expectations
+            clicks: performanceData.totalClicks || 0,
+            impressions: performanceData.totalImpressions || 0,
+            ctr: performanceData.avgCTR || 0,
+            position: performanceData.avgPosition || 0,
+            
+            // Keep other properties as they are
+            chartData: performanceData.chartData || [],
+            topQueries: performanceData.topQueries || [],
+            topPages: performanceData.topPages || [],
+            countries: performanceData.countries || [],
+            devices: performanceData.devices || [],
+            summary: performanceData.summary || {
+              dateRange: metadata.dateRange ? `${metadata.dateRange.startDate} to ${metadata.dateRange.endDate}` : 'Last 30 days'
+            }
+          },
+          metadata: {
+            property: selectedProperty,
+            userId: metadata.userId || '',
+            dateRange: metadata.dateRange || {
+              startDate: new Date(Date.now() - parseInt(timeRange) * 24 * 60 * 60 * 1000).toISOString(),
+              endDate: new Date().toISOString(),
+              days: parseInt(timeRange)
+            },
+            responseTime: data.performance?.responseTime || 0,
+            authMethod: metadata.authMethod || 'unknown',
+            timestamp: new Date().toISOString()
+          },
+          cached: backendData.fromCache || false,
+          cacheTimestamp: backendData.lastCachedAt || new Date().toISOString()
         };
+        
+        console.log('📈 [GSC Performance] Transformed data:', performanceDataOnly);
+        console.log('📊 [GSC Performance] Key metrics:', {
+          clicks: performanceDataOnly.performance.clicks,
+          impressions: performanceDataOnly.performance.impressions,
+          ctr: performanceDataOnly.performance.ctr,
+          position: performanceDataOnly.performance.position,
+          chartDataPoints: performanceDataOnly.performance.chartData.length,
+          topQueriesCount: performanceDataOnly.performance.topQueries.length,
+          topPagesCount: performanceDataOnly.performance.topPages.length
+        });
+        
+        // Validate the transformed data
+        if (performanceDataOnly.performance.clicks === 0 && performanceDataOnly.performance.impressions === 0) {
+          console.warn('⚠️ [GSC Performance] No performance data found in response');
+          toast.error('Limited performance data available. This might be due to insufficient GSC permissions or no data for this property.');
+        }
+        
         setPerformanceData(performanceDataOnly);
-        console.log('📈 [GSC Performance] Loaded optimized cached performance data:', performanceDataOnly);
         
         // Show appropriate success message based on cache status
         if (performanceDataOnly.cached) {
@@ -891,10 +950,32 @@ export default function GSCPerformancePage() {
           </CardHeader>
           <CardContent>
             <div className="text-xs text-gray-500 space-y-1">
+              <div>Property: {performanceData.metadata.property}</div>
               <div>Response Time: {performanceData.metadata.responseTime}ms</div>
-              <div>Auth Method: {performanceData.metadata.authMethod}</div>
               <div>Date Range: {performanceData.metadata.dateRange.startDate} to {performanceData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(performanceData.metadata.timestamp).toLocaleString()}</div>
+              <div>Data Source: {performanceData.cached ? 'Cache' : 'Fresh API'}</div>
+              <div>Total Clicks: {performanceData.performance.clicks}</div>
+              <div>Total Impressions: {performanceData.performance.impressions}</div>
+              <div>Average CTR: {performanceData.performance.ctr}%</div>
+              <div>Average Position: {performanceData.performance.position}</div>
+              <div>Chart Data Points: {performanceData.performance.chartData.length}</div>
+              <div>Top Queries: {performanceData.performance.topQueries.length}</div>
+              <div>Top Pages: {performanceData.performance.topPages.length}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Raw Data Debug (Development Only) */}
+      {process.env.NODE_ENV === 'development' && performanceData && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-sm text-gray-600">Raw Backend Response (Development Only)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xs font-mono bg-gray-100 p-4 rounded overflow-auto max-h-96">
+              <pre>{JSON.stringify(performanceData, null, 2)}</pre>
             </div>
           </CardContent>
         </Card>

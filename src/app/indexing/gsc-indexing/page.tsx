@@ -117,6 +117,8 @@ interface IndexingReason {
   source: string;
   validation: string;
   trend: 'up' | 'down' | 'stable';
+  pages?: number; // Backend returns 'pages' instead of 'count'
+  examples?: string[]; // Backend includes examples
 }
 
 interface GSCIndexingData {
@@ -150,6 +152,8 @@ interface GSCIndexingData {
     responseTime: number;
     timestamp: string;
   };
+  cached?: boolean;
+  cacheTimestamp?: string;
 }
 
 export default function GSCIndexingPage() {
@@ -231,23 +235,53 @@ export default function GSCIndexingPage() {
       console.log('🔍 [GSC Indexing] Raw API response:', data);
       
       if (data.success) {
-        // Transform the new optimized cached backend data to match frontend interface
+        // Transform the backend data to match frontend interface
+        // The backend returns data in a different structure than expected
+        const backendData = data.data;
+        
+        // Extract indexing data from the backend response
+        const indexingData = backendData.indexing || {};
+        const metadata = backendData.metadata || {};
+        
+        // Log the raw backend data for debugging
+        console.log('🔍 [GSC Indexing] Backend data structure:', {
+          backendData,
+          indexingData,
+          metadata,
+          performance: data.performance
+        });
+        
+        // Transform the data to match frontend expectations
         const transformedData = {
           indexing: {
-            indexedPages: data.data.indexing?.indexedPages || 0,
-            notIndexedPages: data.data.indexing?.notIndexedPages || 0,
-            totalPages: data.data.indexing?.totalPages || 0,
-            indexedPercentage: data.data.indexing?.indexingRate || 0,
-            chartData: data.data.indexing?.chartData || [],
-            detailedReasons: data.data.indexing?.indexingReasons || [], // Real GSC indexing reasons
-            sitemaps: data.data.indexing?.sitemaps || []
+            // Map backend indexing data to frontend structure
+            indexedPages: indexingData.indexedPages || 0,
+            notIndexedPages: indexingData.notIndexedPages || 0,
+            totalPages: indexingData.totalPages || 0,
+            indexedPercentage: indexingData.indexingRate || 0,
+            
+            // Handle chart data - backend might return different structure
+            chartData: indexingData.chartData || [],
+            
+            // Handle detailed reasons - backend returns indexingReasons
+            detailedReasons: indexingData.indexingReasons || [],
+            
+            // Handle sitemaps - backend returns sitemaps array
+            sitemaps: indexingData.sitemaps || []
           },
-          metadata: data.data.metadata || {
+          metadata: {
             property: selectedProperty,
+            userId: metadata.userId || '',
+            dateRange: {
+              startDate: metadata.startDate || new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
+              endDate: metadata.endDate || new Date().toISOString(),
+              days: 90
+            },
+            responseTime: data.performance?.responseTime || 0,
             timestamp: new Date().toISOString()
           },
-          cached: data.data.cached || false, // Track if data came from cache
-          cacheTimestamp: data.data.cacheTimestamp
+          cached: backendData.fromCache || false,
+          cacheTimestamp: backendData.lastCachedAt || new Date().toISOString()
         };
         
         console.log('📄 [GSC Indexing] Transformed data:', transformedData);
@@ -259,6 +293,12 @@ export default function GSCIndexingPage() {
           reasonsCount: transformedData.indexing.detailedReasons.length,
           sitemapsCount: transformedData.indexing.sitemaps.length
         });
+        
+        // Validate the transformed data
+        if (transformedData.indexing.totalPages === 0 && transformedData.indexing.detailedReasons.length === 0) {
+          console.warn('⚠️ [GSC Indexing] No indexing data found in response');
+          toast.error('Limited indexing data available. This might be due to insufficient GSC permissions or no data for this property.');
+        }
         
         setIndexingData(transformedData);
         
@@ -488,6 +528,32 @@ export default function GSCIndexingPage() {
         </Card>
       )}
 
+      {/* No Chart Data Message */}
+      {!indexingData?.indexing?.chartData || indexingData.indexing.chartData.length === 0 ? (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Indexing Trend Over Time</CardTitle>
+            <p className="text-sm text-gray-600">
+              Real indexing data from Google Search Console
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <TrendingUp className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Trend Data Available</h3>
+              <p className="text-gray-600">
+                Chart data is not available for this property. This could be due to:
+              </p>
+              <ul className="text-sm text-gray-500 mt-2 space-y-1">
+                <li>• Limited GSC permissions</li>
+                <li>• No historical indexing data</li>
+                <li>• Property not yet indexed by Google</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Why Pages Aren't Indexed - Main Section */}
       <Card className="mb-8">
         <CardHeader>
@@ -537,7 +603,9 @@ export default function GSCIndexingPage() {
                             {reason.trend === 'up' ? '↗' : reason.trend === 'down' ? '↘' : '→'} {reason.trend}
                           </span>
                         </td>
-                        <td className="p-3 text-right font-semibold">{formatNumber(reason.count)}</td>
+                        <td className="p-3 text-right font-semibold">
+                          {formatNumber(reason.pages || reason.count || 0)}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -598,7 +666,7 @@ export default function GSCIndexingPage() {
                   <div className="flex-1">
                     <div className="font-medium">{sitemap.path}</div>
                     <div className="text-sm text-gray-500">
-                      Last submitted: {new Date(sitemap.lastSubmitted).toLocaleDateString()}
+                      Last submitted: {sitemap.lastSubmitted ? new Date(sitemap.lastSubmitted).toLocaleDateString() : 'Unknown'}
                     </div>
                   </div>
                   <div className="text-right">
@@ -633,17 +701,22 @@ export default function GSCIndexingPage() {
               <div>Response Time: {indexingData.metadata.responseTime}ms</div>
               <div>Date Range: {indexingData.metadata.dateRange.startDate} to {indexingData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(indexingData.metadata.timestamp).toLocaleString()}</div>
+              <div>Data Source: {indexingData.cached ? 'Cache' : 'Fresh API'}</div>
+              <div>Indexing Reasons: {indexingData.indexing.detailedReasons.length}</div>
+              <div>Sitemaps: {indexingData.indexing.sitemaps.length}</div>
             </div>
           </CardContent>
         </Card>
       )}
+      
+      {/* Raw Data Debug (Development Only) */}
       {process.env.NODE_ENV === 'development' && indexingData && (
         <Card className="mb-8">
           <CardHeader>
-            <CardTitle className="text-sm text-gray-600">Debug Info (Development Only)</CardTitle>
+            <CardTitle className="text-sm text-gray-600">Raw Backend Response (Development Only)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-xs font-mono bg-gray-100 p-4 rounded overflow-auto">
+            <div className="text-xs font-mono bg-gray-100 p-4 rounded overflow-auto max-h-96">
               <pre>{JSON.stringify(indexingData, null, 2)}</pre>
             </div>
           </CardContent>

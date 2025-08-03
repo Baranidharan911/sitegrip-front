@@ -431,16 +431,69 @@ export default function GSCExperiencePage() {
       }
       
       if (allData.success) {
+        // Extract and transform the backend data to match frontend expectations
+        const backendData = allData.data;
+        const performanceData = backendData.performance || {};
+        const indexingData = backendData.indexing || {};
+        const httpsData = backendData.https || {};
+        const linksData = backendData.links || {};
+        const metadata = backendData.metadata || {};
+        
+        // Log the raw backend data for debugging
+        console.log('🔍 [GSC Experience] Backend data structure:', {
+          backendData,
+          performanceData,
+          indexingData,
+          httpsData,
+          linksData,
+          metadata
+        });
+        
+        // Transform the backend data to match frontend expectations
         const experienceDataStructure = {
-          performance: allData.data.performance,
-          indexing: allData.data.indexing,
-          https: allData.data.https,
-          links: allData.data.links,
+          performance: {
+            // Map backend performance property names to frontend expectations
+            clicks: performanceData.totalClicks || 0,
+            impressions: performanceData.totalImpressions || 0,
+            ctr: performanceData.avgCTR || 0,
+            position: performanceData.avgPosition || 0,
+            chartData: performanceData.chartData || []
+          },
+          indexing: {
+            // Map backend indexing property names to frontend expectations
+            indexedPages: indexingData.indexedPages || 0,
+            notIndexedPages: indexingData.notIndexedPages || 0,
+            totalPages: indexingData.totalPages || 0,
+            indexedPercentage: indexingData.indexingRate || 0,
+            reasons: indexingData.indexingReasons || []
+          },
+          https: {
+            // Map backend HTTPS property names to frontend expectations
+            securePages: httpsData.httpsUrls || 0,
+            insecurePages: httpsData.nonHttpsUrls || 0,
+            securityScore: httpsData.httpsRate || 0,
+            totalUrls: httpsData.totalUrls || 0
+          },
+          links: {
+            // Map backend links property names to frontend expectations
+            internalLinks: linksData.internalLinks || 0,
+            externalLinks: linksData.externalLinks || 0,
+            topLinkingPages: linksData.topLinkingPages || []
+          },
           coreWebVitals: coreWebVitalsData,
           mobileUsability: mobileData,
           enhancements: enhancementsData,
           metadata: {
-            ...allData.data.metadata,
+            property: selectedProperty,
+            userId: metadata.userId || '',
+            dateRange: metadata.dateRange || {
+              startDate: new Date(Date.now() - parseInt(timeRange) * 24 * 60 * 60 * 1000).toISOString(),
+              endDate: new Date().toISOString(),
+              days: parseInt(timeRange)
+            },
+            responseTime: allData.performance?.responseTime || 0,
+            authMethod: metadata.authMethod || 'unknown',
+            timestamp: new Date().toISOString(),
             availableDataTypes: {
               performance: true,
               indexing: true,
@@ -451,8 +504,26 @@ export default function GSCExperiencePage() {
               enhancements: !!enhancementsData,
               richResultsTest: !!enhancementsData
             }
-          }
+          },
+          cached: backendData.fromCache || false,
+          cacheTimestamp: backendData.lastCachedAt || new Date().toISOString()
         };
+        
+        console.log('📊 [GSC Experience] Transformed data:', experienceDataStructure);
+        console.log('📈 [GSC Experience] Key metrics:', {
+          clicks: experienceDataStructure.performance.clicks,
+          impressions: experienceDataStructure.performance.impressions,
+          indexedPages: experienceDataStructure.indexing.indexedPages,
+          securePages: experienceDataStructure.https.securePages,
+          securityScore: experienceDataStructure.https.securityScore,
+          internalLinks: experienceDataStructure.links.internalLinks
+        });
+        
+        // Validate the transformed data
+        if (experienceDataStructure.performance.clicks === 0 && experienceDataStructure.performance.impressions === 0) {
+          console.warn('⚠️ [GSC Experience] No performance data found in response');
+          toast.error('Limited experience data available. This might be due to insufficient GSC permissions or no data for this property.');
+        }
 
         // Check if any data types are missing due to permissions
         const availableTypes = experienceDataStructure.metadata.availableDataTypes;
@@ -464,14 +535,20 @@ export default function GSCExperiencePage() {
           console.warn(`⚠️ [GSC Experience] Missing data types due to permissions: ${missingTypes.join(', ')}`);
           
           // Show user-friendly message about missing data
-          const permissionLevel = allData.data.metadata?.permissionLevel || 'unknown';
+          const permissionLevel = metadata?.permissionLevel || 'unknown';
           if (permissionLevel === 'siteUnverifiedUser') {
             toast(`Some data types are not available for ${permissionLevel} permission level`);
           }
         }
 
         setExperienceData(experienceDataStructure);
-        setLoading(false);
+        
+        // Show appropriate success message based on cache status
+        if (experienceDataStructure.cached) {
+          toast.success('Experience data loaded from cache (2-3s load time!) 🚀');
+        } else {
+          toast.success('Fresh experience data loaded successfully');
+        }
       } else {
         throw new Error(allData.message || 'Failed to load GSC experience data');
       }
@@ -1119,10 +1196,32 @@ export default function GSCExperiencePage() {
           </CardHeader>
           <CardContent>
             <div className="text-xs text-gray-500 space-y-1">
+              <div>Property: {experienceData.metadata.property}</div>
               <div>Response Time: {experienceData.metadata.responseTime}ms</div>
-              <div>Auth Method: {experienceData.metadata.authMethod}</div>
               <div>Date Range: {experienceData.metadata.dateRange.startDate} to {experienceData.metadata.dateRange.endDate}</div>
               <div>Last Updated: {new Date(experienceData.metadata.timestamp).toLocaleString()}</div>
+              <div>Data Source: {experienceData.cached ? 'Cache' : 'Fresh API'}</div>
+              <div>Performance: {experienceData.performance.clicks} clicks, {experienceData.performance.impressions} impressions</div>
+              <div>Indexing: {experienceData.indexing.indexedPages} indexed, {experienceData.indexing.notIndexedPages} not indexed</div>
+              <div>HTTPS: {experienceData.https.securePages} secure, {experienceData.https.insecurePages} insecure</div>
+              <div>Links: {experienceData.links.internalLinks} internal, {experienceData.links.externalLinks} external</div>
+              <div>Core Web Vitals: {experienceData.coreWebVitals ? 'Available' : 'Not available'}</div>
+              <div>Mobile Usability: {experienceData.mobileUsability ? 'Available' : 'Not available'}</div>
+              <div>Enhancements: {experienceData.enhancements ? 'Available' : 'Not available'}</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Raw Data Debug (Development Only) */}
+      {process.env.NODE_ENV === 'development' && experienceData && (
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="text-sm text-gray-600">Raw Backend Response (Development Only)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xs font-mono bg-gray-100 p-4 rounded overflow-auto max-h-96">
+              <pre>{JSON.stringify(experienceData, null, 2)}</pre>
             </div>
           </CardContent>
         </Card>
