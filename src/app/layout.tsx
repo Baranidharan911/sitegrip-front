@@ -214,6 +214,113 @@ export default function RootLayout({
             }}
           />
         )}
+
+        {/* Auto-logout script for security */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Auto-clear localStorage when user leaves the site
+              function clearUserData() {
+                try {
+                  // Clear all user-related localStorage items
+                  localStorage.removeItem('Sitegrip-user');
+                  localStorage.removeItem('Sitegrip-temp-user-id');
+                  localStorage.removeItem('Sitegrip-user-tier-updated');
+                  localStorage.removeItem('processed-oauth-codes');
+                  localStorage.removeItem('user');
+                  localStorage.removeItem('authToken');
+                  localStorage.removeItem('accessToken');
+                  localStorage.removeItem('refreshToken');
+                  localStorage.removeItem('userData');
+                  localStorage.removeItem('userProfile');
+                  localStorage.removeItem('dashboard-widgets');
+                  localStorage.removeItem('dashboard-layouts');
+                  
+                  // Clear sessionStorage
+                  sessionStorage.removeItem('redirectAfterLogin');
+                  
+                  // Clear any other potential auth-related items
+                  const keysToRemove = [];
+                  for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('auth') || key.includes('user') || key.includes('token') || key.includes('login') || key.startsWith('Sitegrip-'))) {
+                      keysToRemove.push(key);
+                    }
+                  }
+                  keysToRemove.forEach(key => localStorage.removeItem(key));
+                  
+                  // Reset theme to light mode
+                  localStorage.setItem('theme', 'light');
+                  if (typeof document !== 'undefined') {
+                    document.documentElement.classList.remove('dark');
+                  }
+                  
+                  console.log('🔒 [Security] User data cleared from localStorage');
+                } catch (error) {
+                  console.warn('Failed to clear localStorage:', error);
+                }
+              }
+
+              // Clear data when page becomes hidden (user switches tabs, minimizes, etc.)
+              document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'hidden') {
+                  // Set a timeout to clear data after 30 minutes of inactivity
+                  window.autoLogoutTimer = setTimeout(clearUserData, 30 * 60 * 1000); // 30 minutes
+                  console.log('🔒 [Security] Page hidden - auto-logout timer started (30 minutes)');
+                } else {
+                  // Clear the timer if user comes back
+                  if (window.autoLogoutTimer) {
+                    clearTimeout(window.autoLogoutTimer);
+                    console.log('🔒 [Security] Page visible - auto-logout timer cleared');
+                  }
+                }
+              });
+
+              // Clear data when user closes the tab/window
+              window.addEventListener('beforeunload', function() {
+                clearUserData();
+              });
+
+              // Clear data when user navigates away
+              window.addEventListener('pagehide', function() {
+                clearUserData();
+              });
+
+              // Clear data when browser loses focus (less aggressive)
+              window.addEventListener('blur', function() {
+                // Set a longer timeout for when browser loses focus
+                window.autoLogoutTimer = setTimeout(clearUserData, 10 * 60 * 1000); // 10 minutes
+                console.log('🔒 [Security] Browser lost focus - auto-logout timer started (10 minutes)');
+              });
+
+              window.addEventListener('focus', function() {
+                // Clear the timer if browser regains focus
+                if (window.autoLogoutTimer) {
+                  clearTimeout(window.autoLogoutTimer);
+                  console.log('🔒 [Security] Browser regained focus - auto-logout timer cleared');
+                }
+              });
+
+              // Clear data after 60 minutes of inactivity (fallback)
+              window.addEventListener('load', function() {
+                window.inactivityTimer = setTimeout(clearUserData, 60 * 60 * 1000); // 60 minutes
+                
+                // Reset timer on user activity
+                function resetInactivityTimer() {
+                  if (window.inactivityTimer) {
+                    clearTimeout(window.inactivityTimer);
+                  }
+                  window.inactivityTimer = setTimeout(clearUserData, 60 * 60 * 1000);
+                }
+
+                // Listen for user activity
+                ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'].forEach(function(event) {
+                  document.addEventListener(event, resetInactivityTimer, true);
+                });
+              });
+            `
+          }}
+        />
       </head>
       <body className={`${inter.className} font-google`}>
         <ThemeProvider>
