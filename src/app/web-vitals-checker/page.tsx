@@ -635,8 +635,8 @@ export default function WebVitalsCheckerPage() {
             )}
 
             {/* Screenshots */}
-            {result[view]?.screenshots && result[view]?.screenshots.length > 0 && (
-              <Filmstrip screenshots={result[view]?.screenshots} />
+            {result[view]?.screenshots && (result[view]?.screenshots || []).length > 0 && (
+              <Filmstrip screenshots={result[view]?.screenshots || []} />
             )}
 
             {/* Diagnostics */}
@@ -644,7 +644,7 @@ export default function WebVitalsCheckerPage() {
               <div className="bg-white rounded-lg border border-gray-200 p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">DIAGNOSTICS</h3>
                 <div className="space-y-3">
-                  {Object.entries(result[view]?.diagnostics).map(([key, value]) => (
+                  {Object.entries(result[view]?.diagnostics || {}).map(([key, value]) => (
                     <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded">
                       <span className="font-medium text-gray-700">{key}</span>
                       <span className="text-gray-900">{JSON.stringify(value)}</span>
