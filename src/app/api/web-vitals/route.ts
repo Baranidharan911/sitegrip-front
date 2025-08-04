@@ -65,17 +65,20 @@ function extractAllMetrics(data: any) {
     pwa: categories.pwa?.score ? categories.pwa.score * 100 : null,
   };
 
-  // Opportunities
+  // Opportunities (Insights)
   const opportunities = Object.values(audits)
-    .filter((a: any) => a.details?.type === 'opportunity')
+    .filter((a: any) => a.details?.type === 'opportunity' && a.score !== 1)
     .map((a: any) => ({
       id: a.id,
       title: a.title,
       description: a.description,
-      savingsMs: a.details.overallSavingsMs,
+      savingsMs: a.details?.overallSavingsMs || 0,
+      savingsBytes: a.details?.overallSavingsBytes || 0,
       score: a.score,
       category: a.details?.type || 'opportunity',
-    }));
+      details: a.details,
+    }))
+    .sort((a: any, b: any) => (b.savingsMs || 0) - (a.savingsMs || 0));
 
   // Diagnostics
   const diagnostics = audits['diagnostics']?.details?.items?.[0] || null;
@@ -209,13 +212,16 @@ export async function POST(request: NextRequest) {
 
     console.log(`🚀 Starting comprehensive web vitals analysis for: ${url}`);
 
-    // Fetch both mobile and desktop results from PageSpeed Insights
+    // Fetch both mobile and desktop results from PageSpeed Insights with all categories
     const [mobileResponse, desktopResponse] = await Promise.all([
-      fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa`),
-      fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa`)
+      fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=mobile&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa&prettyPrint=false`),
+      fetch(`https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${API_KEY}&strategy=desktop&category=performance&category=accessibility&category=best-practices&category=seo&category=pwa&prettyPrint=false`)
     ]);
 
     if (!mobileResponse.ok || !desktopResponse.ok) {
+      const mobileError = await mobileResponse.text();
+      const desktopError = await desktopResponse.text();
+      console.error('PageSpeed API errors:', { mobile: mobileError, desktop: desktopError });
       throw new Error('Failed to fetch PageSpeed data');
     }
 
@@ -241,14 +247,14 @@ export async function POST(request: NextRequest) {
       mobile: {
         ...mobileMetrics,
         screenshots: screenshots.mobileScreenshots,
-        consoleErrors: [], // No console errors in this new structure
-        loadTime: 0, // No load time in this new structure
+        consoleErrors: [],
+        loadTime: 0,
       },
       desktop: {
         ...desktopMetrics,
         screenshots: screenshots.desktopScreenshots,
-        consoleErrors: [], // No console errors in this new structure
-        loadTime: 0, // No load time in this new structure
+        consoleErrors: [],
+        loadTime: 0,
       },
       url: mobileData.id || url,
       additionalChecks,

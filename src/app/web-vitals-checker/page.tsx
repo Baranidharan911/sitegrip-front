@@ -1,11 +1,9 @@
 "use client";
 
-import { Fragment, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
 import { 
   Loader2, 
   Globe, 
-  Gauge, 
   Smartphone, 
   Monitor, 
   ChevronDown, 
@@ -13,7 +11,6 @@ import {
   Info, 
   FileText, 
   Download, 
-  Printer, 
   Share2,
   BarChart3,
   TrendingUp,
@@ -35,26 +32,14 @@ import {
   ExternalLink,
   Play,
   Pause,
-  Square
+  Square,
+  Copy,
+  BookOpen,
+  Lightbulb,
+  Gauge,
+  Smartphone as MobileIcon,
+  Monitor as DesktopIcon
 } from 'lucide-react';
-import { Tooltip } from 'react-tooltip';
-import { exportComponentToPDF } from '@/utils/exportPDF';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip as RechartsTooltip, 
-  ResponsiveContainer,
-  Area,
-  AreaChart,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell
-} from 'recharts';
 
 // Helper to check if Firebase config is present
 function isFirebaseConfigured() {
@@ -68,7 +53,15 @@ export const dynamic = 'force-dynamic';
 interface PageSpeedMetrics {
   metrics: Record<string, number | null>;
   scores: Record<string, number | null>;
-  opportunities: Array<{ id: string; title: string; description: string; savingsMs: number; score: number; category: string }>;
+  opportunities: Array<{ 
+    id: string; 
+    title: string; 
+    description: string; 
+    savingsMs: number; 
+    score: number; 
+    category: string;
+    details?: any;
+  }>;
   diagnostics: Record<string, any> | null;
   resourceSummary: Array<any>;
   passedAudits: Array<{ id: string; title: string }>;
@@ -88,6 +81,15 @@ interface PageSpeedMetrics {
   screenshots?: string[];
   consoleErrors?: string[];
   loadTime?: number;
+  insights?: Array<{
+    id: string;
+    title: string;
+    description: string;
+    score: number;
+    savingsMs?: number;
+    savingsBytes?: number;
+    details?: any;
+  }>;
 }
 
 interface WebVitalsResult {
@@ -114,247 +116,61 @@ const METRIC_META: Record<string, { label: string; unit?: string; description: s
   TTFB: { label: 'Time to First Byte', unit: 'ms', description: 'Server response time. Good <800ms.', color: '#84CC16' },
   FID: { label: 'First Input Delay', unit: 'ms', description: 'Input responsiveness. Good <100ms.', color: '#F97316' },
   FMP: { label: 'First Meaningful Paint', unit: 's', description: 'First meaningful content. Lower is better.', color: '#EC4899' },
-  
-  // Additional Performance Metrics
-  FCI: { label: 'First CPU Idle', unit: 's', description: 'Time when page becomes minimally interactive.', color: '#6366F1' },
-  EIL: { label: 'Estimated Input Latency', unit: 'ms', description: 'Estimated time for next input to be processed.', color: '#14B8A6' },
-  MPU: { label: 'Max Potential FID', unit: 'ms', description: 'Worst-case First Input Delay.', color: '#F43F5E' },
-  
-  // Resource Metrics
-  totalResources: { label: 'Total Resources', unit: '', description: 'Number of HTTP requests made.', color: '#0EA5E9' },
-  totalSize: { label: 'Total Size', unit: 'bytes', description: 'Total transfer size of all resources.', color: '#A855F7' },
-  domSize: { label: 'DOM Size', unit: 'nodes', description: 'Number of DOM nodes.', color: '#EAB308' },
-  criticalRequestChains: { label: 'Critical Chains', unit: '', description: 'Number of critical request chains.', color: '#22C55E' },
 };
 
-
-
-// Enhanced Time Series Chart Component with Recharts
-const TimeSeriesChart = ({ 
-  data, 
-  title, 
-  color = '#3B82F6', 
-  unit = '', 
-  height = 200,
-  showLegend = true,
-  showArea = true
-}: { 
-  data: Array<{ date: string; value: number; weekAgo?: number; timestamp: number }>;
-  title: string;
-  color?: string;
-  unit?: string;
-  height?: number;
-  showLegend?: boolean;
-  showArea?: boolean;
-}) => {
-  if (!data || data.length === 0) return null;
-
-  const formatValue = (value: number) => {
-    if (unit === 's') return `${value.toFixed(2)}s`;
-    if (unit === 'ms') return `${Math.round(value)}ms`;
-    if (unit === ' MB') return `${value.toFixed(2)}MB`;
-    if (unit === ' KB') return `${value.toFixed(2)}KB`;
-    return value.toFixed(1);
-  };
-
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-                    <div className="bg-white dark:bg-slate-800 p-3 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-          <p className="text-sm font-medium text-gray-900">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {formatValue(entry.value)}
-            </p>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
-  return (
-                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-gray-700">{title}</h3>
-        {showLegend && (
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-green-500"></div>
-              <span>Last 24h</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-3 h-0.5 bg-yellow-500"></div>
-              <span>1 week ago</span>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      <ResponsiveContainer width="100%" height={height}>
-        <AreaChart data={data} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-          <defs>
-            <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={color} stopOpacity={0.3}/>
-              <stop offset="95%" stopColor={color} stopOpacity={0.1}/>
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-          <XAxis 
-            dataKey="date" 
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={false}
-            axisLine={false}
-          />
-          <YAxis 
-            tick={{ fontSize: 12, fill: '#6B7280' }}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => formatValue(value)}
-          />
-          <RechartsTooltip content={<CustomTooltip />} />
-          {showArea ? (
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={color}
-              strokeWidth={2}
-              fill={`url(#gradient-${title})`}
-              dot={{ fill: color, strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: color, strokeWidth: 2 }}
-            />
-          ) : (
-            <Line
-              type="monotone"
-              dataKey="value"
-              stroke={color}
-              strokeWidth={2}
-              dot={{ fill: color, strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, stroke: color, strokeWidth: 2 }}
-            />
-          )}
-          {data[0]?.weekAgo !== undefined && (
-            <Line
-              type="monotone"
-              dataKey="weekAgo"
-              stroke="#F59E0B"
-              strokeWidth={2}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          )}
-        </AreaChart>
-      </ResponsiveContainer>
-      
-      {/* Summary stats */}
-      <div className="mt-3 flex justify-between text-xs text-gray-500">
-        <span>Min: {formatValue(Math.min(...data.map(d => d.value)))}</span>
-        <span>Max: {formatValue(Math.max(...data.map(d => d.value)))}</span>
-        <span>Last: {formatValue(data[data.length - 1]?.value || 0)}</span>
-      </div>
-    </div>
-  );
-};
-
-// Enhanced Metric Card
-const MetricCard = ({ 
-  label, 
-  value, 
-  unit = '', 
-  color = '#3B82F6',
-  trend = 'neutral',
-  size = 'medium'
-}: { 
-  label: string; 
-  value: string | number | null | undefined;
-  unit?: string;
-  color?: string;
-  trend?: 'up' | 'down' | 'neutral';
-  size?: 'small' | 'medium' | 'large';
-}) => {
-  const getTrendIcon = () => {
-    switch (trend) {
-      case 'up': return <TrendingUp className="w-4 h-4 text-green-500" />;
-      case 'down': return <TrendingUp className="w-4 h-4 text-red-500 transform rotate-180" />;
-      default: return null;
-    }
-  };
-
-  const sizeClasses = {
-    small: 'p-3',
-    medium: 'p-4',
-    large: 'p-6'
-  };
-
-  return (
-                  <div className={`bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 ${sizeClasses[size]} hover:shadow-md transition-shadow`}>
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-medium text-gray-600">{label}</h3>
-        {getTrendIcon()}
-      </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-2xl font-bold text-gray-900">
-          {value === null || value === undefined ? 'N/A' : value}
-        </span>
-        {unit && <span className="text-sm text-gray-500">{unit}</span>}
-      </div>
-      <div className="mt-2 h-1 bg-gray-100 rounded-full overflow-hidden">
-        <div 
-          className="h-full rounded-full transition-all duration-300"
-          style={{ 
-            width: '60%', 
-            backgroundColor: color 
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-// Performance Score Card
-const PerformanceScoreCard = ({ 
-  title, 
+// Performance Score Component (Circular Gauge)
+const PerformanceScore = ({ 
   score, 
-  color = '#3B82F6',
-  description = ''
+  title = "Performance",
+  size = "large"
 }: { 
-  title: string; 
   score: number | null; 
-  color?: string;
-  description?: string;
+  title?: string;
+  size?: "small" | "medium" | "large";
 }) => {
   if (score === null) return null;
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return '#10B981';
-    if (score >= 50) return '#F59E0B';
-    return '#EF4444';
+    if (score >= 90) return '#0F9D58';
+    if (score >= 50) return '#F4B400';
+    return '#DB4437';
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 90) return 'Good';
+    if (score >= 50) return 'Needs Improvement';
+    return 'Poor';
   };
 
   const scoreColor = getScoreColor(score);
-  const radius = 40;
+  const sizeClasses = {
+    small: { radius: 30, strokeWidth: 4, fontSize: 'text-lg' },
+    medium: { radius: 50, strokeWidth: 6, fontSize: 'text-2xl' },
+    large: { radius: 80, strokeWidth: 8, fontSize: 'text-4xl' }
+  };
+
+  const { radius, strokeWidth, fontSize } = sizeClasses[size];
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (score / 100) * circumference;
 
   return (
-                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 text-center">
-      <h3 className="text-sm font-medium text-gray-600 mb-3">{title}</h3>
-      <div className="relative inline-flex items-center justify-center mb-3">
-        <svg width="100" height="100" className="transform -rotate-90">
+    <div className="flex flex-col items-center">
+      <div className="relative inline-flex items-center justify-center">
+        <svg width={radius * 2 + 20} height={radius * 2 + 20} className="transform -rotate-90">
           <circle
-            cx="50"
-            cy="50"
+            cx={radius + 10}
+            cy={radius + 10}
             r={radius}
             stroke="#E5E7EB"
-            strokeWidth="8"
+            strokeWidth={strokeWidth}
             fill="none"
           />
           <circle
-            cx="50"
-            cy="50"
+            cx={radius + 10}
+            cy={radius + 10}
             r={radius}
             stroke={scoreColor}
-            strokeWidth="8"
+            strokeWidth={strokeWidth}
             fill="none"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
@@ -363,56 +179,172 @@ const PerformanceScoreCard = ({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-xl font-bold" style={{ color: scoreColor }}>
+          <span className={`font-bold ${fontSize}`} style={{ color: scoreColor }}>
             {score.toFixed(0)}
           </span>
         </div>
       </div>
-      {description && (
-        <p className="text-xs text-gray-500">{description}</p>
-      )}
+      <div className="text-center mt-2">
+        <div className="font-semibold text-gray-900">{title}</div>
+        <div className="text-sm text-gray-500">{getScoreLabel(score)}</div>
+      </div>
     </div>
   );
 };
 
-// Filter Bar Component
-const FilterBar = ({ 
-  filters, 
-  onFilterChange 
+// Metric Display Component
+const MetricDisplay = ({ 
+  label, 
+  value, 
+  unit = '', 
+  status = 'good',
+  description = ''
 }: { 
-  filters: Record<string, string>;
-  onFilterChange: (key: string, value: string) => void;
+  label: string; 
+  value: string | number | null | undefined;
+  unit?: string;
+  status?: 'good' | 'needs-improvement' | 'poor';
+  description?: string;
 }) => {
-  const filterOptions = {
-    path: ['desktop', 'mobile'],
-    testname: ['firstView', 'repeatView'],
-    browser: ['chrome', 'firefox', 'safari'],
-    connectivity: ['4g', '3g', '2g'],
-    function: ['median', 'mean', 'p95']
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'good': return 'text-green-600';
+      case 'needs-improvement': return 'text-yellow-600';
+      case 'poor': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'good': return <CheckCircle className="w-4 h-4 text-green-600" />;
+      case 'needs-improvement': return <AlertTriangle className="w-4 h-4 text-yellow-600" />;
+      case 'poor': return <XCircle className="w-4 h-4 text-red-600" />;
+      default: return <Info className="w-4 h-4 text-gray-600" />;
+    }
   };
 
   return (
-                <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
-      <div className="flex flex-wrap items-center gap-4">
-        {Object.entries(filters).map(([key, value]) => (
-          <div key={key} className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-600">{key}:</label>
-            <select
-              value={value}
-              onChange={(e) => onFilterChange(key, e.target.value)}
-              className="text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200">
+      <div className="flex items-center gap-3">
+        {getStatusIcon(status)}
+        <div>
+          <div className="font-medium text-gray-900">{label}</div>
+          {description && <div className="text-sm text-gray-500">{description}</div>}
+        </div>
+      </div>
+      <div className="text-right">
+        <div className={`font-bold text-lg ${getStatusColor(status)}`}>
+          {value === null || value === undefined ? 'N/A' : value}{unit}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Insights Component
+const InsightsSection = ({ insights }: { insights?: Array<any> }) => {
+  const [expandedInsights, setExpandedInsights] = useState<Set<string>>(new Set());
+
+  const toggleInsight = (id: string) => {
+    const newExpanded = new Set(expandedInsights);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedInsights(newExpanded);
+  };
+
+  if (!insights || insights.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <Lightbulb className="w-5 h-5 text-blue-600" />
+        <h3 className="text-lg font-semibold text-gray-900">INSIGHTS</h3>
+      </div>
+      
+      <div className="space-y-3">
+        {insights.map((insight, index) => (
+          <div key={insight.id || index} className="border border-gray-200 rounded-lg">
+            <button
+              onClick={() => toggleInsight(insight.id || index.toString())}
+              className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50"
             >
-              {filterOptions[key as keyof typeof filterOptions]?.map(option => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <div>
+                  <div className="font-medium text-gray-900">{insight.title}</div>
+                  {insight.savingsMs && (
+                    <div className="text-sm text-red-600">
+                      Est savings of {insight.savingsMs} ms
+                    </div>
+                  )}
+                  {insight.savingsBytes && (
+                    <div className="text-sm text-red-600">
+                      Est savings of {insight.savingsBytes} KiB
+                    </div>
+                  )}
+                </div>
+              </div>
+              {expandedInsights.has(insight.id || index.toString()) ? (
+                <ChevronUp className="w-5 h-5 text-gray-500" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-500" />
+              )}
+            </button>
+            
+            {expandedInsights.has(insight.id || index.toString()) && (
+              <div className="px-4 pb-4">
+                <p className="text-sm text-gray-600 mb-3">{insight.description}</p>
+                {insight.details && (
+                  <div className="bg-gray-50 rounded p-3">
+                    <pre className="text-xs text-gray-700 whitespace-pre-wrap">
+                      {JSON.stringify(insight.details, null, 2)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ))}
-        <button className="flex items-center gap-2 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors">
-          <RefreshCw className="w-4 h-4" />
-          Refresh
+      </div>
+    </div>
+  );
+};
+
+// Filmstrip Component
+const Filmstrip = ({ screenshots }: { screenshots?: string[] }) => {
+  if (!screenshots || screenshots.length === 0) return null;
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Page Load Progression</h3>
+        <button className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors">
+          View Treemap
         </button>
       </div>
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {screenshots.map((screenshot, index) => (
+          <div key={index} className="flex-shrink-0">
+            <div className="relative">
+              <img
+                src={`data:image/png;base64,${screenshot}`}
+                alt={`Screenshot ${index + 1}`}
+                className="w-32 h-48 object-cover rounded border border-gray-300 shadow-sm"
+              />
+              <div className="absolute top-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 py-0.5 rounded">
+                {index === 0 ? 'Initial' : `${index * 1000}ms`}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <p className="text-xs text-gray-500 mt-2">
+        These screenshots show the page loading progression over time
+      </p>
     </div>
   );
 };
@@ -423,16 +355,6 @@ export default function WebVitalsCheckerPage() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<WebVitalsResult | null>(null);
   const [view, setView] = useState<'mobile' | 'desktop'>('mobile');
-  const [filters, setFilters] = useState({
-    path: 'desktop',
-    testname: 'firstView',
-    browser: 'chrome',
-    connectivity: '4g',
-    function: 'median'
-  });
-
-
-
   const [user, setUser] = useState<any>(null);
   const [savedReports, setSavedReports] = useState<any[]>([]);
 
@@ -500,7 +422,7 @@ export default function WebVitalsCheckerPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed');
+        throw new Error(data.error || 'Failed to analyze URL');
       }
       const data = await res.json();
       setResult(data);
@@ -511,42 +433,66 @@ export default function WebVitalsCheckerPage() {
     }
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+  const getMetricStatus = (metric: string, value: number) => {
+    const thresholds = {
+      LCP: { good: 2500, needsImprovement: 4000 },
+      FCP: { good: 1800, needsImprovement: 3000 },
+      CLS: { good: 0.1, needsImprovement: 0.25 },
+      TTI: { good: 3800, needsImprovement: 7300 },
+      TBT: { good: 200, needsImprovement: 600 },
+      SI: { good: 3400, needsImprovement: 5800 },
+      TTFB: { good: 800, needsImprovement: 1800 },
+      FID: { good: 100, needsImprovement: 300 }
+    };
+
+    const threshold = thresholds[metric as keyof typeof thresholds];
+    if (!threshold) return 'good';
+
+    if (value <= threshold.good) return 'good';
+    if (value <= threshold.needsImprovement) return 'needs-improvement';
+    return 'poor';
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 50) return 'text-yellow-600';
-    return 'text-red-600';
+  const formatMetricValue = (metric: string, value: number | null) => {
+    if (value === null) return 'N/A';
+    
+    if (['LCP', 'FCP', 'TTI', 'SI'].includes(metric)) {
+      return (value / 1000).toFixed(1);
+    }
+    if (['TBT', 'TTFB', 'FID'].includes(metric)) {
+      return Math.round(value).toString();
+    }
+    if (metric === 'CLS') {
+      return value.toFixed(3);
+    }
+    return value.toString();
   };
 
-  const getScoreBg = (score: number) => {
-    if (score >= 90) return 'bg-green-100 dark:bg-green-900/20';
-    if (score >= 50) return 'bg-yellow-100 dark:bg-yellow-900/20';
-    return 'bg-red-100 dark:bg-red-900/20';
+  const getMetricUnit = (metric: string) => {
+    if (['LCP', 'FCP', 'TTI', 'SI'].includes(metric)) return ' s';
+    if (['TBT', 'TTFB', 'FID'].includes(metric)) return ' ms';
+    return '';
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-                  <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <BarChart3 className="w-6 h-6 text-blue-600" />
-              <h1 className="text-xl font-semibold text-gray-900">Page Metrics</h1>
+              <h1 className="text-xl font-semibold text-gray-900">PageSpeed Insights</h1>
             </div>
-            <div className="text-sm text-gray-500">Home &gt; Dashboards &gt; Page metrics</div>
           </div>
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              <Settings className="w-4 h-4" />
-              Settings
+              <Copy className="w-4 h-4" />
+              Copy Link
             </button>
             <button className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition-colors">
-              <Share2 className="w-4 h-4" />
-              Share
+              <BookOpen className="w-4 h-4" />
+              Docs
             </button>
           </div>
         </div>
@@ -565,7 +511,7 @@ export default function WebVitalsCheckerPage() {
                     value={url}
                     onChange={(e) => setUrl(e.target.value)}
                     placeholder="Enter URL to analyze..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder-gray-500"
                   />
                 </div>
               </div>
@@ -581,19 +527,52 @@ export default function WebVitalsCheckerPage() {
           </div>
         </div>
 
-        {/* Filters */}
-        <FilterBar filters={filters} onFilterChange={handleFilterChange} />
+        {/* Device Toggle */}
+        <div className="mb-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">Device:</span>
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setView('mobile')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    view === 'mobile' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <MobileIcon className="w-4 h-4" />
+                  Mobile
+                </button>
+                <button
+                  onClick={() => setView('desktop')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                    view === 'desktop' 
+                      ? 'bg-white text-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <DesktopIcon className="w-4 h-4" />
+                  Desktop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Results Section */}
         {result && result[view] && !loading && (
           <div className="space-y-6">
-            {/* Page Info */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+            {/* Analysis Info */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">{result.url}</h2>
                   <p className="text-sm text-gray-500">
-                    Analysis completed on {new Date(result.analysisTimestamp || Date.now()).toLocaleString()}
+                    Captured at {new Date(result.analysisTimestamp || Date.now()).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {view === 'mobile' ? 'Emulated Moto G Power' : 'Desktop'} with Lighthouse
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -609,55 +588,40 @@ export default function WebVitalsCheckerPage() {
 
             {/* Performance Scores */}
             {result[view]?.scores && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Performance Scores</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {Object.entries(result[view]?.scores).map(([label, score]) => (
-                    <PerformanceScoreCard
+                    <PerformanceScore
                       key={label}
                       title={label.charAt(0).toUpperCase() + label.slice(1)}
                       score={score}
+                      size="medium"
                     />
                   ))}
                 </div>
               </div>
             )}
 
-
-
-            {/* Key Metrics */}
+            {/* Metrics */}
             {result[view]?.metrics && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Key Performance Metrics</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">METRICS</h3>
+                <div className="space-y-3">
                   {Object.entries(result[view]?.metrics)
                     .filter(([label]) => ['lcp', 'fcp', 'cls', 'tti', 'tbt', 'fid', 'si', 'ttfb'].includes(label))
                     .map(([label, value]) => {
-                      let displayValue: string | number = 'N/A';
-                      let unit = '';
-                      let color = METRIC_META[label.toUpperCase()]?.color || '#3B82F6';
-                      
-                      if (typeof value === 'number' && value > 0) {
-                        if (["lcp", "fcp", "tti", "si"].includes(label)) {
-                          displayValue = (value / 1000).toFixed(2);
-                          unit = 's';
-                        } else if (["tbt", "fid", "ttfb"].includes(label)) {
-                          displayValue = Math.round(value);
-                          unit = 'ms';
-                        } else if (label === "cls") {
-                          displayValue = value.toFixed(3);
-                        } else {
-                          displayValue = value.toString();
-                        }
-                      }
+                      const displayValue = formatMetricValue(label.toUpperCase(), value);
+                      const unit = getMetricUnit(label.toUpperCase());
+                      const status = getMetricStatus(label.toUpperCase(), value || 0);
                       
                       return (
-                        <MetricCard
+                        <MetricDisplay
                           key={label}
                           label={METRIC_META[label.toUpperCase()]?.label || label.toUpperCase()}
                           value={displayValue}
                           unit={unit}
-                          color={color}
+                          status={status}
+                          description={METRIC_META[label.toUpperCase()]?.description}
                         />
                       );
                     })}
@@ -665,75 +629,30 @@ export default function WebVitalsCheckerPage() {
               </div>
             )}
 
-            {/* Resource Metrics */}
-            {result[view]?.metrics && (
-              <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Resource Metrics</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {Object.entries(result[view]?.metrics)
-                    .filter(([label]) => ['totalResources', 'totalSize', 'domSize'].includes(label))
-                    .map(([label, value]) => {
-                      let displayValue: string | number = 'N/A';
-                      let unit = '';
-                      
-                      if (typeof value === 'number' && value > 0) {
-                        if (label === "totalSize") {
-                          const mb = value / (1024 * 1024);
-                          displayValue = mb > 1 ? mb.toFixed(2) : (value / 1024).toFixed(2);
-                          unit = mb > 1 ? ' MB' : ' KB';
-                        } else {
-                          displayValue = value.toString();
-                        }
-                      }
-                      
-                      return (
-                        <MetricCard
-                          key={label}
-                          label={METRIC_META[label]?.label || label}
-                          value={displayValue}
-                          unit={unit}
-                          color={METRIC_META[label]?.color || '#3B82F6'}
-                        />
-                      );
-                    })}
+            {/* Insights */}
+            {result[view]?.opportunities && result[view]?.opportunities.length > 0 && (
+              <InsightsSection insights={result[view]?.opportunities} />
+            )}
+
+            {/* Screenshots */}
+            {result[view]?.screenshots && result[view]?.screenshots.length > 0 && (
+              <Filmstrip screenshots={result[view]?.screenshots} />
+            )}
+
+            {/* Diagnostics */}
+            {result[view]?.diagnostics && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">DIAGNOSTICS</h3>
+                <div className="space-y-3">
+                  {Object.entries(result[view]?.diagnostics).map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      <span className="font-medium text-gray-700">{key}</span>
+                      <span className="text-gray-900">{JSON.stringify(value)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
-
-
-
-            {/* CPU Metrics */}
-            <div className="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">CPU Performance [Chrome only]</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard
-                  label="Long Tasks"
-                  value="5"
-                  color="#EF4444"
-                  size="large"
-                />
-                <MetricCard
-                  label="Long Tasks Before FCP"
-                  value="1"
-                  color="#F59E0B"
-                  size="large"
-                />
-                <MetricCard
-                  label="Total Blocking Time"
-                  value="135"
-                  unit=" ms"
-                  color="#10B981"
-                  size="large"
-                />
-                <MetricCard
-                  label="Longest Long Task"
-                  value="376"
-                  unit=" ms"
-                  color="#EF4444"
-                  size="large"
-                />
-              </div>
-            </div>
           </div>
         )}
 
@@ -744,6 +663,14 @@ export default function WebVitalsCheckerPage() {
               <XCircle className="w-5 h-5 text-red-500" />
               <p className="text-red-700">{error}</p>
             </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Analyzing website performance...</p>
           </div>
         )}
       </div>
