@@ -9,7 +9,16 @@ interface RunCrawlFormProps {
   error?: string | null;
   onUrlChange: (value: string) => void;
   onDepthChange: (value: number) => void;
+  onOptionsChange: (options: Partial<CrawlOptionsUI>) => void;
+  options: CrawlOptionsUI;
   onSubmit: () => void;
+}
+
+export interface CrawlOptionsUI {
+  userAgent: string;
+  respectRobots: boolean;
+  includeExternalLinks: boolean;
+  maxPages: number;
 }
 
 export default function RunCrawlForm({
@@ -19,6 +28,8 @@ export default function RunCrawlForm({
   error,
   onUrlChange,
   onDepthChange,
+  onOptionsChange,
+  options,
   onSubmit,
 }: RunCrawlFormProps) {
   return (
@@ -51,6 +62,48 @@ export default function RunCrawlForm({
               onChange={(e) => onDepthChange(Number(e.target.value))}
               min="0"
             />
+          </div>
+
+          {/* Advanced Options */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">User Agent</label>
+              <input
+                type="text"
+                placeholder="Mozilla/5.0..."
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/50 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={options.userAgent}
+                onChange={(e) => onOptionsChange({ userAgent: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm text-gray-700 dark:text-gray-300">Max Pages</label>
+              <input
+                type="number"
+                min={1}
+                className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-gray-800/50 text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={options.maxPages}
+                onChange={(e) => onOptionsChange({ maxPages: Number(e.target.value) })}
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="respectRobots"
+                type="checkbox"
+                checked={options.respectRobots}
+                onChange={(e) => onOptionsChange({ respectRobots: e.target.checked })}
+              />
+              <label htmlFor="respectRobots" className="text-sm text-gray-700 dark:text-gray-300">Respect robots.txt</label>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                id="includeExternalLinks"
+                type="checkbox"
+                checked={options.includeExternalLinks}
+                onChange={(e) => onOptionsChange({ includeExternalLinks: e.target.checked })}
+              />
+              <label htmlFor="includeExternalLinks" className="text-sm text-gray-700 dark:text-gray-300">Include external links</label>
+            </div>
           </div>
 
           <button

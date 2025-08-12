@@ -86,6 +86,12 @@ export default function SeoCrawlerDashboardPage() {
 
   const [url, setUrl] = useState('');
   const [depth, setDepth] = useState(1);
+  const [options, setOptions] = useState({
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+    respectRobots: true,
+    includeExternalLinks: false,
+    maxPages: 200,
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -176,12 +182,22 @@ export default function SeoCrawlerDashboardPage() {
         const res = await fetch(`${apiUrl}/api/discover`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, depth }),
+          body: JSON.stringify({ url, depth, options }),
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.detail || 'Failed to discover URLs.');
+        // Robust error parsing (JSON or text)
+        let message = 'Failed to discover URLs.';
+        try {
+          const data = await res.json();
+          message = data.detail || data.error || data.message || message;
+        } catch {
+          try {
+            const text = await res.text();
+            if (text) message = text;
+          } catch {}
+        }
+        throw new Error(message);
       }
 
       const data: DiscoveredPage[] = await res.json();
@@ -230,32 +246,29 @@ export default function SeoCrawlerDashboardPage() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ urls: selectedUrls, baseUrl: url }),
+        body: JSON.stringify({ urls: selectedUrls, baseUrl: url, options }),
       });
 
       console.log('📡 Crawl response status:', res.status);
 
       if (!res.ok) {
-        const data = await res.json().catch(() => ({ detail: `HTTP ${res.status} error` }));
+        let data: any = null;
+        try { data = await res.json(); } catch {}
+        if (!data) {
+          try { data = await res.text(); } catch {}
+        }
         console.error('❌ Crawl request failed:', {
           status: res.status,
           statusText: res.statusText,
           data,
           url: res.url
         });
-        
-        // Provide specific error messages for different status codes
-        if (res.status === 401) {
-          throw new Error('Authentication failed. Please log out and log back in.');
-        } else if (res.status === 403) {
-          throw new Error('Access denied. Please check your account permissions.');
-        } else if (res.status === 503) {
-          throw new Error('Service temporarily unavailable. Please try again in a few minutes.');
-        } else if (res.status === 408) {
-          throw new Error('Request timed out. Please try with fewer pages or try again later.');
-        } else {
-          throw new Error(data.detail || data.message || data.error || `Analysis failed with status ${res.status}`);
-        }
+
+        if (res.status === 401) throw new Error('Authentication failed. Please log out and log back in.');
+        if (res.status === 403) throw new Error('Access denied. Please check your account permissions.');
+        if (res.status === 503) throw new Error('Service temporarily unavailable. Please try again in a few minutes.');
+        if (res.status === 408) throw new Error('Request timed out. Please try with fewer pages or try again later.');
+        throw new Error((data && (data.detail || data.message || data.error)) || `Analysis failed with status ${res.status}`);
       }
 
       const result: CrawlResult = await res.json();
@@ -300,7 +313,7 @@ export default function SeoCrawlerDashboardPage() {
       const res = await fetch(`${apiUrl}/api/export/csv`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(crawlResult.pages),
+        body: JSON.stringify({ data: crawlResult.pages }),
       });
 
       if (!res.ok) throw new Error('Failed to generate CSV');
@@ -329,6 +342,8 @@ export default function SeoCrawlerDashboardPage() {
           error={error}
           onUrlChange={setUrl}
           onDepthChange={setDepth}
+          options={options}
+          onOptionsChange={(partial) => setOptions((prev) => ({ ...prev, ...partial }))}
           onSubmit={handleDiscover}
         />
 
