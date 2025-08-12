@@ -127,7 +127,7 @@ export default function CrawlHistory() {
       const q = query(
         crawlCollection,
         where('userId', '==', userId),
-        orderBy('createdAt', 'desc')
+        orderBy('startedAt', 'desc')
       );
       const snapshot = await getDocs(q);
       const results = snapshot.docs.map(doc => {
