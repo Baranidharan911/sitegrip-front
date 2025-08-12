@@ -7,11 +7,13 @@ export const GOOGLE_OAUTH_CONFIG = {
   
   // OAuth Scopes (minimal for verification)
   scopes: [
+    // Use only non-sensitive scopes for sign-in/sign-up to avoid the
+    // "Google hasn’t verified this app" interstitial. Access to
+    // Google APIs like Search Console, Indexing, and Analytics should
+    // be performed via the service account configured below.
+    'openid',
     'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'https://www.googleapis.com/auth/webmasters.readonly',
-    'https://www.googleapis.com/auth/indexing',
-    'https://www.googleapis.com/auth/analytics.readonly'
+    'https://www.googleapis.com/auth/userinfo.profile'
   ],
   
   // Verification Settings
@@ -47,7 +49,8 @@ export function generateOAuthUrl(state?: string): string {
   params.set('response_type', 'code');
   params.set('scope', scopes.join(' '));
   params.set('access_type', 'offline');
-  params.set('prompt', 'consent');
+  // Only request consent when necessary; default behavior avoids
+  // extra interstitials for returning users.
 
   if (state) {
     params.set('state', state);
