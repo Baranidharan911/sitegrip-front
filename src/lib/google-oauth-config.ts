@@ -1,9 +1,9 @@
 // Google OAuth Configuration with Verification Fix
 export const GOOGLE_OAUTH_CONFIG = {
   // Production OAuth Settings
-  clientId: process.env.GOOGLE_CLIENT_ID || '305806997667-uk3asnrtmbajvifs3nf9q3o55o5g4lts.apps.googleusercontent.com',
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET || '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',
-  redirectUri: process.env.GOOGLE_REDIRECT_URI || 'https://www.sitegrip.com/auth/callback',
+  clientId: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  redirectUri: process.env.GOOGLE_REDIRECT_URI,
   
   // OAuth Scopes (minimal for verification)
   scopes: [
@@ -35,24 +35,29 @@ export const GOOGLE_OAUTH_CONFIG = {
 
 // OAuth URL Generator with Verification Fix
 export function generateOAuthUrl(state?: string): string {
-  const params = new URLSearchParams({
-    client_id: GOOGLE_OAUTH_CONFIG.clientId,
-    redirect_uri: GOOGLE_OAUTH_CONFIG.redirectUri,
-    response_type: 'code',
-    scope: GOOGLE_OAUTH_CONFIG.scopes.join(' '),
-    access_type: 'offline',
-    prompt: 'consent',
-  });
-  
+  const { clientId, redirectUri, scopes, isDevelopment } = GOOGLE_OAUTH_CONFIG;
+
+  if (!clientId || !redirectUri) {
+    throw new Error('GOOGLE_CLIENT_ID or GOOGLE_REDIRECT_URI is not configured');
+  }
+
+  const params = new URLSearchParams();
+  params.set('client_id', clientId);
+  params.set('redirect_uri', redirectUri);
+  params.set('response_type', 'code');
+  params.set('scope', scopes.join(' '));
+  params.set('access_type', 'offline');
+  params.set('prompt', 'consent');
+
   if (state) {
-    params.append('state', state);
+    params.set('state', state);
   }
-  
+
   // Add verification bypass for development
-  if (GOOGLE_OAUTH_CONFIG.isDevelopment) {
-    params.append('prompt', 'consent');
+  if (isDevelopment) {
+    params.set('prompt', 'consent');
   }
-  
+
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
