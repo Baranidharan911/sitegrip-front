@@ -9,7 +9,8 @@ import {
   Lightbulb,
   Sparkles,
   X,
-  AlertCircle
+  AlertCircle,
+  Copy
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, ResponsiveContainer } from 'recharts';
 import WebVitalsChart from './WebVitalsChart';
@@ -23,6 +24,11 @@ interface AISuggestions {
   impact?: 'low' | 'medium' | 'high';
   specificIssues?: string[];
   recommendations?: string[];
+  outline?: { h1?: string; h2?: string[] };
+  diffs?: {
+    title?: { current?: string; proposed?: string };
+    metaDescription?: { current?: string; proposed?: string };
+  };
   // Legacy support
   title?: string;
   metaDescription?: string;
@@ -73,6 +79,10 @@ const getColorForTTFB = (ttfb: number) =>
   ttfb > 0.6 ? 'text-red-600' : ttfb > 0.2 ? 'text-yellow-600' : 'text-green-600';
 
 const AISuggestionsCard = ({ suggestions }: { suggestions: AISuggestions }) => {
+  const [copiedTitle, setCopiedTitle] = useState(false);
+  const [copiedMeta, setCopiedMeta] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+
   const getImpactColor = (impact: string) => {
     switch (impact) {
       case 'high': return 'text-red-600 dark:text-red-400';
@@ -88,11 +98,49 @@ const AISuggestionsCard = ({ suggestions }: { suggestions: AISuggestions }) => {
     return 'text-green-600 dark:text-green-400';
   };
 
+  const copyWithFlash = async (text: string, set: (v: boolean) => void) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      set(true);
+      setTimeout(() => set(false), 1200);
+    } catch {}
+  };
+
+  const proposedTitle = suggestions.diffs?.title?.proposed || suggestions.titleSuggestions?.[0] || '';
+  const proposedMeta = suggestions.diffs?.metaDescription?.proposed || suggestions.metaDescriptionSuggestions?.[0] || '';
+  const h2List: string[] = Array.isArray(suggestions.outline?.h2) ? (suggestions.outline!.h2 as string[]) : [];
+
+  const copyAll = () => {
+    const outline = suggestions.outline;
+    const lines: string[] = [];
+    if (proposedTitle) lines.push(`Title: ${proposedTitle}`);
+    if (proposedMeta) lines.push(`Meta: ${proposedMeta}`);
+    if (outline?.h1) lines.push(`H1: ${outline.h1}`);
+    if (h2List.length) {
+      lines.push('H2:');
+      h2List.slice(0, 10).forEach(h2 => lines.push(`- ${h2}`));
+    }
+    if (suggestions.recommendations && suggestions.recommendations.length) {
+      lines.push('Recommendations:');
+      suggestions.recommendations.slice(0, 5).forEach(r => lines.push(`- ${r}`));
+    }
+    copyWithFlash(lines.join('\n'), setCopiedAll);
+  };
+
   return (
     <div className="mt-6">
-      <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center mb-4">
-        <Sparkles className="h-6 w-6 mr-2 text-purple-500" /> AI-Powered Suggestions
-      </h3>
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+          <Sparkles className="h-6 w-6 mr-2 text-purple-500" /> AI-Powered Suggestions
+        </h3>
+        <button
+          onClick={copyAll}
+          className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-purple-600 text-white hover:bg-purple-700"
+          title="Copy title, meta, outline and top recommendations"
+        >
+          <Copy className="h-4 w-4" /> {copiedAll ? 'Copied' : 'Copy All'}
+        </button>
+      </div>
       
       {/* Priority and Impact */}
       {(suggestions.priorityScore !== undefined || suggestions.impact) && (
@@ -222,6 +270,79 @@ const AISuggestionsCard = ({ suggestions }: { suggestions: AISuggestions }) => {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Draft H1/H2 Outline */}
+        {suggestions.outline && (suggestions.outline.h1 || h2List.length > 0) && (
+          <div className="p-4 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700">
+            <h4 className="font-semibold text-purple-800 dark:text-purple-200 mb-2 flex items-center">
+              <Sparkles className="h-4 w-4 mr-2" /> Draft Outline (H1/H2)
+            </h4>
+            {suggestions.outline.h1 && (
+              <div className="mb-2 text-sm"><span className="font-semibold">H1: </span>{suggestions.outline.h1}</div>
+            )}
+            {h2List.length > 0 && (
+              <ul className="space-y-1 ml-1">
+                {h2List.map((h2, idx) => (
+                  <li key={idx} className="text-sm text-purple-700 dark:text-purple-300 flex items-start">
+                    <span className="mr-2">–</span>
+                    {h2}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {/* Diff-like changes for Title/Meta */}
+        {suggestions.diffs && (suggestions.diffs.title || suggestions.diffs.metaDescription) && (
+          <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800/40 border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-800 dark:text-gray-100 mb-2 flex items-center">
+              <Lightbulb className="h-4 w-4 mr-2" /> Proposed Changes
+            </h4>
+            {suggestions.diffs.title && (suggestions.diffs.title.current || suggestions.diffs.title.proposed) && (
+              <div className="mb-3">
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Title</div>
+                {suggestions.diffs.title.current && (
+                  <div className="text-xs text-gray-700 dark:text-gray-300 line-through">
+                    - {suggestions.diffs.title.current}
+                  </div>
+                )}
+                {suggestions.diffs.title.proposed && (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-gray-900 dark:text-white">+ {suggestions.diffs.title.proposed}</div>
+                    <button
+                      onClick={() => copyWithFlash(proposedTitle, setCopiedTitle)}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      <Copy className="h-3 w-3" /> {copiedTitle ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            {suggestions.diffs.metaDescription && (suggestions.diffs.metaDescription.current || suggestions.diffs.metaDescription.proposed) && (
+              <div>
+                <div className="text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1">Meta Description</div>
+                {suggestions.diffs.metaDescription.current && (
+                  <div className="text-xs text-gray-700 dark:text-gray-300 line-through">
+                    - {suggestions.diffs.metaDescription.current}
+                  </div>
+                )}
+                {suggestions.diffs.metaDescription.proposed && (
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs text-gray-900 dark:text-white">+ {suggestions.diffs.metaDescription.proposed}</div>
+                    <button
+                      onClick={() => copyWithFlash(proposedMeta, setCopiedMeta)}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                    >
+                      <Copy className="h-3 w-3" /> {copiedMeta ? 'Copied' : 'Copy'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

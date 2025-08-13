@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import AuthGuard from '@/components/Common/AuthGuard';
@@ -173,6 +174,7 @@ export default function SeoCrawlerDashboardPage() {
 
   const handleDiscover = async () => {
     setLoading(true);
+    const t = toast.loading('Discovering pages…');
     setError(null);
     setDiscovered([]);
     setCrawlResult(null);
@@ -202,10 +204,13 @@ export default function SeoCrawlerDashboardPage() {
 
       const data: DiscoveredPage[] = await res.json();
       setDiscovered(data);
+      toast.success(`Discovered ${data.length} URL${data.length === 1 ? '' : 's'}`);
     } catch (err: any) {
       setError(err.message || 'Discovery failed.');
+      toast.error(err.message || 'Discovery failed');
     } finally {
       setLoading(false);
+      toast.dismiss(t);
     }
   };
 
@@ -216,6 +221,7 @@ export default function SeoCrawlerDashboardPage() {
     }
 
     setLoading(true);
+    const t = toast.loading('Crawling selected pages…');
     setError('');
     setCrawlResult(null);
 
@@ -279,12 +285,15 @@ export default function SeoCrawlerDashboardPage() {
       });
 
       setCrawlResult(result);
+      toast.success(`Crawl complete • ${result.pages?.length || 0} pages analyzed`);
       setActiveTab('summary');
     } catch (err: any) {
       console.error('❌ Crawl error:', err);
       setError(err.message || 'Analysis failed.');
+      toast.error(err.message || 'Crawl failed');
     } finally {
       setLoading(false);
+      toast.dismiss(t);
     }
   };
 
@@ -335,6 +344,7 @@ export default function SeoCrawlerDashboardPage() {
     <AuthGuard>
     <div className="min-h-screen px-2 sm:px-4 py-4 sm:py-8 bg-gray-50 dark:bg-[#0a0b1e]">
       <div className="max-w-7xl mx-auto">
+        <Toaster position="top-right" />
         <RunCrawlForm
           url={url}
           depth={depth}
