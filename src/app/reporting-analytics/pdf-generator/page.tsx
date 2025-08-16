@@ -525,10 +525,12 @@ export default function PDFGeneratorPage() {
       }
 
       const data = await response.json();
+      console.log('🔍 [PDF Generator] Properties response:', data);
       setAnalyticsProperties(data.properties || []);
       
       // Auto-select first property
       if (data.properties && data.properties.length > 0 && !selectedProperty) {
+        console.log('🎯 [PDF Generator] Auto-selecting first property:', data.properties[0]);
         setSelectedProperty(data.properties[0].id);
       }
     } catch (err) {
@@ -609,10 +611,19 @@ export default function PDFGeneratorPage() {
 
   // Load properties and data when user changes
   useEffect(() => {
+    console.log('👤 [PDF Generator] User changed:', user?.email);
     if (user) {
+      console.log('🚀 [PDF Generator] Fetching properties for user:', user.email);
       fetchAnalyticsProperties();
     }
   }, [user]);
+
+  // Auto-select first property when properties are loaded
+  useEffect(() => {
+    if (analyticsProperties.length > 0 && !selectedProperty) {
+      setSelectedProperty(analyticsProperties[0].id);
+    }
+  }, [analyticsProperties, selectedProperty]);
 
   // Fetch data when property or date range changes
   useEffect(() => {
@@ -726,7 +737,7 @@ export default function PDFGeneratorPage() {
               <div className="space-y-5">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Website Property
+                    Website Property {analyticsProperties.length > 0 && `(${analyticsProperties.length} available)`}
                   </label>
                   <div className="relative">
                     <select
@@ -748,6 +759,12 @@ export default function PDFGeneratorPage() {
                       </div>
                     )}
                   </div>
+                  {/* Debug info */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-2 text-xs text-gray-500">
+                      Properties loaded: {analyticsProperties.length} | Selected: {selectedProperty || 'none'}
+                    </div>
+                  )}
                 </div>
 
                 <div>
