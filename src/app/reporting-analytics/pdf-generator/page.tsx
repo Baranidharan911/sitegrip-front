@@ -2,201 +2,483 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, Download, Eye, Settings, BarChart3, TrendingUp, Users, Globe } from 'lucide-react';
+import { 
+  FileText, Upload, Download, Eye, Settings, BarChart3, TrendingUp, Users, Globe, 
+  Search, Activity, Smartphone, Globe2, FileText as FileTextIcon, Calendar,
+  Building2, Target, PieChart, Zap
+} from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import Image from 'next/image';
+import { useAuth } from '@/hooks/useAuth';
+import { getAuthInstance } from '@/lib/firebase.js';
+
+// Types for real analytics data
+interface AnalyticsProperty {
+  id: string;
+  name: string;
+  websiteUrl?: string;
+}
+
+interface GoogleAnalyticsData {
+  basicMetrics: Array<{
+    date: string;
+    totalUsers: number;
+    sessions: number;
+    screenPageViews: number;
+    bounceRate: number;
+    averageSessionDuration: number;
+  }>;
+  newUsersData: Array<{
+    date: string;
+    newUsers: number;
+    totalUsers: number;
+    returningUsers: number;
+  }>;
+  trafficSourcesData: Array<{
+    source: string;
+    value: number;
+    users: number;
+  }>;
+  geoData: Array<{
+    country: string;
+    users: number;
+    sessions: number;
+  }>;
+  topPagesData: Array<{
+    page: string;
+    users: number;
+    sessions: number;
+    pageviews: number;
+    bounceRate: number;
+  }>;
+  deviceData: Array<{
+    name: string;
+    value: number;
+    sessions: number;
+  }>;
+  derivedMetrics: {
+    totalUsers: number;
+    totalSessions: number;
+    totalPageViews: number;
+    avgBounceRate: number;
+    totalNewUsers: number;
+    totalReturningUsers: number;
+    avgSessionDuration: number;
+    conversionRate: number;
+  };
+}
+
+interface SearchConsoleData {
+  topQueries: Array<{
+    query: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+  searchTrends: Array<{
+    date: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+}
 
 interface Widget {
   id: string;
   title: string;
   description: string;
   icon: React.ElementType;
-  component: (props: { refreshKey: number }) => JSX.Element;
+  component: (props: { 
+    data: GoogleAnalyticsData | SearchConsoleData | null, 
+    refreshKey: number,
+    dateRange: { from: string, to: string }
+  }) => JSX.Element;
+  dataType: 'analytics' | 'search-console' | 'both';
 }
 
-// --- Real-time Data Simulation Helpers ---
-function useAnimatedNumber(initial: number, min: number, max: number) {
-  const [value, setValue] = useState(initial);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setValue(v => {
-        let next = v + (Math.random() - 0.5) * (max - min) * 0.05;
-        next = Math.max(min, Math.min(max, Math.round(next)));
-        return next;
-      });
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [min, max]);
-  return [value, setValue] as const;
-}
-
-// --- Real-time Widgets ---
-const RankTrackingWidget = ({ refreshKey }: { refreshKey: number }) => {
-  const [avgPos, setAvgPos] = useAnimatedNumber(3, 1, 10);
-  const [top10, setTop10] = useAnimatedNumber(147, 100, 200);
-  const [posChange, setPosChange] = useAnimatedNumber(23, -10, 50);
-  useEffect(() => {
-    setAvgPos(3 + Math.floor(Math.random() * 5));
-    setTop10(120 + Math.floor(Math.random() * 80));
-    setPosChange(-10 + Math.floor(Math.random() * 60));
-  }, [refreshKey]);
-  return (
-    <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-4 rounded-lg border">
-      <h3 className="font-semibold mb-2 flex items-center gap-2">
-        <TrendingUp size={16} className="text-green-500" />
-        Rank Tracking Summary
-      </h3>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Average Position</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{avgPos} ↑</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Keywords in Top 10</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{top10}</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Position Changes</span>
-          <motion.span className="font-medium text-green-600" animate={{ scale: [1, 1.2, 1] }}>{posChange > 0 ? '+' : ''}{posChange}</motion.span>
+// Real-time Widgets using actual Google Analytics and Search Console data
+const UsersWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('derivedMetrics' in data)) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <Users size={16} className="text-blue-500" />
+          Total Users
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
         </div>
       </div>
-    </motion.div>
-  );
-};
+    );
+  }
 
-const TrafficWidget = ({ refreshKey }: { refreshKey: number }) => {
-  const [thisMonth, setThisMonth] = useAnimatedNumber(12847, 10000, 20000);
-  const [lastMonth, setLastMonth] = useAnimatedNumber(11234, 8000, 18000);
-  const [growth, setGrowth] = useAnimatedNumber(14, -10, 40);
-  useEffect(() => {
-    setThisMonth(10000 + Math.floor(Math.random() * 10000));
-    setLastMonth(8000 + Math.floor(Math.random() * 10000));
-    setGrowth(-10 + Math.floor(Math.random() * 50));
-  }, [refreshKey]);
+  const { totalUsers, totalNewUsers, totalReturningUsers } = data.derivedMetrics;
+  const growth = data.basicMetrics.length > 1 
+    ? ((data.basicMetrics[data.basicMetrics.length - 1].totalUsers - data.basicMetrics[0].totalUsers) / data.basicMetrics[0].totalUsers * 100)
+    : 0;
+
   return (
-    <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-4 rounded-lg border">
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
       <h3 className="font-semibold mb-2 flex items-center gap-2">
         <Users size={16} className="text-blue-500" />
-        Organic Traffic
+        Total Users
       </h3>
       <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">This Month</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{thisMonth.toLocaleString()}</motion.span>
+        <div className="text-2xl font-bold text-blue-600">{totalUsers.toLocaleString()}</div>
+        <div className="text-sm text-green-600">
+          {growth > 0 ? '+' : ''}{growth.toFixed(1)}% from period start
         </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Last Month</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{lastMonth.toLocaleString()}</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Growth</span>
-          <motion.span className="font-medium text-green-600" animate={{ scale: [1, 1.2, 1] }}>{growth > 0 ? '+' : ''}{growth}%</motion.span>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="text-center p-2 bg-blue-50 rounded">
+            <div className="font-semibold text-blue-600">{totalNewUsers.toLocaleString()}</div>
+            <div className="text-gray-500">New Users</div>
+          </div>
+          <div className="text-center p-2 bg-green-50 rounded">
+            <div className="font-semibold text-green-600">{totalReturningUsers.toLocaleString()}</div>
+            <div className="text-gray-500">Returning</div>
+          </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };
 
-const BacklinkWidget = ({ refreshKey }: { refreshKey: number }) => {
-  const [total, setTotal] = useAnimatedNumber(2847, 2000, 5000);
-  const [newMonth, setNewMonth] = useAnimatedNumber(156, 50, 300);
-  const [da, setDA] = useAnimatedNumber(72, 30, 100);
-  useEffect(() => {
-    setTotal(2000 + Math.floor(Math.random() * 3000));
-    setNewMonth(50 + Math.floor(Math.random() * 250));
-    setDA(30 + Math.floor(Math.random() * 70));
-  }, [refreshKey]);
-  return (
-    <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-4 rounded-lg border">
-      <h3 className="font-semibold mb-2 flex items-center gap-2">
-        <Globe size={16} className="text-purple-500" />
-        Backlink Growth
-      </h3>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Total Backlinks</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{total}</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">New This Month</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{newMonth}</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">Domain Authority</span>
-          <motion.span className="font-medium" animate={{ scale: [1, 1.2, 1] }}>{da}</motion.span>
+const SessionsWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('derivedMetrics' in data)) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <Activity size={16} className="text-purple-500" />
+          Sessions
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
         </div>
       </div>
-    </motion.div>
+    );
+  }
+
+  const { totalSessions, avgSessionDuration, avgBounceRate } = data.derivedMetrics;
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Activity size={16} className="text-purple-500" />
+        Sessions
+      </h3>
+      <div className="space-y-2">
+        <div className="text-2xl font-bold text-purple-600">{totalSessions.toLocaleString()}</div>
+        <div className="grid grid-cols-2 gap-2 text-xs">
+          <div className="text-center p-2 bg-purple-50 rounded">
+            <div className="font-semibold text-purple-600">{Math.round(avgSessionDuration / 60)}m {Math.round(avgSessionDuration % 60)}s</div>
+            <div className="text-gray-500">Avg Duration</div>
+          </div>
+          <div className="text-center p-2 bg-red-50 rounded">
+            <div className="font-semibold text-red-600">{avgBounceRate.toFixed(1)}%</div>
+            <div className="text-gray-500">Bounce Rate</div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-const CoreWebVitalsWidget = ({ refreshKey }: { refreshKey: number }) => {
-  const [lcp, setLCP] = useAnimatedNumber(2.1, 1.5, 3.5);
-  const [fid, setFID] = useAnimatedNumber(12, 5, 30);
-  const [cls, setCLS] = useAnimatedNumber(0.12, 0.01, 0.25);
-  useEffect(() => {
-    setLCP(1.5 + Math.random() * 2);
-    setFID(5 + Math.random() * 25);
-    setCLS(0.01 + Math.random() * 0.24);
-  }, [refreshKey]);
-  return (
-    <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-4 rounded-lg border">
-      <h3 className="font-semibold mb-2 flex items-center gap-2">
-        <BarChart3 size={16} className="text-orange-500" />
-        Core Web Vitals
-      </h3>
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">LCP</span>
-          <motion.span className="font-medium text-green-600" animate={{ scale: [1, 1.2, 1] }}>{lcp.toFixed(2)}s</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">FID</span>
-          <motion.span className="font-medium text-green-600" animate={{ scale: [1, 1.2, 1] }}>{fid}ms</motion.span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-sm text-gray-600">CLS</span>
-          <motion.span className="font-medium text-yellow-600" animate={{ scale: [1, 1.2, 1] }}>{cls.toFixed(2)}</motion.span>
+const PageViewsWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('derivedMetrics' in data)) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <FileTextIcon size={16} className="text-green-500" />
+          Page Views
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
         </div>
       </div>
-    </motion.div>
+    );
+  }
+
+  const { totalPageViews } = data.derivedMetrics;
+  const avgPageViewsPerSession = totalPageViews / data.derivedMetrics.totalSessions;
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <FileTextIcon size={16} className="text-green-500" />
+        Page Views
+      </h3>
+      <div className="space-y-2">
+        <div className="text-2xl font-bold text-green-600">{totalPageViews.toLocaleString()}</div>
+        <div className="text-sm text-gray-600">
+          {avgPageViewsPerSession.toFixed(1)} per session
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const TrafficSourcesWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('trafficSourcesData' in data) || !data.trafficSourcesData.length) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <Globe2 size={16} className="text-indigo-500" />
+          Traffic Sources
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
+        </div>
+      </div>
+    );
+  }
+
+  const topSources = data.trafficSourcesData.slice(0, 4);
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Globe2 size={16} className="text-indigo-500" />
+        Traffic Sources
+      </h3>
+      <div className="space-y-2">
+        {topSources.map((source, index) => (
+          <div key={source.source} className="flex justify-between items-center text-sm">
+            <span className="text-gray-600 truncate flex-1">{source.source}</span>
+            <span className="font-medium ml-2">{source.users.toLocaleString()}</span>
+            <span className="text-xs text-gray-500 ml-2">({source.value.toFixed(1)}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const DeviceBreakdownWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('deviceData' in data) || !data.deviceData.length) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <Smartphone size={16} className="text-orange-500" />
+          Device Breakdown
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
+        </div>
+      </div>
+    );
+  }
+
+  const totalSessions = data.deviceData.reduce((sum, device) => sum + device.sessions, 0);
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Smartphone size={16} className="text-orange-500" />
+        Device Breakdown
+      </h3>
+      <div className="space-y-2">
+        {data.deviceData.map((device) => {
+          const percentage = (device.sessions / totalSessions * 100).toFixed(1);
+          return (
+            <div key={device.name} className="flex justify-between items-center text-sm">
+              <span className="text-gray-600">{device.name}</span>
+              <span className="font-medium">{device.sessions.toLocaleString()}</span>
+              <span className="text-xs text-gray-500">({percentage}%)</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const TopPagesWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('topPagesData' in data) || !data.topPagesData.length) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <FileTextIcon size={16} className="text-blue-500" />
+          Top Pages
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No analytics data available</p>
+          <p className="text-xs">Select a property and date range</p>
+        </div>
+      </div>
+    );
+  }
+
+  const topPages = data.topPagesData.slice(0, 4);
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <FileTextIcon size={16} className="text-blue-500" />
+        Top Pages
+      </h3>
+      <div className="space-y-2">
+        {topPages.map((page, index) => (
+          <div key={page.page} className="text-sm">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600 truncate flex-1">{page.page}</span>
+              <span className="font-medium ml-2">{page.pageviews.toLocaleString()}</span>
+            </div>
+            <div className="text-xs text-gray-500 text-right">
+              {page.bounceRate.toFixed(1)}% bounce
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const SearchConsoleWidget = ({ data, refreshKey, dateRange }: { 
+  data: GoogleAnalyticsData | SearchConsoleData | null, 
+  refreshKey: number,
+  dateRange: { from: string, to: string }
+}) => {
+  if (!data || !('topQueries' in data) || !data.topQueries.length) {
+    return (
+      <div className="bg-white p-4 rounded-lg border border-gray-200">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
+          <Search size={16} className="text-yellow-500" />
+          Search Performance
+        </h3>
+        <div className="text-center py-4 text-gray-500">
+          <p className="text-sm">No Search Console data</p>
+          <p className="text-xs">Select a property and date range</p>
+        </div>
+      </div>
+    );
+  }
+
+  const topQueries = data.topQueries.slice(0, 4);
+  const totalClicks = data.topQueries.reduce((sum, query) => sum + query.clicks, 0);
+  const totalImpressions = data.topQueries.reduce((sum, query) => sum + query.impressions, 0);
+  const avgPosition = data.topQueries.reduce((sum, query) => sum + query.position, 0) / data.topQueries.length;
+
+  return (
+    <div className="bg-white p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold mb-2 flex items-center gap-2">
+        <Search size={16} className="text-yellow-500" />
+        Search Performance
+      </h3>
+      <div className="space-y-3 mb-4">
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="text-center p-2 bg-yellow-50 rounded">
+            <div className="font-semibold text-yellow-600">{totalClicks.toLocaleString()}</div>
+            <div className="text-gray-500">Clicks</div>
+          </div>
+          <div className="text-center p-2 bg-blue-50 rounded">
+            <div className="font-semibold text-blue-600">{totalImpressions.toLocaleString()}</div>
+            <div className="text-gray-500">Impressions</div>
+          </div>
+          <div className="text-center p-2 bg-green-50 rounded">
+            <div className="font-semibold text-green-600">{avgPosition.toFixed(1)}</div>
+            <div className="text-gray-500">Avg Position</div>
+          </div>
+        </div>
+      </div>
+      <div className="text-xs text-gray-500">Top queries available</div>
+    </div>
   );
 };
 
 const availableWidgets: Widget[] = [
   {
-    id: 'rank-tracking',
-    title: 'Rank Tracking Summary',
-    description: 'Overview of keyword rankings and position changes',
-    icon: TrendingUp,
-    component: (props) => <RankTrackingWidget {...props} />
-  },
-  {
-    id: 'organic-traffic',
-    title: 'Organic Traffic Chart',
-    description: 'Monthly organic traffic growth and statistics',
+    id: 'users',
+    title: 'Total Users',
+    description: 'Real user counts and growth metrics',
     icon: Users,
-    component: (props) => <TrafficWidget {...props} />
+    component: UsersWidget,
+    dataType: 'analytics'
   },
   {
-    id: 'backlink-growth',
-    title: 'Backlink Growth',
-    description: 'Backlink acquisition and domain authority metrics',
-    icon: Globe,
-    component: (props) => <BacklinkWidget {...props} />
+    id: 'sessions',
+    title: 'Sessions',
+    description: 'Session data and engagement metrics',
+    icon: Activity,
+    component: SessionsWidget,
+    dataType: 'analytics'
   },
   {
-    id: 'core-web-vitals',
-    title: 'Core Web Vitals',
-    description: 'Website performance and user experience metrics',
-    icon: BarChart3,
-    component: (props) => <CoreWebVitalsWidget {...props} />
+    id: 'pageviews',
+    title: 'Page Views',
+    description: 'Page view counts and averages',
+    icon: FileTextIcon,
+    component: PageViewsWidget,
+    dataType: 'analytics'
+  },
+  {
+    id: 'traffic-sources',
+    title: 'Traffic Sources',
+    description: 'Top traffic sources breakdown',
+    icon: Globe2,
+    component: TrafficSourcesWidget,
+    dataType: 'analytics'
+  },
+  {
+    id: 'device-breakdown',
+    title: 'Device Breakdown',
+    description: 'Device usage statistics',
+    icon: Smartphone,
+    component: DeviceBreakdownWidget,
+    dataType: 'analytics'
+  },
+  {
+    id: 'top-pages',
+    title: 'Top Pages',
+    description: 'Best performing pages',
+    icon: FileTextIcon,
+    component: TopPagesWidget,
+    dataType: 'analytics'
+  },
+  {
+    id: 'search-console',
+    title: 'Search Console',
+    description: 'Google Search performance metrics',
+    icon: Search,
+    component: SearchConsoleWidget,
+    dataType: 'search-console'
   }
 ];
 
 export default function PDFGeneratorPage() {
-  const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['rank-tracking', 'organic-traffic']);
+  const { user } = useAuth();
+  const [selectedWidgets, setSelectedWidgets] = useState<string[]>(['users', 'sessions']);
   const [logo, setLogo] = useState<string | null>(null);
   const [reportTitle, setReportTitle] = useState('SEO Performance Report');
   const [clientName, setClientName] = useState('Client Name');
@@ -204,6 +486,140 @@ export default function PDFGeneratorPage() {
   const [generating, setGenerating] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Google Analytics and Search Console integration
+  const [analyticsProperties, setAnalyticsProperties] = useState<AnalyticsProperty[]>([]);
+  const [selectedProperty, setSelectedProperty] = useState<string>('');
+  const [dateRange, setDateRange] = useState({ 
+    from: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
+  const [analyticsData, setAnalyticsData] = useState<GoogleAnalyticsData | null>(null);
+  const [searchConsoleData, setSearchConsoleData] = useState<SearchConsoleData | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingProperties, setLoadingProperties] = useState(false);
+  const [error, setError] = useState('');
+
+  // Fetch Google Analytics properties
+  const fetchAnalyticsProperties = async () => {
+    if (!user) return;
+    
+    setLoadingProperties(true);
+    setError('');
+    
+    try {
+      const auth = getAuthInstance();
+      if (!auth?.currentUser) {
+        throw new Error('No authenticated user found');
+      }
+      const token = await auth.currentUser.getIdToken();
+      const response = await fetch('/api/analytics/properties', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch properties');
+      }
+
+      const data = await response.json();
+      setAnalyticsProperties(data.properties || []);
+      
+      // Auto-select first property
+      if (data.properties && data.properties.length > 0 && !selectedProperty) {
+        setSelectedProperty(data.properties[0].id);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch properties';
+      setError(errorMessage);
+      console.error('Error fetching properties:', err);
+    } finally {
+      setLoadingProperties(false);
+    }
+  };
+
+  // Fetch analytics data
+  const fetchAnalyticsData = async () => {
+    if (!selectedProperty || !user) return;
+    
+    setLoading(true);
+    setError('');
+    
+    try {
+      const auth = getAuthInstance();
+      if (!auth?.currentUser) {
+        throw new Error('No authenticated user found');
+      }
+      const token = await auth.currentUser.getIdToken();
+      
+      // Fetch Google Analytics data
+      const analyticsResponse = await fetch('/api/analytics/data', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          propertyId: selectedProperty,
+          startDate: dateRange.from,
+          endDate: dateRange.to,
+        }),
+      });
+
+      if (!analyticsResponse.ok) {
+        const errorData = await analyticsResponse.json();
+        throw new Error(errorData.error || 'Failed to fetch analytics data');
+      }
+
+      const analyticsResult = await analyticsResponse.json();
+      setAnalyticsData(analyticsResult.data);
+
+      // Fetch Search Console data
+      try {
+        const searchConsoleResponse = await fetch('/api/analytics/search-console', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            propertyId: selectedProperty,
+            startDate: dateRange.from,
+            endDate: dateRange.to,
+          }),
+        });
+
+        if (searchConsoleResponse.ok) {
+          const searchConsoleResult = await searchConsoleResponse.json();
+          setSearchConsoleData(searchConsoleResult.data);
+        }
+      } catch (searchConsoleError) {
+        console.warn('Search Console data not available:', searchConsoleError);
+      }
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch analytics data';
+      setError(errorMessage);
+      console.error('Error fetching analytics data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load properties and data when user changes
+  useEffect(() => {
+    if (user) {
+      fetchAnalyticsProperties();
+    }
+  }, [user]);
+
+  // Fetch data when property or date range changes
+  useEffect(() => {
+    if (selectedProperty && user) {
+      fetchAnalyticsData();
+    }
+  }, [selectedProperty, dateRange, user]);
 
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -265,6 +681,13 @@ export default function PDFGeneratorPage() {
     selectedWidgets.includes(widget.id)
   );
 
+  const handleRefresh = () => {
+    setRefreshKey(k => k + 1);
+    if (selectedProperty) {
+      fetchAnalyticsData();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#e0e7ff] via-[#f0f4ff] to-[#f8fafc] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 p-4">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -283,17 +706,129 @@ export default function PDFGeneratorPage() {
             </h1>
           </div>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-xl mx-auto">
-            Create professional white-label PDF reports with custom branding
+            Create professional PDF reports with real Google Analytics & Search Console data
           </p>
         </motion.div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Configuration Panel */}
           <div className="lg:col-span-1 space-y-6">
+            {/* Property Selection and Date Range */}
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
+            >
+              <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
+                <Building2 size={22} />
+                Data Source
+              </h3>
+              <div className="space-y-5">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Website Property
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={selectedProperty}
+                      onChange={(e) => setSelectedProperty(e.target.value)}
+                      disabled={loadingProperties}
+                      className="w-full px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                    >
+                      <option value="">Select a website property</option>
+                      {analyticsProperties.map((property) => (
+                        <option key={property.id} value={property.id}>
+                          {property.name} {property.websiteUrl && `(${property.websiteUrl})`}
+                        </option>
+                      ))}
+                    </select>
+                    {loadingProperties && (
+                      <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-500"></div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Date Range
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={dateRange.from}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                      className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <span className="flex items-center text-gray-500">to</span>
+                    <input
+                      type="date"
+                      value={dateRange.to}
+                      onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                      className="flex-1 px-4 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Date Presets */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Quick Presets
+                  </label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[7, 30, 90, 365].map((days) => (
+                      <button
+                        key={days}
+                        onClick={() => {
+                          const to = new Date();
+                          const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
+                          setDateRange({
+                            from: from.toISOString().split('T')[0],
+                            to: to.toISOString().split('T')[0]
+                          });
+                        }}
+                        className="px-3 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        {days === 7 ? '7D' : days === 30 ? '30D' : days === 90 ? '90D' : '1Y'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Refresh Button */}
+                <button
+                  onClick={handleRefresh}
+                  disabled={loading || !selectedProperty}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                >
+                  <Zap size={18} className={loading ? 'animate-spin' : ''} />
+                  {loading ? 'Loading...' : 'Refresh Data'}
+                </button>
+
+                {/* Error Display */}
+                {error && (
+                  <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+                    <p className="text-red-700 dark:text-red-400 text-sm">{error}</p>
+                  </div>
+                )}
+
+                {/* Connection Status */}
+                {!selectedProperty && (
+                  <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl">
+                    <p className="text-yellow-700 dark:text-yellow-400 text-sm">
+                      Please select a website property to view analytics data.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+
             {/* Report Settings */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 }}
               className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
             >
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6 flex items-center gap-2">
@@ -365,7 +900,7 @@ export default function PDFGeneratorPage() {
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 }}
+              transition={{ delay: 0.2 }}
               className="bg-white/80 dark:bg-gray-900/60 backdrop-blur-md rounded-2xl shadow-2xl p-6 border border-gray-200 dark:border-gray-700"
             >
               <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-6">
@@ -399,12 +934,12 @@ export default function PDFGeneratorPage() {
             <motion.button
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.3 }}
               onClick={() => {
                 generatePDF();
                 setRefreshKey(prev => prev + 1);
               }}
-              disabled={generating || selectedWidgets.length === 0}
+              disabled={generating || selectedWidgets.length === 0 || !selectedProperty}
               className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-full font-semibold hover:from-blue-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-xl text-lg"
             >
               {generating ? (
@@ -444,17 +979,38 @@ export default function PDFGeneratorPage() {
                       <h1 className="text-3xl font-bold text-gray-900 mb-2">{reportTitle}</h1>
                       <p className="text-lg text-gray-600">Prepared for: {clientName}</p>
                       <p className="text-sm text-gray-500">Report Date: {reportDate}</p>
+                      {selectedProperty && (
+                        <p className="text-sm text-gray-500">Property: {analyticsProperties.find(p => p.id === selectedProperty)?.name}</p>
+                      )}
+                      <p className="text-sm text-gray-500">Period: {dateRange.from} to {dateRange.to}</p>
                     </div>
                     {logo && (
                       <Image src={logo} alt="Company Logo" width={128} height={64} className="max-h-16 max-w-32 object-contain" />
                     )}
                   </div>
+                  
                   {/* Report Content */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    {selectedWidgetComponents.map((widget) => (
-                      <widget.component key={widget.id} refreshKey={refreshKey} />
-                    ))}
+                    {selectedWidgetComponents.map((widget) => {
+                      // Pass appropriate data to each widget
+                      let widgetData = null;
+                      if (widget.dataType === 'search-console') {
+                        widgetData = searchConsoleData;
+                      } else if (widget.dataType === 'analytics') {
+                        widgetData = analyticsData;
+                      }
+
+                      return (
+                        <widget.component 
+                          key={widget.id} 
+                          data={widgetData} 
+                          refreshKey={refreshKey}
+                          dateRange={dateRange}
+                        />
+                      );
+                    })}
                   </div>
+                  
                   {selectedWidgets.length === 0 && (
                     <div className="text-center py-12 text-gray-500">
                       <FileText size={48} className="mx-auto mb-4 opacity-50" />
