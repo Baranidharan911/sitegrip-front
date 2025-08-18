@@ -13,6 +13,7 @@ const AnimatedBackground = lazy(() => import('../components/Home/AnimatedBackgro
 
 // Batch 1: Above the fold content
 const TrustedBy = lazy(() => import('../components/Home/TrustedBy'));
+const CompanyShowcase = lazy(() => import('../components/Home/CompanyShowcase'));
 const Process = lazy(() => import('../components/Home/Process'));
 
 // Batch 2: Main content (load after initial render)
@@ -124,6 +125,9 @@ const Home = memo(() => {
     <>
       <Suspense fallback={<LoadingSpinner />}>
         <TrustedBy />
+      </Suspense>
+      <Suspense fallback={<LoadingSpinner />}>
+        <CompanyShowcase />
       </Suspense>
       <Suspense fallback={<LoadingSpinner />}>
         <Process />
