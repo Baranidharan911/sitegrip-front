@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { RefreshCw } from 'lucide-react';
 import { useFrontendUptime } from '../../hooks/useFrontendUptime';
 import { Monitor, CheckResult, Incident } from '../../types/uptime';
 
@@ -17,16 +18,22 @@ export default function UptimeHistory({ monitor, isOpen, onClose }: UptimeHistor
     getMonitorStats, 
     performMonitorCheck,
     exportMonitorData,
-    loading 
+    loading,
+    checkSSLStatus,
+    getMonitorDiagnostics
   } = useFrontendUptime();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'checks' | 'incidents' | 'settings'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'checks' | 'incidents' | 'ssl' | 'diagnostics' | 'settings'>('overview');
   const [checks, setChecks] = useState<CheckResult[]>([]);
   const [incidents, setIncidents] = useState<Incident[]>([]);
   const [stats, setStats] = useState<any>(null);
+  const [sslInfo, setSslInfo] = useState<any>(null);
+  const [diagnostics, setDiagnostics] = useState<any>(null);
   const [loadingChecks, setLoadingChecks] = useState(false);
   const [loadingIncidents, setLoadingIncidents] = useState(false);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [loadingSSL, setLoadingSSL] = useState(false);
+  const [loadingDiagnostics, setLoadingDiagnostics] = useState(false);
 
   useEffect(() => {
     if (isOpen && monitor) {
@@ -55,6 +62,32 @@ export default function UptimeHistory({ monitor, isOpen, onClose }: UptimeHistor
       setLoadingChecks(false);
       setLoadingIncidents(false);
       setLoadingStats(false);
+    }
+  };
+
+  const loadSSLData = async () => {
+    if (!monitor.url.startsWith('https://')) return;
+    
+    try {
+      setLoadingSSL(true);
+      const sslData = await checkSSLStatus(monitor.id);
+      setSslInfo(sslData);
+    } catch (error) {
+      console.error('Failed to load SSL data:', error);
+    } finally {
+      setLoadingSSL(false);
+    }
+  };
+
+  const loadDiagnosticsData = async () => {
+    try {
+      setLoadingDiagnostics(true);
+      const diagnosticsData = await getMonitorDiagnostics(monitor.id);
+      setDiagnostics(diagnosticsData);
+    } catch (error) {
+      console.error('Failed to load diagnostics data:', error);
+    } finally {
+      setLoadingDiagnostics(false);
     }
   };
 
@@ -132,6 +165,8 @@ export default function UptimeHistory({ monitor, isOpen, onClose }: UptimeHistor
               { id: 'overview', label: 'Overview' },
               { id: 'checks', label: 'Check History' },
               { id: 'incidents', label: 'Incidents' },
+              ...(monitor.url.startsWith('https://') ? [{ id: 'ssl', label: 'SSL Certificate' }] : []),
+              { id: 'diagnostics', label: 'Diagnostics' },
               { id: 'settings', label: 'Settings' }
             ].map((tab) => (
               <button
@@ -414,6 +449,137 @@ export default function UptimeHistory({ monitor, isOpen, onClose }: UptimeHistor
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* SSL Tab */}
+          {activeTab === 'ssl' && monitor.url.startsWith('https://') && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">SSL Certificate</h3>
+                <button
+                  onClick={loadSSLData}
+                  disabled={loadingSSL}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:border-gray-500 dark:hover:bg-gray-500"
+                >
+                  {loadingSSL ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh SSL
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {loadingSSL ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Checking SSL certificate...</p>
+                </div>
+              ) : sslInfo ? (
+                <div className="bg-white dark:bg-gray-700 shadow rounded-lg p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Certificate Status</h4>
+                      <dl className="space-y-3">
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
+                          <dd className="text-sm">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              sslInfo.ssl_status === 'valid' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                              sslInfo.ssl_status === 'expiring_soon' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                              'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                            }`}>
+                              {sslInfo.ssl_status?.toUpperCase() || 'UNKNOWN'}
+                            </span>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Expires</dt>
+                          <dd className="text-sm text-gray-900 dark:text-white">
+                            {sslInfo.ssl_cert_expires_at ? new Date(sslInfo.ssl_cert_expires_at).toLocaleString() : 'Unknown'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Days Until Expiry</dt>
+                          <dd className="text-sm text-gray-900 dark:text-white">
+                            {sslInfo.ssl_cert_days_until_expiry !== null ? sslInfo.ssl_cert_days_until_expiry : 'Unknown'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Issuer</dt>
+                          <dd className="text-sm text-gray-900 dark:text-white">
+                            {sslInfo.ssl_cert_issuer || 'Unknown'}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Last Checked</dt>
+                          <dd className="text-sm text-gray-900 dark:text-white">
+                            {sslInfo.ssl_last_checked ? new Date(sslInfo.ssl_last_checked).toLocaleString() : 'Never'}
+                          </dd>
+                        </div>
+                      </dl>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">Click "Refresh SSL" to check certificate status</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Diagnostics Tab */}
+          {activeTab === 'diagnostics' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Network Diagnostics</h3>
+                <button
+                  onClick={loadDiagnosticsData}
+                  disabled={loadingDiagnostics}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:bg-gray-600 dark:text-white dark:border-gray-500 dark:hover:bg-gray-500"
+                >
+                  {loadingDiagnostics ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Running...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Run Diagnostics
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {loadingDiagnostics ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Running network diagnostics...</p>
+                </div>
+              ) : diagnostics ? (
+                <div className="bg-white dark:bg-gray-700 shadow rounded-lg p-6">
+                  <div className="space-y-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-4">Diagnostic Results</h4>
+                      <pre className="bg-gray-50 dark:bg-gray-800 p-4 rounded-md text-sm overflow-auto max-h-96">
+                        {JSON.stringify(diagnostics, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">Click "Run Diagnostics" to analyze network connectivity</p>
                 </div>
               )}
             </div>

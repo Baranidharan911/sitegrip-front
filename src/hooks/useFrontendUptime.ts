@@ -21,7 +21,21 @@ import {
   MonitorType,
   NotificationType
 } from '../types/uptime';
-import { firebaseMonitoringService } from '../lib/firebaseMonitoringService';
+import {
+  listMonitors,
+  createMonitor as apiCreateMonitor,
+  updateMonitor as apiUpdateMonitor,
+  deleteMonitor as apiDeleteMonitor,
+  triggerCheck as apiTriggerCheck,
+  bulkUpdate as apiBulkUpdate,
+  getSummary as apiGetSummary,
+  listMonitorsWithChecks,
+  testEndpoint as apiTestEndpoint,
+  checkSSLStatus,
+  getMonitorDiagnostics,
+  getMonitorIncidents as apiGetMonitorIncidents,
+  getMonitorChecks as apiGetMonitorChecks,
+} from '../lib/monitoringApi';
 import useAuth from './useAuth';
 
 /**
@@ -68,10 +82,12 @@ interface UseFrontendUptimeReturn extends UseFrontendUptimeState {
   resolveIncident: (incidentId: string) => Promise<void>;
   exportMonitorData: (monitorId: string, format: 'csv' | 'json', timeRange?: number) => Promise<Blob>;
   clearError: () => void;
-  getMonitorSummary: () => void;
-  getMonitorTypes: () => void;
-  getNotificationTypes: () => void;
+  getMonitorSummary: () => Promise<any>;
+  getMonitorTypes: () => MonitorType[];
+  getNotificationTypes: () => NotificationType[];
   triggerCheck: (monitorId: string) => Promise<void>;
+  checkSSLStatus: (monitorId: string) => Promise<any>;
+  getMonitorDiagnostics: (monitorId: string) => Promise<any>;
 }
 
 // Static monitor types
@@ -83,6 +99,16 @@ const MONITOR_TYPES: MonitorType[] = [
   { type: 'pagespeed', label: 'PageSpeed', description: 'Measure web page speed' },
   { type: 'hardware', label: 'Hardware', description: 'Monitor hardware health' },
   { type: 'docker', label: 'Docker', description: 'Monitor Docker containers' },
+];
+
+// Static notification types
+const NOTIFICATION_TYPES: NotificationType[] = [
+  { type: 'email', label: 'Email', description: 'Send email notifications' },
+  { type: 'webhook', label: 'Webhook', description: 'HTTP webhook notifications' },
+  { type: 'slack', label: 'Slack', description: 'Slack channel notifications' },
+  { type: 'discord', label: 'Discord', description: 'Discord channel notifications' },
+  { type: 'telegram', label: 'Telegram', description: 'Telegram bot notifications' },
+  { type: 'sms', label: 'SMS', description: 'SMS text notifications' },
 ];
 
 export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: number = 30000): UseFrontendUptimeReturn => {
@@ -132,7 +158,7 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     setStateIfMounted(prev => ({ ...prev, error: errorMessage, loading: false }));
   }, [setStateIfMounted]);
 
-  // Fetch all monitors from Firebase Firestore
+  // Fetch all monitors from backend API
   const refreshMonitors = useCallback(async () => {
     if (!user?.uid) {
       console.log('No user, skipping monitor refresh');
@@ -141,10 +167,9 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
 
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      console.log('🔄 Fetching monitors from Firebase...');
-      
-      const monitors = await firebaseMonitoringService.getAllMonitors(user.uid);
-      console.log(`✅ Fetched ${monitors.length} monitors from Firebase`);
+      console.log('🔄 Fetching monitors from backend...');
+      const monitors = await listMonitors();
+      console.log(`✅ Fetched ${monitors.length} monitors from backend`);
 
       setStateIfMounted(prev => ({
         ...prev,
@@ -157,31 +182,14 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [user?.uid, setStateIfMounted, handleError]);
 
-  // Create new monitor using Firebase
+  // Create new monitor via backend
   const createMonitor = useCallback(async (data: CreateMonitorRequest): Promise<Monitor> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      console.log('🔄 Creating monitor in Firebase...');
-      
-      const monitor = await firebaseMonitoringService.createMonitor(user.uid, {
-        name: data.name,
-        url: data.url,
-        type: data.type,
-        status: true, // Default to active status
-        interval: data.interval || 300, // 5 minutes
-        timeout: data.timeout || 30,
-        retries: data.retries || 3,
-        tags: data.tags || [],
-        notifications: data.notifications || [],
-        threshold: data.threshold || { responseTime: 5000, statusCode: 200 },
-        description: data.description || '',
-        isActive: data.isActive !== false,
-        expectedStatusCode: data.expectedStatusCode || 200,
-        retryInterval: data.retryInterval || 60,
-      });
-      
+      console.log('🔄 Creating monitor via backend...');
+      const monitor = await apiCreateMonitor(data);
       console.log('✅ Monitor created successfully');
       await refreshMonitors();
       return monitor;
@@ -191,33 +199,33 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [user?.uid, setStateIfMounted, handleError, refreshMonitors]);
 
-  // Update monitor using Firebase
+  // Update monitor via backend
   const updateMonitor = useCallback(async (id: string, data: UpdateMonitorRequest): Promise<Monitor> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      console.log('🔄 Updating monitor in Firebase...');
-      
-      const monitor = await firebaseMonitoringService.updateMonitor(user.uid, id, data);
+      console.log('🔄 Updating monitor via backend...');
+      await apiUpdateMonitor(id, data);
       console.log('✅ Monitor updated successfully');
       await refreshMonitors();
-      return monitor;
+      // Return updated monitor from current state
+      const updated = state.monitors.find(m => m.id === id) as Monitor;
+      return updated;
     } catch (error) {
       handleError(error, 'updateMonitor');
       throw error;
     }
-  }, [user?.uid, setStateIfMounted, handleError, refreshMonitors]);
+  }, [user?.uid, setStateIfMounted, handleError, refreshMonitors, state.monitors]);
 
-  // Delete monitor using Firebase
+  // Delete monitor via backend
   const deleteMonitor = useCallback(async (id: string): Promise<void> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
     try {
       setStateIfMounted(prev => ({ ...prev, loading: true, error: null }));
-      console.log('🔄 Deleting monitor from Firebase...');
-      
-      await firebaseMonitoringService.deleteMonitor(user.uid, id);
+      console.log('🔄 Deleting monitor via backend...');
+      await apiDeleteMonitor(id);
       console.log('✅ Monitor deleted successfully');
       await refreshMonitors();
     } catch (error) {
@@ -231,13 +239,13 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     setStateIfMounted(prev => ({ ...prev, selectedMonitor: monitor }));
   }, [setStateIfMounted]);
 
-  // Get monitor checks from Firebase
+  // Get monitor checks – use dedicated backend endpoint
   const getMonitorChecks = useCallback(async (monitorId: string, limit: number = 50): Promise<CheckResult[]> => {
     if (!user?.uid) return [];
     
     try {
-      console.log(`🔄 Fetching checks for monitor ${monitorId}...`);
-      const checks = await firebaseMonitoringService.getMonitorChecks(user.uid, monitorId, limit);
+      console.log(`🔄 Fetching checks for monitor ${monitorId} (backend)...`);
+      const checks = await apiGetMonitorChecks(monitorId, limit);
       console.log(`✅ Fetched ${checks.length} checks`);
       return checks;
     } catch (error) {
@@ -246,33 +254,33 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [user?.uid, handleError]);
 
-  // Get monitor incidents from Firebase
+  // Get monitor incidents – use dedicated backend endpoint
   const getMonitorIncidents = useCallback(async (monitorId: string, limit: number = 20): Promise<Incident[]> => {
     if (!user?.uid) return [];
     
     try {
-      console.log(`🔄 Fetching incidents for monitor ${monitorId}...`);
-      const incidents = await firebaseMonitoringService.getIncidents(monitorId, user.uid);
+      console.log(`🔄 Fetching incidents for monitor ${monitorId} (backend)...`);
+      const incidents = await apiGetMonitorIncidents(monitorId, limit);
       console.log(`✅ Fetched ${incidents.length} incidents`);
-      return incidents.slice(0, limit);
+      return incidents;
     } catch (error) {
       handleError(error, 'getMonitorIncidents');
       return [];
     }
   }, [user?.uid, handleError]);
 
-  // Get monitor stats from Firebase
+  // Get monitor stats – derive from backend combined data
   const getMonitorStats = useCallback(async (monitorId: string): Promise<MonitorStats> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
     try {
       console.log(`🔄 Fetching stats for monitor ${monitorId}...`);
-      const monitor = await firebaseMonitoringService.getMonitorById(user.uid, monitorId);
-      if (!monitor) throw new Error('Monitor not found');
-      
-      // Get recent checks for stats calculation
-      const checks = await firebaseMonitoringService.getMonitorChecks(user.uid, monitorId, 100);
-      const incidents = await firebaseMonitoringService.getIncidents(monitorId, user.uid);
+      const withChecks = await listMonitorsWithChecks({ limit: 25 });
+      const target = (withChecks || []).find((m: any) => m.id === monitorId);
+      if (!target) throw new Error('Monitor not found');
+      const monitor = target as Monitor;
+      const checks: CheckResult[] = target.recentChecks || [];
+      const incidents: Incident[] = target.incidents || [];
       
       // Calculate stats
       const avgResponseTime = checks.length > 0 
@@ -311,65 +319,15 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [user?.uid, handleError]);
 
-  // Perform manual monitor check
+  // Perform manual monitor check via backend
   const performMonitorCheck = useCallback(async (monitorId: string): Promise<CheckResult> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
     try {
-      console.log(`🔄 Performing manual check for monitor ${monitorId}...`);
-      
-      // Get monitor details
-      const monitor = await firebaseMonitoringService.getMonitorById(user.uid, monitorId);
-      if (!monitor) throw new Error('Monitor not found');
-      
-      // Perform HTTP check
-      const startTime = Date.now();
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
-      
-      try {
-        const response = await fetch(monitor.url, {
-          method: 'GET',
-          signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; WebWatch/1.0)',
-          },
-        });
-        
-        clearTimeout(timeoutId);
-        const responseTime = Date.now() - startTime;
-        const status = response.ok;
-        
-        // Save check result to Firebase
-        const checkResult = await firebaseMonitoringService.saveCheckResult(user.uid, {
-          monitorId,
-          status,
-          responseTime,
-          statusCode: response.status,
-          message: status ? 'Manual check successful' : `HTTP ${response.status}`,
-          createdAt: new Date(),
-        });
-        
-        console.log('✅ Manual check completed');
-        return checkResult;
-      } catch (error: any) {
-        clearTimeout(timeoutId);
-        const responseTime = Date.now() - startTime;
-        
-        // Save failed check result
-        const checkResult = await firebaseMonitoringService.saveCheckResult(user.uid, {
-          monitorId,
-          status: false,
-          responseTime,
-          statusCode: undefined,
-          message: error.message || 'Manual check failed',
-          error: error.message,
-          createdAt: new Date(),
-        });
-        
-        console.log('❌ Manual check failed');
-        return checkResult;
-      }
+      console.log(`🔄 Performing manual check for monitor ${monitorId} (backend)...`);
+      const result = await apiTriggerCheck(monitorId);
+      console.log('✅ Manual check completed');
+      return result;
     } catch (error) {
       handleError(error, 'performMonitorCheck');
       throw error;
@@ -405,65 +363,35 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     }
   }, [state.monitors]);
 
-  // testMonitor implementation
+  // testMonitor via backend test endpoint
   const testMonitor = useCallback(async (url: string, timeout?: number): Promise<TestResult> => {
-    const res = await fetch('/api/monitoring/test', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, timeout }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data) {
-      throw new Error(data?.message || 'Test failed');
-    }
+    const data = await apiTestEndpoint(url, 'http', timeout);
     return {
       id: '',
       monitorId: '',
       status: data.status,
       responseTime: data.responseTime,
       message: data.message,
+      statusCode: data.statusCode,
       createdAt: new Date(),
     };
   }, []);
 
-  // Bulk update monitors
+  // Bulk update monitors via backend
   const bulkUpdateMonitors = useCallback(async (data: BulkUpdateRequest): Promise<BulkUpdateResponse> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
-    const results = [];
-    let successful = 0;
-    let failed = 0;
-    
-    for (const monitorId of data.monitorIds) {
-      try {
-        if (data.action === 'pause') {
-          await firebaseMonitoringService.updateMonitor(user.uid, monitorId, { isActive: false });
-        } else if (data.action === 'resume') {
-          await firebaseMonitoringService.updateMonitor(user.uid, monitorId, { isActive: true });
-        } else if (data.action === 'delete') {
-          await firebaseMonitoringService.deleteMonitor(user.uid, monitorId);
-        }
-        
-        results.push({ id: monitorId, success: true });
-        successful++;
-      } catch (error) {
-        results.push({ id: monitorId, success: false, error: error instanceof Error ? error.message : 'Unknown error' });
-        failed++;
-      }
-    }
-    
-    return {
-      action: data.action,
-      results,
-      summary: { total: data.monitorIds.length, successful, failed }
-    };
-  }, [user?.uid]);
+    const result = await apiBulkUpdate(data.action, data.monitorIds);
+    await refreshMonitors();
+    return result.data || result;
+  }, [user?.uid, refreshMonitors]);
 
-  // Resolve incident
+  // Resolve incident – placeholder (would need backend incident management endpoints)
   const resolveIncident = useCallback(async (incidentId: string): Promise<void> => {
     try {
-      await firebaseMonitoringService.resolveIncident(incidentId);
-      console.log('✅ Incident resolved');
+      // TODO: Implement when backend incident resolution endpoints are available
+      console.log('ℹ️ Resolve incident functionality pending backend endpoint implementation');
+      throw new Error('Incident resolution not yet implemented');
     } catch (error) {
       handleError(error, 'resolveIncident');
       throw error;
@@ -478,8 +406,10 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
   ): Promise<Blob> => {
     if (!user?.uid) throw new Error('User not authenticated');
     
-    const checks = await firebaseMonitoringService.getMonitorChecks(user.uid, monitorId, 1000);
-    const incidents = await firebaseMonitoringService.getIncidents(monitorId, user.uid);
+    const withChecks = await listMonitorsWithChecks({ limit: 25 });
+    const target = (withChecks || []).find((m: any) => m.id === monitorId);
+    const checks: CheckResult[] = target?.recentChecks || [];
+    const incidents: Incident[] = target?.incidents || [];
     
     const data = {
       monitorId,
@@ -494,7 +424,7 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
       // Simple CSV export
       const csvContent = [
         'Timestamp,Status,ResponseTime,StatusCode,Message',
-        ...checks.map(check => 
+        ...checks.map((check: CheckResult) => 
           `${check.createdAt},${check.status},${check.responseTime},${check.statusCode || ''},${check.message}`
         ).join('\n')
       ].join('\n');
@@ -536,35 +466,17 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     m.ssl_status === 'expired'
   );
 
-  // Real-time subscription setup
+  // Polling-based refresh (backend source of truth)
   useEffect(() => {
-    if (!user?.uid) return;
-
-    console.log('🔄 Setting up real-time Firebase listeners...');
-    
-    // Subscribe to monitors
-    const unsubscribeMonitors = firebaseMonitoringService.subscribeToMonitors(user.uid, (monitors) => {
-      console.log('📡 Real-time monitors update:', monitors.length);
-      setStateIfMounted(prev => ({ ...prev, monitors }));
-    });
-
-    // Subscribe to incidents
-    const unsubscribeIncidents = firebaseMonitoringService.subscribeToIncidents(user.uid, (incidents) => {
-      console.log('📡 Real-time incidents update:', incidents.length);
-      setStateIfMounted(prev => ({ ...prev, monitorIncidents: { [user.uid]: incidents } }));
-    });
-
-    // Store unsubscribe functions
-    unsubscribeRef.current = () => {
-      unsubscribeMonitors();
-      unsubscribeIncidents();
-    };
-
+    if (!user?.uid || !autoRefresh) return;
+    if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
+    refreshIntervalRef.current = setInterval(() => {
+      refreshMonitors().catch(() => {});
+    }, refreshInterval);
     return () => {
-      unsubscribeMonitors();
-      unsubscribeIncidents();
+      if (refreshIntervalRef.current) clearInterval(refreshIntervalRef.current);
     };
-  }, [user?.uid, setStateIfMounted]);
+  }, [user?.uid, autoRefresh, refreshInterval, refreshMonitors]);
 
   // Initial data load
   useEffect(() => {
@@ -639,9 +551,18 @@ export const useFrontendUptime = (autoRefresh: boolean = true, refreshInterval: 
     resolveIncident,
     exportMonitorData,
     clearError,
-    getMonitorSummary: () => {},
-    getMonitorTypes: () => {},
-    getNotificationTypes: () => {},
+    getMonitorSummary: async () => {
+      try {
+        return await apiGetSummary();
+      } catch (error) {
+        console.error('Failed to get monitor summary:', error);
+        return null;
+      }
+    },
+    getMonitorTypes: () => MONITOR_TYPES,
+    getNotificationTypes: () => NOTIFICATION_TYPES,
     triggerCheck,
+    checkSSLStatus,
+    getMonitorDiagnostics,
   };
 }; 

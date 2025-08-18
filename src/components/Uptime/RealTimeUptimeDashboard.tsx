@@ -20,7 +20,9 @@ export const RealTimeUptimeDashboard: React.FC = () => {
     refreshMonitors,
     clearError,
     getMonitorChecks,
-    getMonitorIncidents
+    getMonitorIncidents,
+    checkSSLStatus,
+    getMonitorDiagnostics
   } = useFrontendUptime();
 
   // SSL summary
