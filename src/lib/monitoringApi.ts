@@ -64,12 +64,19 @@ export async function getSummary(): Promise<any> {
 }
 
 export async function createMonitor(data: CreateMonitorRequest): Promise<Monitor> {
+  console.log('🚀 Frontend: Preparing monitor data for backend:', data);
+  
   const body = {
-    ...data,
-    // Backend expects milliseconds for interval/timeouts in its service; keep values if caller passes ms
-    interval: data.interval && data.interval < 1000 ? data.interval * 1000 : data.interval,
-    timeout: data.timeout && data.timeout < 1000 ? data.timeout * 1000 : data.timeout,
-  } as any;
+    name: data.name,
+    url: data.url,
+    type: data.type,
+    // Convert seconds to milliseconds for backend
+    interval: (data.interval || 60) * 1000,
+    timeout: (data.timeout || 30) * 1000,
+    expectedStatusCode: data.threshold?.statusCode || 200
+  };
+  
+  console.log('📤 Frontend: Sending to backend:', body);
   const res = await fetchWithAuth(`${API_BASE_URL}/api/monitoring/monitors`, {
     method: 'POST',
     body: JSON.stringify(body),
