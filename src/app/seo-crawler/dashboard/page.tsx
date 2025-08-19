@@ -66,12 +66,29 @@ interface CrawlSummaryData {
   orphanPages: number;
 }
 
+interface PlanAnalytics {
+  currentPlan: string;
+  accountType: string;
+  pagesProcessed: number;
+  quotaUsed: {
+    dailyCrawls: { used: number; limit: number; };
+    monthlyCrawls: { used: number; limit: number; };
+    dailyPages: { used: number; limit: number; };
+    monthlyPages: { used: number; limit: number; };
+  };
+  featuresUsed: {
+    [key: string]: boolean | number;
+  };
+  costOptimization: string;
+}
+
 interface CrawlResult {
   crawlId: string;
   summary: CrawlSummaryData;
   pages: PageData[];
   sitemapUrls: string[];
   aiSummaryText?: string;
+  planAnalytics?: PlanAnalytics;
 }
 
 interface DiscoveredPage {
@@ -104,6 +121,11 @@ export default function SeoCrawlerDashboardPage() {
   // Add state for user and saved reports
   const [user, setUser] = useState<any>(null);
   const [savedReports, setSavedReports] = useState<any[]>([]);
+  
+  // Add state for plan analytics and quota information
+  const [quotaInfo, setQuotaInfo] = useState<any>(null);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeDetails, setUpgradeDetails] = useState<any>(null);
 
   // On mount, listen for auth state and load saved reports
   useEffect(() => {
@@ -111,8 +133,13 @@ export default function SeoCrawlerDashboardPage() {
     
     const unsub = onAuthStateChanged(getAuthInstance()!, (u) => {
       setUser(u);
-      if (u) loadReports(u.uid);
-      else setSavedReports([]);
+      if (u) {
+        loadReports(u.uid);
+        loadUserQuota();
+      } else {
+        setSavedReports([]);
+        setQuotaInfo(null);
+      }
     });
     return () => unsub();
   }, []);
@@ -127,6 +154,30 @@ export default function SeoCrawlerDashboardPage() {
     );
     const snap = await getDocs(q);
     setSavedReports(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  };
+
+  // Load user quota information
+  const loadUserQuota = async () => {
+    try {
+      const auth = getAuthInstance();
+      if (!auth?.currentUser) return;
+      
+      const token = await auth.currentUser.getIdToken();
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+      
+      const res = await fetch(`${apiUrl}/api/crawl-analytics/user-quota`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        setQuotaInfo(data.data);
+      }
+    } catch (error) {
+      console.warn('Failed to load quota info:', error);
+    }
   };
 
   const saveReport = async (data: any) => {
@@ -270,6 +321,20 @@ export default function SeoCrawlerDashboardPage() {
           url: res.url
         });
 
+        // Handle plan-based access restrictions
+        if (res.status === 403 && data?.reason) {
+          setUpgradeDetails({
+            reason: data.reason,
+            currentPlan: data.currentPlan,
+            requiredPlan: data.requiredPlan,
+            limits: data.limits,
+            upgradeUrl: data.upgradeInfo?.upgradeUrl,
+            features: data.upgradeInfo?.features || []
+          });
+          setShowUpgradePrompt(true);
+          throw new Error(data.reason);
+        }
+
         if (res.status === 401) throw new Error('Authentication failed. Please log out and log back in.');
         if (res.status === 403) throw new Error('Access denied. Please check your account permissions.');
         if (res.status === 503) throw new Error('Service temporarily unavailable. Please try again in a few minutes.');
@@ -285,7 +350,17 @@ export default function SeoCrawlerDashboardPage() {
       });
 
       setCrawlResult(result);
-      toast.success(`Crawl complete • ${result.pages?.length || 0} pages analyzed`);
+      
+      // Refresh quota information after successful crawl
+      await loadUserQuota();
+      
+      // Show success message with plan info if available
+      const planInfo = result.planAnalytics;
+      if (planInfo) {
+        toast.success(`Crawl complete • ${result.pages?.length || 0} pages analyzed • ${planInfo.currentPlan} plan`);
+      } else {
+        toast.success(`Crawl complete • ${result.pages?.length || 0} pages analyzed`);
+      }
       setActiveTab('summary');
     } catch (err: any) {
       console.error('❌ Crawl error:', err);
@@ -357,6 +432,161 @@ export default function SeoCrawlerDashboardPage() {
           onSubmit={handleDiscover}
         />
 
+        {/* Plan and Quota Information */}
+        {quotaInfo && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {quotaInfo.currentPlan?.charAt(0).toUpperCase() + quotaInfo.currentPlan?.slice(1)} Plan
+                {quotaInfo.currentAccountType === 'premium' && (
+                  <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                    Premium
+                  </span>
+                )}
+              </h3>
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                {quotaInfo.costOptimization || 'Plan-based optimization active'}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Daily Crawls</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {quotaInfo.limits?.dailyCrawls?.used || 0} / {quotaInfo.limits?.dailyCrawls?.limit || 0}
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-blue-500 h-2 rounded-full transition-all"
+                    style={{ 
+                      width: `${Math.min(100, ((quotaInfo.limits?.dailyCrawls?.used || 0) / Math.max(1, quotaInfo.limits?.dailyCrawls?.limit || 1)) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Daily Pages</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {quotaInfo.limits?.dailyPages?.used || 0} / {quotaInfo.limits?.dailyPages?.limit || 0}
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-2">
+                  <div 
+                    className="bg-green-500 h-2 rounded-full transition-all"
+                    style={{ 
+                      width: `${Math.min(100, ((quotaInfo.limits?.dailyPages?.used || 0) / Math.max(1, quotaInfo.limits?.dailyPages?.limit || 1)) * 100)}%` 
+                    }}
+                  ></div>
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Max Depth</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {quotaInfo.planConfig?.maxDepth || 1}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  levels deep
+                </div>
+              </div>
+              
+              <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div className="text-sm text-gray-500 dark:text-gray-400">Remaining Today</div>
+                <div className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {quotaInfo.usage?.dailyCrawlsRemaining || 0}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  crawls left
+                </div>
+              </div>
+            </div>
+            
+            {quotaInfo.upgradeInfo && (
+              <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <div className="text-sm text-blue-800 dark:text-blue-300">
+                  💡 <strong>Upgrade to {quotaInfo.upgradeInfo.requiredPlan}</strong> for more crawls and advanced features!
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* Upgrade Prompt Modal */}
+        {showUpgradePrompt && upgradeDetails && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowUpgradePrompt(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                Upgrade Required
+              </h3>
+              
+              <div className="mb-4">
+                <p className="text-gray-700 dark:text-gray-300 mb-3">
+                  {upgradeDetails.reason}
+                </p>
+                
+                <div className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg mb-3">
+                  <div className="text-sm">
+                    <div><strong>Current Plan:</strong> {upgradeDetails.currentPlan}</div>
+                    <div><strong>Required Plan:</strong> {upgradeDetails.requiredPlan}</div>
+                  </div>
+                </div>
+                
+                {upgradeDetails.features && upgradeDetails.features.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Upgrade benefits:
+                    </p>
+                    <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                      {upgradeDetails.features.map((feature: string, index: number) => (
+                        <li key={index} className="flex items-center">
+                          <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowUpgradePrompt(false)}
+                  className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                >
+                  Maybe Later
+                </button>
+                <button
+                  onClick={() => {
+                    if (upgradeDetails.upgradeUrl) {
+                      window.open(upgradeDetails.upgradeUrl, '_blank');
+                    } else {
+                      router.push('/pricing');
+                    }
+                    setShowUpgradePrompt(false);
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Upgrade Now
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
         {discovered.length > 0 && (
           <DiscoveredTable
             discovered={discovered}
@@ -416,6 +646,79 @@ export default function SeoCrawlerDashboardPage() {
                 <span className="sm:hidden">Share</span>
               </button>
             </div>
+
+            {/* Plan Analytics Display */}
+            {crawlResult.planAnalytics && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg border border-blue-200 dark:border-blue-800"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Crawl Analytics - {crawlResult.planAnalytics.currentPlan.charAt(0).toUpperCase() + crawlResult.planAnalytics.currentPlan.slice(1)} Plan
+                    {crawlResult.planAnalytics.accountType === 'premium' && (
+                      <span className="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">
+                        Premium
+                      </span>
+                    )}
+                  </h4>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {crawlResult.planAnalytics.costOptimization}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Pages Processed</div>
+                    <div className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      {crawlResult.planAnalytics.pagesProcessed}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Daily Quota Used</div>
+                    <div className="text-lg font-bold text-green-600 dark:text-green-400">
+                      {crawlResult.planAnalytics.quotaUsed.dailyCrawls.used} / {crawlResult.planAnalytics.quotaUsed.dailyCrawls.limit}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Monthly Quota</div>
+                    <div className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                      {crawlResult.planAnalytics.quotaUsed.monthlyCrawls.used} / {crawlResult.planAnalytics.quotaUsed.monthlyCrawls.limit}
+                    </div>
+                  </div>
+                  
+                  <div className="text-center p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide">Features Used</div>
+                    <div className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      {Object.values(crawlResult.planAnalytics.featuresUsed).filter(Boolean).length}
+                    </div>
+                  </div>
+                </div>
+                
+                {Object.keys(crawlResult.planAnalytics.featuresUsed).length > 0 && (
+                  <div className="mt-3 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Features Used in This Crawl:</div>
+                    <div className="flex flex-wrap gap-2">
+                      {Object.entries(crawlResult.planAnalytics.featuresUsed).map(([feature, value]) => {
+                        if (!value) return null;
+                        return (
+                          <span 
+                            key={feature}
+                            className="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 rounded-full"
+                          >
+                            {feature.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase())}
+                            {typeof value === 'number' && value !== 1 && ` (${value})`}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6 max-w-4xl mx-auto">
               <TabCard
