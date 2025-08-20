@@ -21,7 +21,7 @@ const pricingPlans = [
     color: 'from-slate-400 to-slate-600',
     features: [
       '10 URLs/day indexing',
-      'Basic crawling',
+      'Basic crawling (1 crawl/day, 10 pages/day)',
       'Testing only',
       'Email support',
       'Basic analytics'
@@ -39,7 +39,8 @@ const pricingPlans = [
     color: 'from-blue-500 to-blue-600',
     features: [
       '50 URLs/day indexing',
-      'Basic crawling',
+      'Basic crawling (2 crawls/day, 25 pages/day)',
+      'PageSpeed checks (2/day, desktop only)',
       'Email support',
       'Advanced analytics',
       'Status tracking',
@@ -58,7 +59,9 @@ const pricingPlans = [
     color: 'from-purple-500 to-pink-500',
     features: [
       '100 URLs/day indexing',
-      'Advanced crawling',
+      'Advanced crawling (1-2 crawls/day, 50-100 pages/day)',
+      'AI suggestions (4-7 calls/day)',
+      'PageSpeed insights (14-28 checks/day, mobile+desktop)',
       'Priority support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -79,7 +82,9 @@ const pricingPlans = [
     color: 'from-emerald-500 to-teal-500',
     features: [
       '150 URLs/day indexing',
-      'Unlimited crawling',
+      'Enhanced crawling (3-5 crawls/day, 140-210 pages/day)',
+      'AI suggestions (14-21 calls/day)',
+      'PageSpeed insights (35-70 checks/day, mobile+desktop)',
       'Priority support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -101,7 +106,9 @@ const pricingPlans = [
     color: 'from-orange-500 to-amber-500',
     features: [
       '200 URLs/day indexing',
-      'Unlimited crawling',
+      'Premium crawling (4-7 crawls/day, 280-420 pages/day)',
+      'AI suggestions (28-42 calls/day)',
+      'PageSpeed insights (70-140 checks/day, mobile+desktop)',
       'Premium support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -124,7 +131,9 @@ const pricingPlans = [
     color: 'from-indigo-500 to-purple-600',
     features: [
       '500 URLs/day indexing',
-      'Unlimited crawling',
+      'Enterprise crawling (7-14 crawls/day, 350-700 pages/day)',
+      'AI suggestions (70-105 calls/day)',
+      'PageSpeed insights (140-280 checks/day, mobile+desktop)',
       'Dedicated support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -148,7 +157,9 @@ const pricingPlans = [
     color: 'from-cyan-500 to-blue-600',
     features: [
       '1000 URLs/day indexing',
-      'Unlimited crawling',
+      'Enterprise crawling (14-28 crawls/day, 700-1400 pages/day)',
+      'AI suggestions (140-210 calls/day)',
+      'PageSpeed insights (280-560 checks/day, mobile+desktop)',
       'Dedicated support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -173,7 +184,9 @@ const pricingPlans = [
     color: 'from-pink-500 to-rose-600',
     features: [
       '2000 URLs/day indexing',
-      'Unlimited crawling',
+      'Enterprise crawling (28-56 crawls/day, 1400-2800 pages/day)',
+      'AI suggestions (280-420 calls/day)',
+      'PageSpeed insights (560-1120 checks/day, mobile+desktop)',
       'Dedicated support',
       'Advanced analytics',
       'Real-time monitoring',
@@ -199,6 +212,9 @@ const pricingPlans = [
     color: 'from-violet-500 to-purple-600',
     features: [
       '10000+ URLs/day indexing',
+      'Enterprise crawling (35-70 crawls/day, 1750-3500 pages/day)',
+      'AI suggestions (525-750 calls/day)',
+      'PageSpeed insights (700-1400 checks/day, mobile+desktop)',
       'Unlimited everything',
       'Dedicated support team',
       'Custom solutions',
@@ -223,22 +239,22 @@ const pricingPlans = [
 const features = [
   {
     title: 'Google Indexing API',
-    description: 'Direct integration with Google\'s official indexing API for fastest results',
+    description: 'Direct integration with Google\'s official indexing API for fastest results. Professional plan: 100 URLs/day, Advanced: 150 URLs/day, Premium: 200 URLs/day',
     icon: Search
   },
   {
-    title: 'Real-time Analytics',
-    description: 'Monitor your indexing progress with live status updates and detailed reports',
+    title: 'AI-Powered SEO Analysis',
+    description: 'Get intelligent SEO suggestions with our AI service. Professional plan: 5-10 AI calls/day, Advanced: 20-30 calls/day, Premium: 40-60 calls/day',
     icon: BarChart3
   },
   {
-    title: 'Bulk Processing',
-    description: 'Submit thousands of URLs efficiently with our optimized batch processing',
+    title: 'Comprehensive Crawling',
+            description: 'Advanced website crawling with depth control. Professional plan: 1-2 crawls/day, Advanced: 3-5 crawls/day, Premium: 4-7 crawls/day',
     icon: Database
   },
   {
-    title: 'Enterprise Security',
-    description: 'Bank-level security to protect your URLs and indexing data',
+    title: 'Performance Monitoring',
+            description: 'PageSpeed insights with mobile and desktop analysis. Professional plan: 14-28 checks/day, Advanced: 35-70 checks/day, Premium: 70-140 checks/day',
     icon: Shield
   }
 ];
@@ -600,74 +616,74 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Section */}
-                 <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-slate-200/50 dark:border-white/10 mb-20">
-                     <div className="text-center mb-12">
-             <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-4">
-               Frequently Asked Questions
-             </h2>
-             <p className="text-slate-600 dark:text-white/60 text-lg">
-               Everything you need to know about our comprehensive SEO platform
-             </p>
-           </div>
+        <div className="bg-white/80 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-slate-200/50 dark:border-white/10 mb-20">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-slate-600 dark:text-white/60 text-lg">
+              Everything you need to know about our comprehensive SEO platform
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
             <div className="space-y-8">
-                             <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   What features are included in SiteGrip?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   SiteGrip includes Google Indexing API, performance monitoring, SEO crawling, analytics, broken link detection, and comprehensive reporting tools.
-                 </p>
-               </div>
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  What features are included in SiteGrip?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  SiteGrip includes Google Indexing API, performance monitoring, SEO crawling, analytics, broken link detection, AI-powered suggestions, and comprehensive reporting tools. Each plan has specific daily limits for optimal performance and cost efficiency.
+                </p>
+              </div>
               
-                             <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   How fast is the indexing?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   Using Google's official API, most URLs are indexed within 24-48 hours compared to weeks with traditional methods.
-                 </p>
-               </div>
-               
-               <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   Can I upgrade or downgrade anytime?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   Yes, you can change your plan at any time. Changes take effect immediately with prorated billing.
-                 </p>
-               </div>
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  How fast is the indexing?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  Using Google's official API, most URLs are indexed within 24-48 hours compared to weeks with traditional methods. Our Professional plan allows 100 URLs/day, Advanced plan 150 URLs/day, and Premium plan 200 URLs/day.
+                </p>
+              </div>
+              
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  Can I upgrade or downgrade anytime?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  Yes, you can change your plan at any time. Changes take effect immediately with prorated billing. Upgrading gives you access to more daily limits and advanced features like AI suggestions and mobile PageSpeed insights.
+                </p>
+              </div>
             </div>
             
-                         <div className="space-y-8">
-               <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   What happens if I exceed my daily quota?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   URLs submitted beyond your daily quota will be queued for the next day. We recommend upgrading for consistent high-volume needs.
-                 </p>
-               </div>
-               
-               <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   Do you offer a free trial?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   Yes, all paid plans include a 14-day free trial. The Free plan is available permanently for testing.
-                 </p>
-               </div>
-               
-               <div className="group">
-                 <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
-                   Is there API access available?
-                 </h3>
-                 <p className="text-slate-700 dark:text-white/70 leading-relaxed">
-                   API access is available starting with the Professional plan, allowing you to integrate SEO tools into your workflows.
-                 </p>
-               </div>
-             </div>
+            <div className="space-y-8">
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  What happens if I exceed my daily quota?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  URLs submitted beyond your daily quota will be queued for the next day. We recommend upgrading for consistent high-volume needs. For example, Professional plan allows 100 URLs/day, while Custom 500 plan allows 500 URLs/day. All plans have strict daily limits to ensure optimal performance.
+                </p>
+              </div>
+              
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  Do you offer a free trial?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  Yes, all paid plans include a 14-day free trial. The Free plan is available permanently for testing with 10 URLs/day and basic crawling. Upgrade to Basic for 50 URLs/day or Professional for 100 URLs/day with AI features.
+                </p>
+              </div>
+              
+              <div className="group">
+                <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-3 group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors duration-300">
+                  Is there API access available?
+                </h3>
+                <p className="text-slate-700 dark:text-white/70 leading-relaxed">
+                  API access is available starting with the Professional plan, allowing you to integrate SEO tools into your workflows. Professional plan includes 4-7 AI calls/day and 14-28 PageSpeed checks/day with strict daily limits.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

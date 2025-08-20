@@ -1,4 +1,4 @@
-# API CONFIGURATION - TypeScript Backend (Updated with Monitoring Fixes)
+# API CONFIGURATION - TypeScript Backend
 NEXT_PUBLIC_API_URL=https://sitegrip-backend-pu22v4ao5a-uc.a.run.app
 
 # FIREBASE CONFIGURATION
@@ -19,5 +19,5 @@ API_BASE_URL=https://sitegrip-backend-pu22v4ao5a-uc.a.run.app
 GOOGLE_PAGESPEED_API_KEY=AIzaSyD88Y2iFLvtS1i1XgMCalyibZ3vlbp0CO4
 GOOGLE_CRUX_API_KEY=AIzaSyD88Y2iFLvtS1i1XgMCalyibZ3vlbp0CO4
 
-# PRODUCTION MODE (Updated for deployment)
-NODE_ENV=production
+# DEVELOPMENT MODE
+NODE_ENV=development
